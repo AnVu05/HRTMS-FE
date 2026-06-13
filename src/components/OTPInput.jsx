@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 
 function OTPInput({ value, onChange }) {
   const inputRefs = useRef([]);

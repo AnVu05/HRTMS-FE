@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 function Register({ onNavigate }) {
   const [username, setUsername] = useState('');
@@ -57,32 +57,6 @@ function Register({ onNavigate }) {
 
   return (
     <div className="register-container mx-auto d-flex flex-column justify-content-between min-vh-100 py-3">
-      {/* Top Bar Navigation */}
-      <div className="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-white header-bar mb-4">
-        <div className="d-flex align-items-center gap-3">
-          <button 
-            type="button" 
-            className="btn btn-link p-0 text-dark border-0"
-            onClick={() => alert('Menu clicked')}
-            aria-label="Menu"
-          >
-            <i className="bi bi-list fs-2 text-primary-custom"></i>
-          </button>
-          <span className="brand-logo fw-bold fs-4">RoyalTurf</span>
-        </div>
-        <div>
-          <img
-            src="/avatar.png"
-            alt="Profile Avatar"
-            className="rounded-circle border profile-avatar"
-            onError={(e) => {
-              // Fallback if avatar fails to load
-              e.target.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80';
-            }}
-          />
-        </div>
-      </div>
-
       {/* Main Registration Card */}
       <div className="auth-card mx-auto shadow-sm p-4 bg-white border border-light-gray flex-grow-0 my-auto">
         <div className="text-center my-3">
