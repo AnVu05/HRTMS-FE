@@ -74,10 +74,10 @@ function LoginOtp({ onNavigate }) {
   };
 
   return (
-    <div className="auth-card mx-auto shadow-sm p-4 d-flex flex-column justify-content-between">
+    <div className="auth-card mx-auto shadow-sm p-4 d-flex flex-column justify-content-between my-auto">
       <div>
         {/* Header bar */}
-        <div className="d-flex align-items-center justify-content-between mb-4">
+        <div className="d-flex align-items-center justify-content-between mb-3">
           <button 
             type="button" 
             className="btn btn-link p-0 text-primary border-0" 
@@ -91,13 +91,13 @@ function LoginOtp({ onNavigate }) {
         </div>
 
         {/* Welcome Section */}
-        <div className="text-center my-4">
+        <div className="text-center my-3">
           <h2 className="fw-bold text-dark-navy mb-1 fs-3">Welcome to Elite</h2>
           <p className="text-muted mb-0 small">Secure access to premium management.</p>
         </div>
 
         {/* Tab separator "Login" */}
-        <div className="text-center position-relative my-4">
+        <div className="text-center position-relative my-3">
           <span className="bg-white px-3 text-secondary-custom fw-semibold position-relative z-3 fs-6">Login</span>
           <hr className="position-absolute top-50 start-0 end-0 m-0 z-1 border-light-gray" />
         </div>
@@ -112,7 +112,7 @@ function LoginOtp({ onNavigate }) {
 
         <form onSubmit={handleSubmit} noValidate>
           {/* Email or Phone field */}
-          <div className="mb-4 text-start">
+          <div className="mb-3 text-start">
             <label className="form-label small fw-bold text-dark-navy mb-2" style={{ letterSpacing: '0.05em' }}>
               EMAIL OR PHONE NUMBER
             </label>
@@ -158,7 +158,7 @@ function LoginOtp({ onNavigate }) {
             <div className="d-flex justify-content-between align-items-center mt-2 px-1">
               <button
                 type="button"
-                className={`btn btn-link p-0 text-decoration-none small fw-semibold resend-btn ${resendTimer > 0 ? 'text-muted disabled' : 'text-primary'}`}
+                className={`btn btn-link p-0 border-0 text-decoration-none small fw-semibold resend-btn ${resendTimer > 0 ? 'text-muted disabled' : 'text-primary'}`}
                 onClick={handleResend}
                 disabled={resendTimer > 0}
               >
@@ -167,7 +167,7 @@ function LoginOtp({ onNavigate }) {
               
               <button
                 type="button"
-                className="btn btn-link p-0 text-decoration-none small text-primary fw-semibold"
+                className="btn btn-link p-0 border-0 text-decoration-none small text-primary fw-semibold"
                 onClick={() => onNavigate('register')}
               >
                 Register
@@ -176,7 +176,7 @@ function LoginOtp({ onNavigate }) {
           </div>
 
           {/* Continue Button */}
-          <div className="mt-5">
+          <div className="mt-4">
             <button
               type="submit"
               className="btn btn-primary w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2 continue-btn"
@@ -188,7 +188,7 @@ function LoginOtp({ onNavigate }) {
       </div>
 
       {/* Footer */}
-      <div className="mt-5 pt-3">
+      <div className="mt-4 pt-2">
         <p className="text-muted text-center small mb-0 font-sans footer-disclaimer">
           By continuing, you agree to our{' '}
           <a href="#" className="text-decoration-underline text-secondary-custom hover-primary fw-medium">Terms</a>{' '}

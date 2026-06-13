@@ -56,10 +56,10 @@ function Register({ onNavigate }) {
   };
 
   return (
-    <div className="register-container mx-auto d-flex flex-column justify-content-between min-vh-100 py-3">
+    <div className="register-container mx-auto d-flex flex-column justify-content-between py-2 my-auto">
       {/* Main Registration Card */}
       <div className="auth-card mx-auto shadow-sm p-4 bg-white border border-light-gray flex-grow-0 my-auto">
-        <div className="text-center my-3">
+        <div className="text-center mt-2 mb-2">
           <h2 className="fw-bold text-dark-navy mb-1 fs-3">Join the Elite</h2>
           <p className="text-muted mb-0 small">Register for RoyalTurf Management System</p>
         </div>
@@ -72,7 +72,7 @@ function Register({ onNavigate }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-4" noValidate>
+        <form onSubmit={handleSubmit} className="mt-3" noValidate>
           {/* Username Field */}
           <div className="mb-3 text-start">
             <label className="form-label small fw-semibold text-secondary-custom mb-1">Username</label>
@@ -151,7 +151,7 @@ function Register({ onNavigate }) {
           </div>
 
           {/* Platform Role dropdown */}
-          <div className="mb-4 text-start">
+          <div className="mb-3 text-start">
             <label className="form-label small fw-semibold text-secondary-custom mb-1">Platform Role</label>
             <div className={`input-group input-group-custom ${errors.role ? 'is-invalid' : ''}`}>
               <span className="input-group-text bg-transparent text-muted">
@@ -188,13 +188,14 @@ function Register({ onNavigate }) {
         </form>
 
         {/* Bottom Switch Link */}
-        <div className="text-center mt-4">
+        <div className="text-center mt-3">
           <p className="small mb-0 text-muted">
             Already have an account?{' '}
             <button
               type="button"
-              className="btn btn-link p-0 text-decoration-none small text-primary fw-semibold"
+              className="btn btn-link p-0 border-0 text-decoration-none small text-primary fw-semibold"
               onClick={() => onNavigate('login')}
+              style={{ display: 'inline', verticalAlign: 'baseline', lineHeight: 'inherit' }}
             >
               Login
             </button>
@@ -202,12 +203,12 @@ function Register({ onNavigate }) {
         </div>
       </div>
 
-      {/* Corporate Footer */}
-      <div className="text-center mt-5">
+      {/* Corporate Footer
+      <div className="text-center mt-3">
         <p className="copyright-text small mb-0">
           &copy; 2024 ROYALTURF INTERNATIONAL. ALL RIGHTS RESERVED.
         </p>
-      </div>
+      </div> */}
     </div>
   );
 }
