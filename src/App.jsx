@@ -1,18 +1,57 @@
 import { useState } from 'react';
 import LoginOtp from './pages/LoginOtp';
 import Register from './pages/Register';
+import SpectatorHome from './pages/SpectatorHome';
+
+const PAGES = ['login', 'register', 'spectator-home'];
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('login');
+  const [currentPage, setCurrentPage] = useState('spectator-home');
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'login':         return <LoginOtp onNavigate={setCurrentPage} />;
+      case 'register':      return <Register onNavigate={setCurrentPage} />;
+      case 'spectator-home': return <SpectatorHome onNavigate={setCurrentPage} />;
+      default:              return <LoginOtp onNavigate={setCurrentPage} />;
+    }
+  };
 
   return (
     <>
-      {/* Render Current Active Page */}
-      {currentPage === 'login' ? (
-        <LoginOtp onNavigate={setCurrentPage} />
-      ) : (
-        <Register onNavigate={setCurrentPage} />
-      )}
+      {/* Dev navigation bar – remove in production */}
+      <div style={{
+        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 9999, display: 'flex', gap: 6, background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(10px)', border: '1px solid #e2e8f0',
+        borderRadius: '0 0 12px 12px', padding: '6px 14px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.06)', alignItems: 'center',
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginRight: 4 }}>DEV:</span>
+        {PAGES.map(p => (
+          <button
+            key={p}
+            onClick={() => setCurrentPage(p)}
+            style={{
+              fontSize: 11, padding: '3px 10px', borderRadius: 6, border: 'none',
+              cursor: 'pointer', fontWeight: 600,
+              background: currentPage === p ? '#1b60ec' : '#f1f5f9',
+              color: currentPage === p ? '#fff' : '#475569',
+              transition: 'all 0.15s',
+            }}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {/* Page content */}
+      <div 
+        className={`app-page-container ${currentPage === 'spectator-home' ? 'full-width' : ''}`}
+        style={{ paddingTop: currentPage === 'spectator-home' ? 0 : 40 }}
+      >
+        {renderPage()}
+      </div>
     </>
   );
 }
