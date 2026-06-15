@@ -272,8 +272,8 @@ export default function AdminDashboard({ onNavigate }) {
                       <tr>
                         <th scope="col" className="text-secondary-custom fw-semibold">TOURNAMENT DETAILS</th>
                         <th scope="col" className="text-secondary-custom fw-semibold">DATES</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold">RACES</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold">STATUS</th>
+                        <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">RACES</th>
+                        <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">STATUS</th>
                         <th scope="col" style={{ width: '40px' }}></th>
                       </tr>
                     </thead>
@@ -290,8 +290,8 @@ export default function AdminDashboard({ onNavigate }) {
                             <div className="text-secondary-custom font-monospace" style={{ fontSize: '11px' }}>{t.id}</div>
                           </td>
                           <td className="fw-semibold text-secondary-custom">{t.dates}</td>
-                          <td className="fw-semibold text-dark-navy">{t.raceCount} Races</td>
-                          <td>
+                          <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.raceCount} Races</td>
+                          <td className="d-none d-md-table-cell">
                             <span className={`status-badge-custom ${t.status === 'PUBLISHED' ? 'published' : 'draft'}`}>
                               {t.status}
                             </span>
@@ -303,6 +303,7 @@ export default function AdminDashboard({ onNavigate }) {
                       ))}
                     </tbody>
                   </table>
+
                 </div>
               </div>
             </div>
