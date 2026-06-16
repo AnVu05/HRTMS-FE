@@ -70,6 +70,9 @@ export default function AdminDashboard({ onNavigate }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState('Tournaments');
 
+  // Subview State: 'list' or 'create'
+  const [currentSubView, setCurrentSubView] = useState('list');
+
   // Modal / Form States
   const [showTournamentModal, setShowTournamentModal] = useState(false);
   const [showRaceModal, setShowRaceModal] = useState(false);
@@ -86,6 +89,92 @@ export default function AdminDashboard({ onNavigate }) {
   const [newRaceEndTime, setNewRaceEndTime] = useState('');
   const [newRaceHorse, setNewRaceHorse] = useState('');
   const [newRaceReferee, setNewRaceReferee] = useState('');
+
+  // 'Create Tournament' Page Form States
+  const [createTourneyName, setCreateTourneyName] = useState('');
+  const [createStartDate, setCreateStartDate] = useState('');
+  const [createEndDate, setCreateEndDate] = useState('');
+  const [createBreed, setCreateBreed] = useState('Thoroughbred');
+  const [createAgeReq, setCreateAgeReq] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+  const [createRacesList, setCreateRacesList] = useState([
+    { name: 'Opening Stakes', date: '', startTime: '13:00', endTime: '13:15', laps: 1, horsesCount: 6, referee: 'John Doe (Ref)' },
+    { name: 'Grand Stakes', date: '', startTime: '15:15', endTime: '15:45', laps: 2, horsesCount: 8, referee: 'Jane Smith (Ref)' }
+  ]);
+
+  const addCreateRaceRow = () => {
+    setCreateRacesList([
+      ...createRacesList,
+      { name: '', date: '', startTime: '', endTime: '', laps: 3, horsesCount: 8, referee: '' }
+    ]);
+  };
+
+  const removeCreateRaceRow = (index) => {
+    setCreateRacesList(createRacesList.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateCreateRace = (index, field, value) => {
+    const nextList = [...createRacesList];
+    nextList[index][field] = value;
+    setCreateRacesList(nextList);
+  };
+
+  const handleSaveNewTournament = (e) => {
+    e.preventDefault();
+    if (!createTourneyName || !createStartDate || !createEndDate) {
+      alert("Please fill in the Tournament Name and Date Range.");
+      return;
+    }
+
+    const newId = `TRN-2024-${String(tournaments.length + 8).padStart(2, '0')}`;
+    
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+    
+    const formattedDates = `${formatDate(createStartDate)} - ${formatDate(createEndDate)}`;
+
+    const formattedRaces = createRacesList.map((r, index) => ({
+      id: index + 1,
+      name: r.name || `Race ${index + 1}`,
+      code: `RACE ${index + 1}`,
+      status: 'PUBLISHED',
+      time: `${r.startTime || '12:00'} - ${r.endTime || '12:30'}`,
+      laps: parseInt(r.laps, 10) || 3
+    }));
+
+    const totalHorsesCount = createRacesList.reduce((sum, r) => sum + (parseInt(r.horsesCount, 10) || 8), 0);
+
+    const newTourney = {
+      id: newId,
+      name: createTourneyName,
+      dates: formattedDates,
+      raceCount: formattedRaces.length,
+      status: 'PUBLISHED',
+      totalEntries: `${totalHorsesCount} Horses`,
+      races: formattedRaces
+    };
+
+    setTournaments([...tournaments, newTourney]);
+    setSelectedId(newId);
+    
+    // Reset states
+    setCreateTourneyName('');
+    setCreateStartDate('');
+    setCreateEndDate('');
+    setCreateBreed('Thoroughbred');
+    setCreateAgeReq('');
+    setCreateDescription('');
+    setCreateRacesList([
+      { name: 'Opening Stakes', date: '', startTime: '13:00', endTime: '13:15', laps: 1, horsesCount: 6, referee: 'John Doe (Ref)' },
+      { name: 'Grand Stakes', date: '', startTime: '15:15', endTime: '15:45', laps: 2, horsesCount: 8, referee: 'Jane Smith (Ref)' }
+    ]);
+    
+    setCurrentSubView('list');
+  };
 
   const selectedTourney = tournaments.find(t => t.id === selectedId) || tournaments[0];
 
@@ -149,11 +238,11 @@ export default function AdminDashboard({ onNavigate }) {
   };
 
   const menuItems = [
-    { name: 'Tournaments', icon: 'bi-trophy' },
-    { name: 'Approve Application', icon: 'bi-file-earmark-check' },
-    { name: 'Verify Profile Jockey', icon: 'bi-shield-check' },
-    { name: 'Healthcheck Management', icon: 'bi-activity' },
-    { name: 'Incident Management', icon: 'bi-exclamation-triangle' }
+    { name: 'Tournament management', icon: 'bi-trophy' },
+    { name: 'Approve application', icon: 'bi-file-earmark-check' },
+    { name: 'Verify profile Jockey', icon: 'bi-shield-check' },
+    { name: 'Healthcheck management', icon: 'bi-activity' },
+    { name: 'Incident management', icon: 'bi-exclamation-triangle' }
   ];
 
   return (
@@ -170,25 +259,30 @@ export default function AdminDashboard({ onNavigate }) {
             <i className="bi bi-list fs-2"></i>
           </button>
           <span className="brand-logo fs-5 fw-bold text-primary-custom d-flex align-items-center gap-1">
-            <i className="bi bi-award-fill"></i> HRTMS Admin
+            <i className="bi bi-award-fill"></i> HRTMS
           </span>
         </div>
-        <button 
-          className="btn btn-primary btn-sm px-3 py-2 fw-bold"
-          onClick={() => setShowTournamentModal(true)}
-          style={{ fontSize: '12px', borderRadius: '6px' }}
-        >
-          + CREATE
-        </button>
+        {currentSubView === 'list' && (
+          <button 
+            className="btn btn-primary btn-sm px-3 py-2 fw-bold"
+            onClick={() => setCurrentSubView('create')}
+            style={{ fontSize: '12px', borderRadius: '6px' }}
+          >
+            + CREATE
+          </button>
+        )}
       </header>
 
       {/* ── Left Sidebar ── */}
       <aside className={`admin-sidebar bg-white border-end d-flex flex-column justify-content-between ${sidebarOpen ? 'open' : ''}`}>
         <div>
           {/* Logo Section */}
-          <div className="sidebar-logo d-flex align-items-center gap-2 p-4 border-bottom">
-            <i className="bi bi-award-fill fs-4 text-primary-custom"></i>
-            <span className="brand-title fw-bold text-dark-navy m-0">HRTMS Admin</span>
+          <div className="sidebar-logo d-flex align-items-center gap-2.5 p-4 border-bottom">
+            <div className="rounded" style={{ width: '36px', height: '36px', minWidth: '36px', backgroundColor: '#e2e8f0' }}></div>
+            <div>
+              <span className="brand-title fw-bold text-dark-navy m-0 d-block" style={{ fontSize: '17px', lineHeight: '1.2', letterSpacing: '-0.3px' }}>HRTMS</span>
+              <span className="text-secondary-custom" style={{ fontSize: '11px' }}>Global Dashboard</span>
+            </div>
           </div>
 
           {/* Navigation Links */}
@@ -197,9 +291,10 @@ export default function AdminDashboard({ onNavigate }) {
               {menuItems.map(item => (
                 <li key={item.name}>
                   <button
-                    className={`w-100 sidebar-link border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold ${activeMenu === item.name ? 'active' : ''}`}
+                    className={`w-100 sidebar-link border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold ${activeMenu === item.name || (activeMenu === 'Tournaments' && item.name === 'Tournament management') ? 'active' : ''}`}
                     onClick={() => {
                       setActiveMenu(item.name);
+                      setCurrentSubView('list');
                       setSidebarOpen(false);
                     }}
                   >
@@ -212,19 +307,29 @@ export default function AdminDashboard({ onNavigate }) {
           </nav>
         </div>
 
-        {/* Sign Out Button */}
+        {/* Back / Sign Out Button */}
         <div className="sidebar-footer p-3 border-top">
-          <button 
-            className="w-100 sign-out-btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger bg-transparent"
-            onClick={() => {
-              if (window.confirm("Are you sure you want to sign out?")) {
-                onNavigate('login');
-              }
-            }}
-          >
-            <i className="bi bi-box-arrow-left fs-5"></i>
-            <span>Sign Out</span>
-          </button>
+          {currentSubView === 'create' ? (
+            <button 
+              className="w-100 sign-out-btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger bg-transparent"
+              onClick={() => setCurrentSubView('list')}
+            >
+              <i className="bi bi-arrow-left fs-5"></i>
+              <span>Back</span>
+            </button>
+          ) : (
+            <button 
+              className="w-100 sign-out-btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger bg-transparent"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to sign out?")) {
+                  onNavigate('login');
+                }
+              }}
+            >
+              <i className="bi bi-box-arrow-left fs-5"></i>
+              <span>Sign Out</span>
+            </button>
+          )}
         </div>
       </aside>
 
@@ -240,20 +345,270 @@ export default function AdminDashboard({ onNavigate }) {
       <main className="admin-main flex-grow-1 bg-cool-gray p-3 p-md-4">
         
         {/* Header (Desktop only) */}
-        <div className="admin-main-header d-none d-lg-flex justify-content-end align-items-center mb-4">
-          <button 
-            className="btn btn-primary d-flex align-items-center gap-2 px-4 py-2.5 fw-bold"
-            onClick={() => setShowTournamentModal(true)}
-            style={{ borderRadius: '8px', fontSize: '14px', letterSpacing: '0.5px' }}
-          >
-            <i className="bi bi-plus-lg fs-5"></i>
-            <span>CREATE NEW TOURNAMENT</span>
-          </button>
+        <div className="admin-main-header d-none d-lg-flex justify-content-between align-items-center mb-4">
+          <h2 className="h5 fw-bold text-dark-navy m-0" style={{ letterSpacing: '-0.3px' }}>Tournament Management</h2>
+          <div className="d-flex align-items-center gap-3">
+            {currentSubView === 'list' && (
+              <button 
+                className="btn btn-primary d-flex align-items-center gap-2 px-4 py-2.5 fw-bold"
+                onClick={() => setCurrentSubView('create')}
+                style={{ borderRadius: '8px', fontSize: '14px', letterSpacing: '0.5px' }}
+              >
+                <i className="bi bi-plus-lg fs-5"></i>
+                <span>CREATE NEW TOURNAMENT</span>
+              </button>
+            )}
+            <i className="bi bi-person-circle fs-4 text-secondary-custom"></i>
+          </div>
         </div>
 
         {/* Dynamic content placeholder - for simulation, we focus on Tournaments menu */}
-        {activeMenu === 'Tournaments' ? (
-          <div className="row g-4 mt-2 mt-lg-0">
+        {activeMenu === 'Tournaments' || activeMenu === 'Tournament management' ? (
+          currentSubView === 'create' ? (
+            /* ── Create New Tournament Subview ── */
+            <div className="create-tournament-view">
+              {/* Breadcrumbs */}
+              <div className="admin-breadcrumb mb-2">
+                Admin <span>&gt;</span> Tournaments <span>&gt;</span> New
+              </div>
+              <h1 className="h3 fw-bold text-dark-navy mb-4">Create New Tournament</h1>
+
+              <form onSubmit={handleSaveNewTournament}>
+                {/* Section 1: Tournament Details */}
+                <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
+                  <h3 className="h5 fw-bold text-dark-navy mb-3 create-section-title">Tournament Details</h3>
+                  
+                  <div className="row g-3">
+                    {/* Tournament Name */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Name
+                      </label>
+                      <input 
+                        type="text" 
+                        className="form-control py-2 px-3 form-input-custom"
+                        placeholder="e.g., Royal Ascot 2024"
+                        value={createTourneyName}
+                        onChange={(e) => setCreateTourneyName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Date Range */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Date Range
+                      </label>
+                      <div className="d-flex align-items-center gap-2">
+                        <input 
+                          type="date" 
+                          className="form-control py-2 px-2 form-input-custom"
+                          value={createStartDate}
+                          onChange={(e) => setCreateStartDate(e.target.value)}
+                          required
+                        />
+                        <span className="text-secondary-custom" style={{ fontSize: '13px' }}>to</span>
+                        <input 
+                          type="date" 
+                          className="form-control py-2 px-2 form-input-custom"
+                          value={createEndDate}
+                          onChange={(e) => setCreateEndDate(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Allowed Horse Breeds */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Allowed Horse Breeds
+                      </label>
+                      <select 
+                        className="form-select py-2 px-3 form-input-custom"
+                        value={createBreed}
+                        onChange={(e) => setCreateBreed(e.target.value)}
+                      >
+                        <option value="Thoroughbred">Thoroughbred</option>
+                        <option value="Quarter Horse">Quarter Horse</option>
+                        <option value="Arabian">Arabian</option>
+                        <option value="Standardbred">Standardbred</option>
+                      </select>
+                    </div>
+
+                    {/* Horse Age Requirement */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Horse Age Requirement (Years)
+                      </label>
+                      <input 
+                        type="text" 
+                        className="form-control py-2 px-3 form-input-custom"
+                        placeholder="e.g., 3+"
+                        value={createAgeReq}
+                        onChange={(e) => setCreateAgeReq(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Tournament Description */}
+                    <div className="col-12">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Description
+                      </label>
+                      <textarea 
+                        className="form-control py-2 px-3 form-input-custom"
+                        rows="3"
+                        placeholder="Describe the tournament rules, history, and prizes..."
+                        value={createDescription}
+                        onChange={(e) => setCreateDescription(e.target.value)}
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Races */}
+                <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h3 className="h5 fw-bold text-dark-navy m-0 create-section-title">Races</h3>
+                    <button 
+                      type="button" 
+                      className="add-race-row-btn d-flex align-items-center gap-1"
+                      onClick={addCreateRaceRow}
+                    >
+                      <i className="bi bi-plus-lg"></i> Add Race Row
+                    </button>
+                  </div>
+
+                  <div className="table-responsive">
+                    <table className="table align-middle races-creation-table mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col" style={{ minWidth: '160px' }}>Race Name</th>
+                          <th scope="col" style={{ minWidth: '140px' }}>Date</th>
+                          <th scope="col" style={{ minWidth: '110px' }}>Start Time</th>
+                          <th scope="col" style={{ minWidth: '110px' }}>End Time</th>
+                          <th scope="col" style={{ minWidth: '80px' }}>Laps</th>
+                          <th scope="col" style={{ minWidth: '80px' }}>Horses</th>
+                          <th scope="col" style={{ minWidth: '150px' }}>Referee</th>
+                          <th scope="col" style={{ width: '60px' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {createRacesList.length > 0 ? (
+                          createRacesList.map((race, index) => (
+                            <tr key={index}>
+                              <td>
+                                <input 
+                                  type="text" 
+                                  className="table-input-custom"
+                                  placeholder="e.g. Opening Stakes"
+                                  value={race.name}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'name', e.target.value)}
+                                  required
+                                />
+                              </td>
+                              <td>
+                                <input 
+                                  type="date" 
+                                  className="table-input-custom"
+                                  value={race.date}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'date', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input 
+                                  type="time" 
+                                  className="table-input-custom"
+                                  value={race.startTime}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'startTime', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input 
+                                  type="time" 
+                                  className="table-input-custom"
+                                  value={race.endTime}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'endTime', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input 
+                                  type="number" 
+                                  className="table-input-custom text-center"
+                                  value={race.laps}
+                                  min="1"
+                                  onChange={(e) => handleUpdateCreateRace(index, 'laps', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input 
+                                  type="number" 
+                                  className="table-input-custom text-center"
+                                  value={race.horsesCount}
+                                  min="1"
+                                  onChange={(e) => handleUpdateCreateRace(index, 'horsesCount', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <select 
+                                  className="table-input-custom table-select-custom"
+                                  value={race.referee}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'referee', e.target.value)}
+                                >
+                                  <option value="">Select Referee</option>
+                                  {MOCK_REFEREES.map((ref, rIdx) => (
+                                    <option key={rIdx} value={ref}>{ref}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <button 
+                                  type="button" 
+                                  className="action-delete-btn"
+                                  onClick={() => removeCreateRaceRow(index)}
+                                  aria-label="Delete Race Row"
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="8" className="text-center py-4 text-muted border border-dashed rounded-3">
+                              No races added. Use "+ Add Race Row" to create races.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="d-flex justify-content-end gap-3 mt-4">
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-secondary px-4 py-2"
+                    onClick={() => setCurrentSubView('list')}
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary px-4 py-2 fw-bold"
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Save Tournament
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          ) : (
+            /* ── Active Tournaments List Subview ── */
+            <div className="row g-4 mt-2 mt-lg-0">
+
             
             {/* Left Column: Active Tournaments Table */}
             <div className="col-12 col-xl-8">
@@ -375,8 +730,9 @@ export default function AdminDashboard({ onNavigate }) {
             </div>
 
           </div>
-        ) : (
-          <div className="card border-0 shadow-sm rounded-3 p-5 text-center bg-white mt-2 mt-lg-0">
+        )
+      ) : (
+        <div className="card border-0 shadow-sm rounded-3 p-5 text-center bg-white mt-2 mt-lg-0">
             <i className="bi bi-gear-wide-connected fs-1 text-muted mb-3 d-block"></i>
             <h2 className="h4 fw-bold text-dark-navy mb-2">{activeMenu}</h2>
             <p className="text-secondary-custom max-width-md mx-auto mb-0" style={{ fontSize: '14px' }}>
