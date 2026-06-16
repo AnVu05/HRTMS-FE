@@ -98,8 +98,8 @@ export default function AdminDashboard({ onNavigate }) {
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
   const [createRacesList, setCreateRacesList] = useState([
-    { name: 'Opening Stakes', date: '', startTime: '13:00', endTime: '13:15', laps: 1, horsesCount: 6, referee: 'John Doe (Ref)' },
-    { name: 'Grand Stakes', date: '', startTime: '15:15', endTime: '15:45', laps: 2, horsesCount: 8, referee: 'Jane Smith (Ref)' }
+    { name: 'Op', date: '', startTime: '', endTime: '', laps: 1, horsesCount: 6, referee: '8' },
+    { name: 'Gr', date: '', startTime: '', endTime: '', laps: 2, horsesCount: 8, referee: '12' }
   ]);
 
   const addCreateRaceRow = () => {
@@ -142,7 +142,7 @@ export default function AdminDashboard({ onNavigate }) {
       name: r.name || `Race ${index + 1}`,
       code: `RACE ${index + 1}`,
       status: 'PUBLISHED',
-      time: `${r.startTime || '12:00'} - ${r.endTime || '12:30'}`,
+      time: r.startTime && r.endTime ? `${r.startTime} - ${r.endTime}` : '12:00 - 12:30',
       laps: parseInt(r.laps, 10) || 3
     }));
 
@@ -169,8 +169,8 @@ export default function AdminDashboard({ onNavigate }) {
     setCreateAgeReq('');
     setCreateDescription('');
     setCreateRacesList([
-      { name: 'Opening Stakes', date: '', startTime: '13:00', endTime: '13:15', laps: 1, horsesCount: 6, referee: 'John Doe (Ref)' },
-      { name: 'Grand Stakes', date: '', startTime: '15:15', endTime: '15:45', laps: 2, horsesCount: 8, referee: 'Jane Smith (Ref)' }
+      { name: 'Op', date: '', startTime: '', endTime: '', laps: 1, horsesCount: 6, referee: '8' },
+      { name: 'Gr', date: '', startTime: '', endTime: '', laps: 2, horsesCount: 8, referee: '12' }
     ]);
     
     setCurrentSubView('list');
@@ -368,8 +368,12 @@ export default function AdminDashboard({ onNavigate }) {
             /* ── Create New Tournament Subview ── */
             <div className="create-tournament-view">
               {/* Breadcrumbs */}
-              <div className="admin-breadcrumb mb-2">
-                Admin <span>&gt;</span> Tournaments <span>&gt;</span> New
+              <div className="admin-breadcrumb mb-2" style={{ fontSize: '13px', fontWeight: '500' }}>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Admin</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Tournaments</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="text-dark fw-bold">New</span>
               </div>
               <h1 className="h3 fw-bold text-dark-navy mb-4">Create New Tournament</h1>
 
@@ -400,21 +404,31 @@ export default function AdminDashboard({ onNavigate }) {
                         Date Range
                       </label>
                       <div className="d-flex align-items-center gap-2">
-                        <input 
-                          type="date" 
-                          className="form-control py-2 px-2 form-input-custom"
-                          value={createStartDate}
-                          onChange={(e) => setCreateStartDate(e.target.value)}
-                          required
-                        />
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input 
+                            type="date" 
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createStartDate}
+                            onChange={(e) => setCreateStartDate(e.target.value)}
+                            required
+                          />
+                        </div>
                         <span className="text-secondary-custom" style={{ fontSize: '13px' }}>to</span>
-                        <input 
-                          type="date" 
-                          className="form-control py-2 px-2 form-input-custom"
-                          value={createEndDate}
-                          onChange={(e) => setCreateEndDate(e.target.value)}
-                          required
-                        />
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input 
+                            type="date" 
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createEndDate}
+                            onChange={(e) => setCreateEndDate(e.target.value)}
+                            required
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -482,14 +496,14 @@ export default function AdminDashboard({ onNavigate }) {
                     <table className="table align-middle races-creation-table mb-0">
                       <thead>
                         <tr>
-                          <th scope="col" style={{ minWidth: '160px' }}>Race Name</th>
-                          <th scope="col" style={{ minWidth: '140px' }}>Date</th>
+                          <th scope="col" style={{ minWidth: '100px' }}>Race Name</th>
+                          <th scope="col" style={{ minWidth: '130px' }}>Date</th>
                           <th scope="col" style={{ minWidth: '110px' }}>Start Time</th>
                           <th scope="col" style={{ minWidth: '110px' }}>End Time</th>
                           <th scope="col" style={{ minWidth: '80px' }}>Laps</th>
                           <th scope="col" style={{ minWidth: '80px' }}>Horses</th>
-                          <th scope="col" style={{ minWidth: '150px' }}>Referee</th>
-                          <th scope="col" style={{ width: '60px' }}>Actions</th>
+                          <th scope="col" style={{ minWidth: '100px' }}>Referee</th>
+                          <th scope="col" style={{ minWidth: '120px' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -500,7 +514,7 @@ export default function AdminDashboard({ onNavigate }) {
                                 <input 
                                   type="text" 
                                   className="table-input-custom"
-                                  placeholder="e.g. Opening Stakes"
+                                  placeholder="e.g. Op"
                                   value={race.name}
                                   onChange={(e) => handleUpdateCreateRace(index, 'name', e.target.value)}
                                   required
@@ -549,26 +563,35 @@ export default function AdminDashboard({ onNavigate }) {
                                 />
                               </td>
                               <td>
-                                <select 
-                                  className="table-input-custom table-select-custom"
+                                <input 
+                                  type="text" 
+                                  className="table-input-custom text-center"
+                                  placeholder="e.g. 8"
                                   value={race.referee}
                                   onChange={(e) => handleUpdateCreateRace(index, 'referee', e.target.value)}
-                                >
-                                  <option value="">Select Referee</option>
-                                  {MOCK_REFEREES.map((ref, rIdx) => (
-                                    <option key={rIdx} value={ref}>{ref}</option>
-                                  ))}
-                                </select>
+                                />
                               </td>
                               <td>
-                                <button 
-                                  type="button" 
-                                  className="action-delete-btn"
-                                  onClick={() => removeCreateRaceRow(index)}
-                                  aria-label="Delete Race Row"
-                                >
-                                  <i className="bi bi-trash"></i>
-                                </button>
+                                <div className="d-flex align-items-center gap-2">
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-sm btn-outline-secondary px-2.5 py-1 text-secondary-custom border-light-gray" 
+                                    style={{ fontSize: '12.5px', borderRadius: '6px', backgroundColor: '#ffffff', borderColor: '#cbd5e1' }}
+                                  >
+                                    Referee
+                                  </button>
+                                  {createRacesList.length > 1 && (
+                                    <button 
+                                      type="button" 
+                                      className="action-delete-btn text-secondary-custom"
+                                      onClick={() => removeCreateRaceRow(index)}
+                                      aria-label="Delete Race Row"
+                                      style={{ padding: '4px 8px', borderRadius: '6px' }}
+                                    >
+                                      <i className="bi bi-trash"></i>
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))

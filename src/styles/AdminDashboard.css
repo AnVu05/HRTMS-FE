@@ -370,3 +370,41 @@
   color: var(--primary-blue-hover);
   text-decoration: underline;
 }
+
+/* Custom Date input styling */
+.input-group-custom {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+.input-group-custom .input-group-text {
+  border: none;
+  background-color: transparent;
+  color: #64748b;
+  padding-left: 12px;
+  padding-right: 8px;
+}
+
+.input-group-custom .form-input-custom {
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hide native calendar picker indicator icon so we only show the custom icon on the left */
+.input-group-custom input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.input-group-custom input[type="date"] {
+  position: relative;
+}
+
