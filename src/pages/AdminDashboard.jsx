@@ -135,6 +135,9 @@ export default function AdminDashboard({ onNavigate }) {
       name: newRaceName,
       code: `RACE ${nextRaceNum}`,
       status: 'PUBLISHED',
+      date: newRaceDate,
+      startTime: newRaceStartTime,
+      endTime: newRaceEndTime,
       time: formattedTime,
       laps: parseInt(newRaceLaps, 10) || 3
     };
@@ -367,7 +370,14 @@ export default function AdminDashboard({ onNavigate }) {
                               </span>
                             </div>
                           </div>
-                          <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
+                          <div className="text-secondary-custom d-flex align-items-center gap-1.5 flex-wrap" style={{ fontSize: '12px' }}>
+                            {race.date && (
+                              <>
+                                <i className="bi bi-calendar-event"></i>
+                                <span>{race.date}</span>
+                                <span className="text-muted mx-1">•</span>
+                              </>
+                            )}
                             <i className="bi bi-clock"></i>
                             <span>{race.time || race.startTime || 'TBD'} • <strong>{race.laps || 0} Laps</strong></span>
                           </div>
