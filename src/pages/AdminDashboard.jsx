@@ -1,47 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../styles/AdminDashboard.css';
 
 // ─── Initial Mock Data ────────────────────────────────────────────────────────
-const INITIAL_TOURNAMENTS = [
-  {
-    id: 'TRN-2024-08',
-    name: 'Autumn Prestige Derby',
-    dates: 'Oct 12 - Oct 15',
-    raceCount: 8,
-    status: 'DRAFT',
-    totalEntries: '48 Horses',
-    races: [
-      { id: 1, name: 'Autumn Cup Opening', code: 'RACE 1', status: 'DRAFT', time: '10:00 - 10:30', laps: 3 },
-      { id: 2, name: 'Maple Stakes', code: 'RACE 2', status: 'DRAFT', time: '11:15 - 11:45', laps: 4 },
-      { id: 3, name: 'Harvest Cup', code: 'RACE 3', status: 'DRAFT', time: '13:00 - 13:45', laps: 5 },
-    ]
-  },
-  {
-    id: 'TRN-2024-09',
-    name: 'Royal Ascot Invitational',
-    dates: 'Nov 02 - Nov 05',
-    raceCount: 12,
-    status: 'PUBLISHED',
-    totalEntries: '84 Horses',
-    races: [
-      { id: 1, name: 'Queen Elizabeth II Cup', code: 'RACE 1', status: 'PUBLISHED', time: '13:00 - 13:15', laps: 3 },
-      { id: 2, name: 'Ascot Gold Cup', code: 'RACE 2', status: 'PENDING_REFEREE', time: '15:15 - 15:45', laps: 5 },
-      { id: 3, name: 'Diamond Jubilee Stakes', code: 'RACE 3', status: 'CANCELLED', time: '16:45 - 17:00', laps: 2 },
-    ]
-  },
-  {
-    id: 'TRN-2024-10',
-    name: 'Winter Classic Series',
-    dates: 'Dec 15 - Dec 18',
-    raceCount: 6,
-    status: 'DRAFT',
-    totalEntries: '32 Horses',
-    races: [
-      { id: 1, name: 'Snowflake Sprint', code: 'RACE 1', status: 'DRAFT', time: '09:00 - 09:30', laps: 2 },
-      { id: 2, name: 'Frosty Derby', code: 'RACE 2', status: 'DRAFT', time: '10:30 - 11:15', laps: 4 },
-    ]
-  }
-];
+// Data is now fetched via API
 
 const MOCK_HORSES = [
   'Lightning Strike',
@@ -65,8 +26,10 @@ const MOCK_REFEREES = [
 ];
 
 export default function AdminDashboard({ onNavigate }) {
-  const [tournaments, setTournaments] = useState(INITIAL_TOURNAMENTS);
-  const [selectedId, setSelectedId] = useState('TRN-2024-09');
+  const [tournaments, setTournaments] = useState([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [tournamentRaces, setTournamentRaces] = useState([]);
+  const [tournamentDetails, setTournamentDetails] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState('Tournaments');
 
@@ -87,7 +50,47 @@ export default function AdminDashboard({ onNavigate }) {
   const [newRaceHorse, setNewRaceHorse] = useState('');
   const [newRaceReferee, setNewRaceReferee] = useState('');
 
-  const selectedTourney = tournaments.find(t => t.id === selectedId) || tournaments[0];
+  const selectedTourney = tournaments.find(t => t.id === selectedId) || null;
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/v1/tournaments/dashboard')
+      .then(res => res.json())
+      .then(resData => {
+        const list = resData.data || [];
+        setTournaments(list);
+        if (list.length > 0) {
+          setSelectedId(list[0].id);
+        }
+      })
+      .catch(err => console.error('Error fetching tournaments:', err));
+  }, []);
+
+  useEffect(() => {
+    if (selectedId) {
+      fetch(`http://localhost:8080/api/v1/races/tournament/${selectedId}`)
+        .then(res => res.json())
+        .then(resData => {
+          console.log('Races API response:', resData);
+          setTournamentDetails(resData.data); // Store the full data object
+          let list = [];
+          if (Array.isArray(resData.data)) {
+            list = resData.data;
+          } else if (resData.data && Array.isArray(resData.data.races)) {
+            list = resData.data.races;
+          } else if (resData.data && Array.isArray(resData.data.content)) {
+            list = resData.data.content;
+          } else if (resData.data && typeof resData.data === 'object') {
+            // fallback if it's just a single object returned instead of list
+            list = [resData.data];
+          }
+          setTournamentRaces(list);
+        })
+        .catch(err => console.error('Error fetching races:', err));
+    } else {
+      setTournamentRaces([]);
+      setTournamentDetails(null);
+    }
+  }, [selectedId]);
 
   const handleCreateTournament = (e) => {
     e.preventDefault();
@@ -100,8 +103,7 @@ export default function AdminDashboard({ onNavigate }) {
       dates: newTourneyDates,
       raceCount: 0,
       status: 'DRAFT',
-      totalEntries: '0 Horses',
-      races: []
+      totalEntries: '0 Horses'
     };
 
     setTournaments([...tournaments, newTourney]);
@@ -119,25 +121,26 @@ export default function AdminDashboard({ onNavigate }) {
 
     const updatedTourneys = tournaments.map(t => {
       if (t.id === selectedId) {
-        const nextRaceNum = t.races.length + 1;
-        const newRace = {
-          id: nextRaceNum,
-          name: newRaceName,
-          code: `RACE ${nextRaceNum}`,
-          status: 'PUBLISHED',
-          time: formattedTime,
-          laps: parseInt(newRaceLaps, 10) || 3
-        };
         return {
           ...t,
-          raceCount: t.raceCount + 1,
-          races: [...t.races, newRace]
+          raceCount: t.raceCount + 1
         };
       }
       return t;
     });
 
+    const nextRaceNum = tournamentRaces.length + 1;
+    const newRace = {
+      id: nextRaceNum,
+      name: newRaceName,
+      code: `RACE ${nextRaceNum}`,
+      status: 'PUBLISHED',
+      time: formattedTime,
+      laps: parseInt(newRaceLaps, 10) || 3
+    };
+
     setTournaments(updatedTourneys);
+    setTournamentRaces([...tournamentRaces, newRace]);
     setNewRaceName('');
     setNewRaceDate('');
     setNewRaceLaps(3);
@@ -289,11 +292,15 @@ export default function AdminDashboard({ onNavigate }) {
                             <div className="fw-bold text-dark-navy tourney-title">{t.name}</div>
                             <div className="text-secondary-custom font-monospace" style={{ fontSize: '11px' }}>{t.id}</div>
                           </td>
-                          <td className="fw-semibold text-secondary-custom">{t.dates}</td>
-                          <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.raceCount} Races</td>
+                          <td className="fw-semibold text-secondary-custom">
+                            {t.dates || (t.startDate && t.endDate ? `${new Date(t.startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} - ${new Date(t.endDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}` : 'N/A')}
+                          </td>
+                          <td className="fw-semibold text-dark-navy d-none d-md-table-cell">
+                            {t.numRaces ?? t.raceCount ?? 0} Races
+                          </td>
                           <td className="d-none d-md-table-cell">
-                            <span className={`status-badge-custom ${t.status === 'PUBLISHED' ? 'published' : 'draft'}`}>
-                              {t.status}
+                            <span className={`status-badge-custom ${t.status ? t.status.toLowerCase() : 'draft'}`}>
+                              {t.status || 'DRAFT'}
                             </span>
                           </td>
                           <td className="text-end text-muted pe-3">
@@ -310,6 +317,7 @@ export default function AdminDashboard({ onNavigate }) {
 
             {/* Right Column: Selected Tournament Details Sidebar */}
             <div className="col-12 col-xl-4">
+              {selectedTourney ? (
               <div className="card border-0 shadow-sm rounded-3 bg-white h-100 overflow-hidden">
                 {/* Details Header */}
                 <div className="card-header bg-white border-bottom p-4">
@@ -323,7 +331,9 @@ export default function AdminDashboard({ onNavigate }) {
                     </div>
                     <div className="d-flex justify-content-between align-items-center">
                       <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>TOTAL ENTRIES</span>
-                      <span className="fw-bold text-dark-navy">{selectedTourney.totalEntries}</span>
+                      <span className="fw-bold text-dark-navy">
+                        {tournamentDetails?.totalEntries ?? selectedTourney?.totalEntries ?? '0'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -332,7 +342,7 @@ export default function AdminDashboard({ onNavigate }) {
                 <div className="card-body p-4">
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <h4 className="text-uppercase fw-bold text-secondary-custom m-0" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
-                      RACE SCHEDULE ({selectedTourney.races.length})
+                      RACE SCHEDULE ({tournamentRaces.length})
                     </h4>
                     <button 
                       className="btn btn-link text-decoration-none p-0 text-primary-custom fw-semibold d-flex align-items-center gap-1"
@@ -345,21 +355,21 @@ export default function AdminDashboard({ onNavigate }) {
 
                   {/* Races list */}
                   <div className="d-flex flex-column gap-3">
-                    {selectedTourney.races.length > 0 ? (
-                      selectedTourney.races.map(race => (
-                        <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
+                    {tournamentRaces && tournamentRaces.length > 0 ? (
+                      tournamentRaces.map(race => (
+                        <div key={race.id || Math.random()} className="race-schedule-box p-3 rounded-3 border">
                           <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
-                            <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
+                            <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name || 'Unnamed Race'}</h5>
                             <div className="d-flex gap-1.5 flex-wrap">
-                              <span className="badge-custom-code">{race.code}</span>
-                              <span className={`status-badge-custom ${race.status.toLowerCase()}`}>
-                                {race.status}
+                              {race.code && <span className="badge-custom-code">{race.code}</span>}
+                              <span className={`status-badge-custom ${race.status ? race.status.toLowerCase() : 'draft'}`}>
+                                {race.status || 'DRAFT'}
                               </span>
                             </div>
                           </div>
                           <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
                             <i className="bi bi-clock"></i>
-                            <span>{race.time} • <strong>{race.laps} Laps</strong></span>
+                            <span>{race.time || race.startTime || 'TBD'} • <strong>{race.laps || 0} Laps</strong></span>
                           </div>
                         </div>
                       ))
@@ -372,6 +382,11 @@ export default function AdminDashboard({ onNavigate }) {
                   </div>
                 </div>
               </div>
+              ) : (
+                <div className="card border-0 shadow-sm rounded-3 bg-white h-100 p-4 d-flex align-items-center justify-content-center">
+                  <span className="text-muted">Loading or no tournament selected...</span>
+                </div>
+              )}
             </div>
 
           </div>
