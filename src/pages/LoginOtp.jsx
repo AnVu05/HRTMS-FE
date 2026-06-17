@@ -3,6 +3,8 @@ import OTPInput from '../components/OTPInput';
 
 function LoginOtp({ onNavigate }) {
   const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState(Array(6).fill(''));
   const [resendTimer, setResendTimer] = useState(0);
   
@@ -50,6 +52,13 @@ function LoginOtp({ onNavigate }) {
       if (!phoneRegex.test(cleanPhone)) {
         newErrors.emailOrPhone = 'Please enter a valid 10-11 digit phone number';
       }
+    }
+
+    // Password validation
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
     }
 
     // OTP validation
@@ -133,6 +142,39 @@ function LoginOtp({ onNavigate }) {
             </div>
             {errors.emailOrPhone && (
               <div className="text-danger small mt-1">{errors.emailOrPhone}</div>
+            )}
+          </div>
+
+          {/* Password field */}
+          <div className="mb-3 text-start">
+            <label className="form-label small fw-bold text-dark-navy mb-2" style={{ letterSpacing: '0.05em' }}>
+              PASSWORD
+            </label>
+            <div className={`input-group input-group-custom ${errors.password ? 'is-invalid' : ''}`}>
+              <span className="input-group-text bg-transparent text-muted">
+                <i className="bi bi-lock"></i>
+              </span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className={`form-control border-start-0 border-end-0 ps-1 ${errors.password ? 'is-invalid' : ''}`}
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors({ ...errors, password: '' });
+                }}
+              />
+              <button
+                type="button"
+                className={`btn btn-outline-secondary border-start-0 bg-transparent text-muted d-flex align-items-center justify-content-center border-custom-right ${errors.password ? 'border-danger' : ''}`}
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex="-1"
+              >
+                <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+              </button>
+            </div>
+            {errors.password && (
+              <div className="text-danger small mt-1">{errors.password}</div>
             )}
           </div>
 
