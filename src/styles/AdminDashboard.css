@@ -269,3 +269,142 @@
     font-size: 9px;
   }
 }
+/* ── Create Tournament View Styles ── */
+.admin-breadcrumb {
+  font-size: 13px;
+  color: var(--secondary-custom);
+  font-weight: 500;
+}
+.admin-breadcrumb span {
+  color: #94a3b8;
+}
+
+.create-section-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.create-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dark-navy);
+}
+
+/* Form fields inside Create View */
+.form-input-custom {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+.form-input-custom:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12);
+  outline: none;
+}
+
+/* Dynamic Races Table in creation form */
+.races-creation-table th {
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--secondary-custom);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 10px;
+}
+
+.races-creation-table td {
+  padding: 10px 8px;
+  vertical-align: middle;
+}
+
+.table-input-custom {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  padding: 6px 10px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+.table-input-custom:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.1);
+  outline: none;
+}
+
+.table-select-custom {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px 10px;
+  padding-right: 24px !important;
+}
+
+.action-delete-btn {
+  color: var(--secondary-custom);
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.action-delete-btn:hover {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.add-race-row-btn {
+  color: var(--primary-blue);
+  font-weight: 600;
+  font-size: 13px;
+  background: transparent;
+  border: none;
+  transition: all 0.2s ease;
+}
+.add-race-row-btn:hover {
+  color: var(--primary-blue-hover);
+  text-decoration: underline;
+}
+
+/* Custom Date input styling */
+.input-group-custom {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+.input-group-custom .input-group-text {
+  border: none;
+  background-color: transparent;
+  color: #64748b;
+  padding-left: 12px;
+  padding-right: 8px;
+}
+
+.input-group-custom .form-input-custom {
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hide native calendar picker indicator icon so we only show the custom icon on the left */
+.input-group-custom input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.input-group-custom input[type="date"] {
+  position: relative;
+}
+

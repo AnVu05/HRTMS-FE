@@ -1,0 +1,432 @@
+/* ╔══════════════════════════════════════════════════════════╗
+   ║           HRTMS – Owner Races / Events CSS               ║
+   ╚══════════════════════════════════════════════════════════╝ */
+
+/* Variables and design tokens */
+:root {
+  --primary-blue: #1b60ec;
+  --primary-blue-hover: #0d4ed1;
+  --primary-blue-light: rgba(27, 96, 236, 0.08);
+  --dark-navy: #09132c;
+  --secondary-custom: #64748b;
+  --bg-cool-gray: #f8fafc;
+  --border-color: #e2e8f0;
+  --gold-text: #b57a00;
+  
+  /* Badge backgrounds */
+  --badge-open-bg: #2563eb;
+  --badge-open-txt: #ffffff;
+  --badge-registered-bg: #e2e8f0;
+  --badge-registered-txt: #475569;
+  --badge-closed-bg: #fee2e2;
+  --badge-closed-txt: #991b1b;
+}
+
+.races-page-wrapper {
+  background-color: var(--bg-cool-gray);
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.races-content-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Navbar Races Underline styling */
+.nav-item-custom.active-underline {
+  color: var(--primary-blue) !important;
+  border-bottom: 2px solid var(--primary-blue) !important;
+  font-weight: 700;
+  border-radius: 0 !important;
+  padding: 8px 4px !important;
+  margin: 0 12px;
+}
+
+/* Event Intro Center Section */
+.events-intro-section {
+  text-align: center;
+  padding: 30px 0;
+}
+
+.events-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--dark-navy);
+  letter-spacing: -0.5px;
+}
+
+.events-subtitle {
+  color: var(--secondary-custom);
+  font-size: 1.05rem;
+  font-weight: 400;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Rulebook grid and cards */
+.rulebook-section-header {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--dark-navy);
+}
+
+.view-all-link {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  text-decoration: none;
+  letter-spacing: 0.8px;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+  color: var(--primary-blue-hover);
+}
+
+.rulebook-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.rulebook-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(9, 19, 44, 0.04);
+  border-color: #cbd5e1;
+}
+
+.rulebook-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.rulebook-icon-wrapper.blue-box {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.rulebook-icon-wrapper.red-box {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.rulebook-icon-wrapper.gold-box {
+  background-color: rgba(217, 119, 6, 0.1);
+  color: #d97706;
+}
+
+.rulebook-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--dark-navy);
+  margin-bottom: 8px;
+}
+
+.rulebook-card-desc {
+  font-size: 0.85rem;
+  color: var(--secondary-custom);
+  line-height: 1.4;
+  margin-bottom: 20px;
+  flex-grow: 1;
+}
+
+.rulebook-download-link {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  transition: color 0.15s ease;
+}
+
+.rulebook-download-link:hover {
+  color: var(--primary-blue-hover);
+}
+
+/* Upcoming Races List */
+.races-list-header {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--dark-navy);
+}
+
+.btn-filter-funnel {
+  color: var(--secondary-custom);
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-filter-funnel:hover {
+  background-color: #f1f5f9;
+  color: var(--dark-navy);
+  border-color: #cbd5e1;
+}
+
+.race-event-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.race-event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(9, 19, 44, 0.03);
+  border-color: #cbd5e1;
+}
+
+/* Card Badge Tags */
+.badge-grade {
+  background-color: #f1f5f9;
+  color: var(--secondary-custom);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-entry-status {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-entry-status.open {
+  background-color: var(--badge-open-bg);
+  color: var(--badge-open-txt);
+}
+
+.badge-entry-status.registered {
+  background-color: var(--badge-registered-bg);
+  color: var(--badge-registered-txt);
+}
+
+.badge-entry-status.closed {
+  background-color: var(--badge-closed-bg);
+  color: var(--badge-closed-txt);
+}
+
+/* Race Details Layout */
+.race-event-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--dark-navy);
+}
+
+.race-event-location {
+  font-size: 0.9rem;
+  color: var(--secondary-custom);
+}
+
+.race-info-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--secondary-custom);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.race-info-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--dark-navy);
+}
+
+.race-info-value.prize-gold {
+  color: var(--gold-text);
+}
+
+/* Registration Action Buttons */
+.register-btn-group {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.btn-register-action {
+  background-color: #004ecc !important;
+  border-color: #004ecc !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  border-radius: 8px 0 0 8px !important;
+  padding: 12px 24px !important;
+  flex-grow: 1;
+  transition: all 0.2s ease !important;
+}
+
+.btn-register-action:hover {
+  background-color: #003fa8 !important;
+  border-color: #003fa8 !important;
+}
+
+.btn-register-action:active {
+  transform: translateY(1px);
+}
+
+.btn-register-action.registered-done {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+  cursor: default !important;
+  border-radius: 8px !important;
+  pointer-events: none !important;
+}
+
+.btn-register-action.closed-done {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  border-radius: 8px !important;
+  pointer-events: none !important;
+}
+
+.btn-chevron-toggle {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--secondary-custom);
+  border-radius: 0 8px 8px 0;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-chevron-toggle:hover {
+  background-color: #f1f5f9;
+  color: var(--dark-navy);
+}
+
+/* Custom Horse Select items in Modal */
+.horse-select-item {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.horse-select-item:hover {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue-light);
+}
+
+.horse-select-item.selected {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue-light);
+  box-shadow: 0 0 0 1px var(--primary-blue);
+}
+
+/* Custom Toast Alerts */
+.toast-container-custom {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast-item-custom {
+  background-color: #ffffff;
+  border-left: 4px solid #16a34a;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: toastSlideIn 0.3s ease-out;
+  min-width: 300px;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Expanded Card Content style */
+.expanded-race-details {
+  border-top: 1px solid var(--border-color);
+  background-color: #f8fafc;
+  padding: 20px;
+}
+
+/* Navbar active capsule styling */
+.nav-item-custom.active-capsule {
+  color: var(--primary-blue) !important;
+  background-color: #fef3c7 !important; /* Light yellow capsule */
+  border-radius: 12px;
+  padding: 6px 18px;
+  border-bottom: none !important;
+  font-weight: 700;
+}
+
+.nav-item-custom.active-capsule i {
+  color: var(--primary-blue) !important;
+}
+
+/* Responsive Overrides */
+@media (max-width: 767.98px) {
+  .events-title {
+    font-size: 1.8rem;
+  }
+  
+  .races-row-layout {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch !important;
+  }
+
+  .races-row-layout .d-flex.align-items-center.justify-content-end {
+    width: 100% !important;
+    justify-content: stretch !important;
+  }
+
+  .register-btn-group {
+    width: 100% !important;
+  }
+  
+  .btn-register-action {
+    padding: 10px 16px !important;
+  }
+  
+  .rulebook-card {
+    padding: 16px;
+  }
+}
