@@ -4,11 +4,43 @@ import Register from './pages/Register';
 import SpectatorHome from './pages/SpectatorHome';
 import AdminDashboard from './pages/AdminDashboard';
 import StableManagement from './pages/StableManagement';
+import OwnerRaces from './pages/OwnerRaces';
 
-const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management'];
+const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management', 'owner-races'];
+
+const INITIAL_HORSES = [
+  {
+    id: 1,
+    name: 'Thunder Dash',
+    breed: 'THOROUGHBRED',
+    age: 4,
+    weight: 520,
+    wins: 12,
+    status: 'Active',
+  },
+  {
+    id: 2,
+    name: 'Silver Mist',
+    breed: 'ARABIAN',
+    age: 6,
+    weight: 480,
+    wins: 8,
+    status: 'Training',
+  },
+  {
+    id: 3,
+    name: 'Midnight Ace',
+    breed: 'QUARTER HORSE',
+    age: 5,
+    weight: 545,
+    wins: 15,
+    status: 'Resting',
+  },
+];
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('stable-management');
+  const [currentPage, setCurrentPage] = useState('owner-races');
+  const [horses, setHorses] = useState(INITIAL_HORSES);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -16,7 +48,8 @@ function App() {
       case 'register':          return <Register onNavigate={setCurrentPage} />;
       case 'spectator-home':    return <SpectatorHome onNavigate={setCurrentPage} />;
       case 'admin-dashboard':   return <AdminDashboard onNavigate={setCurrentPage} />;
-      case 'stable-management': return <StableManagement onNavigate={setCurrentPage} />;
+      case 'stable-management': return <StableManagement onNavigate={setCurrentPage} horses={horses} setHorses={setHorses} />;
+      case 'owner-races':       return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
       default:                  return <LoginOtp onNavigate={setCurrentPage} />;
     }
   };
@@ -52,8 +85,8 @@ function App() {
 
       {/* Page content */}
       <div 
-        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management') ? 'full-width' : ''}`}
-        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management') ? 0 : 40 }}
+        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 'full-width' : ''}`}
+        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 0 : 40 }}
       >
         {renderPage()}
       </div>
@@ -62,4 +95,5 @@ function App() {
 }
 
 export default App;
+
 

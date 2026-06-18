@@ -1,39 +1,7 @@
 import { useState } from 'react';
 import '../styles/StableManagement.css';
 
-const INITIAL_HORSES = [
-  {
-    id: 1,
-    name: 'Thunder Dash',
-    breed: 'THOROUGHBRED',
-    age: 4,
-    weight: 520,
-    wins: 12,
-    status: 'Active',
-  },
-  {
-    id: 2,
-    name: 'Silver Mist',
-    breed: 'ARABIAN',
-    age: 6,
-    weight: 480,
-    wins: 8,
-    status: 'Training',
-  },
-  {
-    id: 3,
-    name: 'Midnight Ace',
-    breed: 'QUARTER HORSE',
-    age: 5,
-    weight: 545,
-    wins: 15,
-    status: 'Resting',
-  },
-];
-
-export default function StableManagement({ onNavigate }) {
-  // Stable horse list state
-  const [horses, setHorses] = useState(INITIAL_HORSES);
+export default function StableManagement({ onNavigate, horses = [], setHorses }) {
 
   // Filtering & searching states
   const [activeFilter, setActiveFilter] = useState('All');
@@ -197,7 +165,7 @@ export default function StableManagement({ onNavigate }) {
         <div className="desktop-nav d-flex align-items-center gap-2">
           <a
             href="#race"
-            onClick={(e) => { e.preventDefault(); }}  
+            onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('owner-races'); }}
             className="nav-item-custom"
           >
             <i className="bi bi-flag-fill"></i>
@@ -221,7 +189,7 @@ export default function StableManagement({ onNavigate }) {
               width="18"
               height="18"
               fill="currentColor"
-              style={{ marginBottom: '2px' }}
+              style={{ margin: '5px 0 5px 0' }}
             >
               <path d="M25,80.18A33.31,33.31,0,0,0,36.67,94.3a38.86,38.86,0,0,0,43.44.09A33.37,33.37,0,0,0,92,80.18c5.83-13.42,4.56-36.7-1.84-50-1.67-3.46-3.81-6.34-7.25-12.4C80.1,13,78.79,8.63,83.73,4.59A22,22,0,0,1,97.47,0c4.67.14,7.54,3.4,9.14,7.61,1.07,2.78,2.25,8.35,1.5,11.35-.37,1.53-1.16,2-1.65,3-.72,1.46.09,2.95,1.18,5.07,16.4,32,11,69.78-15.88,86.81-17.14,10.86-41.64,11.89-60,3.55C-.75,102.61-8.4,61.46,9.27,27c1.08-2.12,1.89-3.61,1.17-5.07-.49-1-1.27-1.42-1.65-3-.74-3,.44-8.57,1.5-11.35C11.89,3.41,14.76.15,19.43,0A22,22,0,0,1,33.17,4.59c4.94,4,3.63,8.36.87,13.23-3.43,6.06-5.57,8.94-7.25,12.4-6.4,13.26-7.66,36.54-1.84,50ZM21.87,12.29a3.3,3.3,0,1,1-3.3,3.3,3.29,3.29,0,0,1,3.3-3.3Zm36.58,94.77a3.66,3.66,0,1,1-3.65,3.66,3.65,3.65,0,0,1,3.65-3.66Zm41-19.31a3.66,3.66,0,1,1-3.65,3.65,3.65,3.65,0,0,1,3.65-3.65Zm-81.9,0a3.66,3.66,0,1,1-3.65,3.65,3.66,3.66,0,0,1,3.65-3.65Zm88.76-26.1a3.65,3.65,0,1,1-3.66,3.65,3.65,3.65,0,0,1,3.66-3.65Zm-95.61,0A3.65,3.65,0,1,1,7,65.3a3.65,3.65,0,0,1,3.66-3.65Zm91.87-26.11a3.66,3.66,0,1,1-3.66,3.66,3.66,3.66,0,0,1,3.66-3.66Zm-88.13,0a3.66,3.66,0,1,1-3.66,3.66,3.66,3.66,0,0,1,3.66-3.66ZM95,12.29a3.3,3.3,0,1,1-3.3,3.3,3.29,3.29,0,0,1,3.3-3.3Z" />
             </svg>
@@ -592,7 +560,7 @@ export default function StableManagement({ onNavigate }) {
       <div className="mobile-bottom-nav">
         <a
           href="#race"
-          onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('spectator-home'); }}
+          onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('owner-races'); }}
           className="nav-item-custom"
         >
           <i className="bi bi-flag-fill"></i>
