@@ -3,19 +3,21 @@ import LoginOtp from './pages/LoginOtp';
 import Register from './pages/Register';
 import SpectatorHome from './pages/SpectatorHome';
 import AdminDashboard from './pages/AdminDashboard';
+import StableManagement from './pages/StableManagement';
 
-const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard'];
+const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management'];
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('admin-dashboard');
+  const [currentPage, setCurrentPage] = useState('stable-management');
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'login':            return <LoginOtp onNavigate={setCurrentPage} />;
-      case 'register':         return <Register onNavigate={setCurrentPage} />;
-      case 'spectator-home':   return <SpectatorHome onNavigate={setCurrentPage} />;
-      case 'admin-dashboard':  return <AdminDashboard onNavigate={setCurrentPage} />;
-      default:                 return <LoginOtp onNavigate={setCurrentPage} />;
+      case 'login':             return <LoginOtp onNavigate={setCurrentPage} />;
+      case 'register':          return <Register onNavigate={setCurrentPage} />;
+      case 'spectator-home':    return <SpectatorHome onNavigate={setCurrentPage} />;
+      case 'admin-dashboard':   return <AdminDashboard onNavigate={setCurrentPage} />;
+      case 'stable-management': return <StableManagement onNavigate={setCurrentPage} />;
+      default:                  return <LoginOtp onNavigate={setCurrentPage} />;
     }
   };
 
@@ -50,8 +52,8 @@ function App() {
 
       {/* Page content */}
       <div 
-        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard') ? 'full-width' : ''}`}
-        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard') ? 0 : 40 }}
+        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management') ? 'full-width' : ''}`}
+        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management') ? 0 : 40 }}
       >
         {renderPage()}
       </div>
@@ -60,3 +62,4 @@ function App() {
 }
 
 export default App;
+
