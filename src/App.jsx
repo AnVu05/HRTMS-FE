@@ -58,11 +58,11 @@ function App() {
     <>
        {/* Dev navigation bar – remove in production */}
       <div style={{
-        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
         zIndex: 9999, display: 'flex', gap: 6, background: 'rgba(255,255,255,0.92)',
         backdropFilter: 'blur(10px)', border: '1px solid #e2e8f0',
-        borderRadius: '0 0 12px 12px', padding: '6px 14px',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.06)', alignItems: 'center',
+        borderRadius: '12px 12px 0 0', padding: '6px 14px',
+        boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', alignItems: 'center',
       }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginRight: 4 }}>DEV:</span>
         {PAGES.map(p => (

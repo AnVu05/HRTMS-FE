@@ -387,13 +387,13 @@
   padding: 20px;
 }
 
-/* Navbar active capsule styling */
+/* Navbar active capsule styling refactored to blue line underline */
 .nav-item-custom.active-capsule {
   color: var(--primary-blue) !important;
-  background-color: #fef3c7 !important; /* Light yellow capsule */
-  border-radius: 12px;
-  padding: 6px 18px;
-  border-bottom: none !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  padding: 6px 16px !important;
+  border-bottom: 3px solid var(--primary-blue) !important;
   font-weight: 700;
 }
 
@@ -430,3 +430,100 @@
     padding: 16px;
   }
 }
+
+/* Shared Mobile Navigation Drawer */
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
+  background-color: #ffffff;
+  z-index: 2000;
+  box-shadow: 4px 0 24px rgba(9, 19, 44, 0.15);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.mobile-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(9, 19, 44, 0.3);
+  z-index: 1999;
+  animation: fadeIn 0.2s ease;
+}
+
+.drawer-header {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawer-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.drawer-link:hover {
+  background-color: #f8fafc;
+  color: var(--dark-navy);
+}
+
+.drawer-link.active {
+  color: var(--primary-blue) !important;
+  background-color: transparent !important;
+}
+
+.drawer-link.active i {
+  color: var(--primary-blue) !important;
+}
+
+.drawer-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  background-color: var(--primary-blue);
+  border-radius: 0 4px 4px 0;
+}
+
+.menu-toggle-btn {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .menu-toggle-btn {
+    display: block !important;
+  }
+}
+

@@ -19,6 +19,7 @@ const HORSES = [
 export default function SpectatorHome({ onNavigate }) {
   // Navigation active tab
   const [activeTab, setActiveTab] = useState('races');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Accordion open/collapse states
   const [expandedTournament, setExpandedTournament] = useState('spring-prestige');
@@ -124,7 +125,7 @@ export default function SpectatorHome({ onNavigate }) {
       {/* Top Navbar */}
       <nav className="main-navbar d-flex justify-content-between align-items-center mb-4 shadow-sm py-2 px-3">
         <div className="d-flex align-items-center gap-3">
-          <button className="btn border-0 p-0 text-dark-navy" aria-label="Menu">
+          <button className="btn border-0 p-0 text-dark-navy menu-toggle-btn" aria-label="Menu" onClick={() => setMenuOpen(!menuOpen)}>
             <i className="bi bi-list fs-3"></i>
           </button>
           <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2">
@@ -174,6 +175,59 @@ export default function SpectatorHome({ onNavigate }) {
             <i className="bi bi-person-circle"></i>
             <span>Profile</span>
           </a>
+        </div>
+
+        {/* Mobile Drawer */}
+        {menuOpen && <div className="drawer-overlay" onClick={() => setMenuOpen(false)}></div>}
+        <div className={`mobile-drawer ${menuOpen ? 'open' : ''}`}>
+          <div className="drawer-header d-flex justify-content-between align-items-center">
+            <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2" style={{ color: 'var(--primary-blue)', letterSpacing: '-0.5px' }}>
+              HRTMS
+            </span>
+            <button className="btn-close shadow-none border-0" onClick={() => setMenuOpen(false)} aria-label="Close"></button>
+          </div>
+          <div className="drawer-body">
+            <a
+              href="#races"
+              onClick={(e) => { e.preventDefault(); setActiveTab('races'); setMenuOpen(false); }}
+              className={`drawer-link ${activeTab === 'races' ? 'active' : ''}`}
+            >
+              <i className="bi bi-flag-fill"></i>
+              <span>Races</span>
+            </a>
+            <a
+              href="#wallet"
+              onClick={(e) => { e.preventDefault(); setActiveTab('wallet'); setMenuOpen(false); }}
+              className={`drawer-link ${activeTab === 'wallet' ? 'active' : ''}`}
+            >
+              <i className="bi bi-wallet2"></i>
+              <span>Wallet</span>
+            </a>
+            <a
+              href="#horse"
+              onClick={(e) => { e.preventDefault(); setActiveTab('horse'); setMenuOpen(false); }}
+              className={`drawer-link ${activeTab === 'horse' ? 'active' : ''}`}
+            >
+              <i className="bi bi-award"></i>
+              <span>Horse</span>
+            </a>
+            <a
+              href="#alerts"
+              onClick={(e) => { e.preventDefault(); setActiveTab('alerts'); setMenuOpen(false); }}
+              className={`drawer-link ${activeTab === 'alerts' ? 'active' : ''}`}
+            >
+              <i className="bi bi-bell"></i>
+              <span>Alerts</span>
+            </a>
+            <a
+              href="#profile"
+              onClick={(e) => { e.preventDefault(); setActiveTab('profile'); setMenuOpen(false); }}
+              className={`drawer-link ${activeTab === 'profile' ? 'active' : ''}`}
+            >
+              <i className="bi bi-person-circle"></i>
+              <span>Profile</span>
+            </a>
+          </div>
         </div>
 
         {/* Demo Navigation Helper button (navigates back to login/register if needed) */}
