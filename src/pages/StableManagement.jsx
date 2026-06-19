@@ -2,6 +2,7 @@ import { useState } from 'react';
 import '../styles/StableManagement.css';
 
 export default function StableManagement({ onNavigate, horses = [], setHorses }) {
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Filtering & searching states
   const [activeFilter, setActiveFilter] = useState('All');
@@ -153,7 +154,7 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
       {/* Header Navigation Bar */}
       <nav className="main-navbar d-flex justify-content-between align-items-center mb-4 py-2 px-3">
         <div className="d-flex align-items-center gap-3">
-          <button className="btn border-0 p-0 text-dark-navy" aria-label="Menu">
+          <button className="btn border-0 p-0 text-dark-navy menu-toggle-btn" aria-label="Menu" onClick={() => setMenuOpen(!menuOpen)}>
             <i className="bi bi-list fs-3"></i>
           </button>
           <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2" style={{ color: 'var(--primary-blue)', letterSpacing: '-0.5px' }}>
@@ -211,6 +212,59 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
             <i className="bi bi-person-circle"></i>
             <span>Profile</span>
           </a>
+        </div>
+
+        {/* Mobile Drawer */}
+        {menuOpen && <div className="drawer-overlay" onClick={() => setMenuOpen(false)}></div>}
+        <div className={`mobile-drawer ${menuOpen ? 'open' : ''}`}>
+          <div className="drawer-header d-flex justify-content-between align-items-center">
+            <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2" style={{ color: 'var(--primary-blue)', letterSpacing: '-0.5px' }}>
+              HRTMS
+            </span>
+            <button className="btn-close shadow-none border-0" onClick={() => setMenuOpen(false)} aria-label="Close"></button>
+          </div>
+          <div className="drawer-body">
+            <a
+              href="#race"
+              onClick={(e) => { e.preventDefault(); setMenuOpen(false); if (onNavigate) onNavigate('owner-races'); }}
+              className="drawer-link"
+            >
+              <i className="bi bi-flag-fill"></i>
+              <span>Race</span>
+            </a>
+            <a
+              href="#registration"
+              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
+              className="drawer-link"
+            >
+              <i className="bi bi-clipboard-check"></i>
+              <span>Registration</span>
+            </a>
+            <a
+              href="#horse"
+              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
+              className="drawer-link active"
+            >
+              <i className="bi bi-award"></i>
+              <span>Horse</span>
+            </a>
+            <a
+              href="#alerts"
+              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
+              className="drawer-link"
+            >
+              <i className="bi bi-bell"></i>
+              <span>Alerts</span>
+            </a>
+            <a
+              href="#profile"
+              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
+              className="drawer-link"
+            >
+              <i className="bi bi-person-circle"></i>
+              <span>Profile</span>
+            </a>
+          </div>
         </div>
 
         {/* Profile Placeholder Avatar */}

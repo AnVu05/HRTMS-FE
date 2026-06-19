@@ -1,47 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
 import '../styles/AdminDashboard.css';
-
-// ─── Initial Mock Data ────────────────────────────────────────────────────────
-const INITIAL_TOURNAMENTS = [
-  {
-    id: 'TRN-2024-08',
-    name: 'Autumn Prestige Derby',
-    dates: 'Oct 12 - Oct 15',
-    raceCount: 8,
-    status: 'DRAFT',
-    totalEntries: '48 Horses',
-    races: [
-      { id: 1, name: 'Autumn Cup Opening', code: 'RACE 1', status: 'DRAFT', time: '10:00 - 10:30', laps: 3 },
-      { id: 2, name: 'Maple Stakes', code: 'RACE 2', status: 'DRAFT', time: '11:15 - 11:45', laps: 4 },
-      { id: 3, name: 'Harvest Cup', code: 'RACE 3', status: 'DRAFT', time: '13:00 - 13:45', laps: 5 },
-    ]
-  },
-  {
-    id: 'TRN-2024-09',
-    name: 'Royal Ascot Invitational',
-    dates: 'Nov 02 - Nov 05',
-    raceCount: 12,
-    status: 'PUBLISHED',
-    totalEntries: '84 Horses',
-    races: [
-      { id: 1, name: 'Queen Elizabeth II Cup', code: 'RACE 1', status: 'PUBLISHED', time: '13:00 - 13:15', laps: 3 },
-      { id: 2, name: 'Ascot Gold Cup', code: 'RACE 2', status: 'PENDING_REFEREE', time: '15:15 - 15:45', laps: 5 },
-      { id: 3, name: 'Diamond Jubilee Stakes', code: 'RACE 3', status: 'CANCELLED', time: '16:45 - 17:00', laps: 2 },
-    ]
-  },
-  {
-    id: 'TRN-2024-10',
-    name: 'Winter Classic Series',
-    dates: 'Dec 15 - Dec 18',
-    raceCount: 6,
-    status: 'DRAFT',
-    totalEntries: '32 Horses',
-    races: [
-      { id: 1, name: 'Snowflake Sprint', code: 'RACE 1', status: 'DRAFT', time: '09:00 - 09:30', laps: 2 },
-      { id: 2, name: 'Frosty Derby', code: 'RACE 2', status: 'DRAFT', time: '10:30 - 11:15', laps: 4 },
-    ]
-  }
-];
+import { tournamentService } from '../services/tournament.service';
+import { raceService } from '../services/race.service';
 
 const MOCK_HORSES = [
   'Lightning Strike',
@@ -65,8 +27,8 @@ const MOCK_REFEREES = [
 ];
 
 export default function AdminDashboard({ onNavigate }) {
-  const [tournaments, setTournaments] = useState(INITIAL_TOURNAMENTS);
-  const [selectedId, setSelectedId] = useState('TRN-2024-09');
+  const [tournaments, setTournaments] = useState([]);
+  const [selectedId, setSelectedId] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState('Tournaments');
 
@@ -97,6 +59,173 @@ export default function AdminDashboard({ onNavigate }) {
   const [createBreed, setCreateBreed] = useState('Thoroughbred');
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+
+  const [selectedTourneyDetails, setSelectedTourneyDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getStatusClass = (status) => {
+    if (!status) return 'draft';
+    const s = status.toLowerCase();
+    if (s === 'published') return 'published';
+    if (s === 'cancelled') return 'cancelled';
+    if (s === 'complet' || s === 'completed') return 'completed';
+    if (s === 'pending_referee') return 'pending_referee';
+    return 'draft';
+  };
+
+  const fetchDashboardTournaments = useCallback(async (autoSelect = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await tournamentService.getTournamentDashboard();
+      
+      let tournamentsList = [];
+      if (Array.isArray(data)) {
+        tournamentsList = data;
+      } else if (data && Array.isArray(data.content)) {
+        tournamentsList = data.content;
+      } else if (data && Array.isArray(data.data)) {
+        tournamentsList = data.data;
+      }
+
+      setTournaments(tournamentsList);
+      if (tournamentsList.length > 0) {
+        if (autoSelect || !selectedId || !tournamentsList.some(t => t.id === selectedId)) {
+          setSelectedId(tournamentsList[0].id);
+        }
+      } else {
+        setSelectedId('');
+      }
+    } catch (err) {
+      console.error("Error fetching tournaments:", err);
+      setError(err.message || "Failed to load tournaments.");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedId]);
+
+  const fetchDashboardTournamentsRef = useRef(fetchDashboardTournaments);
+  useEffect(() => {
+    fetchDashboardTournamentsRef.current = fetchDashboardTournaments;
+  }, [fetchDashboardTournaments]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      fetchDashboardTournamentsRef.current(true);
+    }, 0);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setTimeout(() => {
+        setSelectedTourneyDetails(null);
+      }, 0);
+      return;
+    }
+    
+    let active = true;
+    const fetchDetails = async () => {
+      setTimeout(() => {
+        if (active) setLoadingDetails(true);
+      }, 0);
+      try {
+        const details = await raceService.getTournamentRaceDetails(selectedId);
+        
+        let detailsObj = null;
+        if (details) {
+          if (details.id || details.races) {
+            detailsObj = details;
+          } else if (details.data && (details.data.id || details.data.races)) {
+            detailsObj = details.data;
+          }
+        }
+
+        if (active) {
+          setTimeout(() => {
+            setSelectedTourneyDetails(detailsObj);
+          }, 0);
+        }
+      } catch (err) {
+        console.error("Error fetching tournament details:", err);
+        if (active) {
+          setTimeout(() => {
+            setSelectedTourneyDetails(null);
+          }, 0);
+        }
+      } finally {
+        if (active) {
+          setTimeout(() => {
+            setLoadingDetails(false);
+          }, 0);
+        }
+      }
+    };
+    fetchDetails();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedId]);
+
+  const handleCancelTourney = async (id) => {
+    const reason = prompt("Please enter the reason for canceling this tournament:");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert("A reason is required to cancel the tournament.");
+      return;
+    }
+
+    try {
+      await tournamentService.cancelTournament(id, reason);
+      alert("Tournament successfully cancelled.");
+      await fetchDashboardTournaments(false);
+    } catch (err) {
+      console.error("Error canceling tournament:", err);
+      alert(err.message || "Failed to cancel tournament.");
+    }
+  };
+  
+  const createDescriptionRef = useRef(createDescription);
+  useEffect(() => {
+    createDescriptionRef.current = createDescription;
+  }, [createDescription]);
+
+  const quillRef = useRef(null);
+  const editorRef = useCallback((node) => {
+    if (node !== null) {
+      if (node.classList.contains('ql-container')) {
+        return;
+      }
+      const quill = new Quill(node, {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            [{ 'font': [] }, { 'size': [] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link', 'image'],
+            ['clean']
+          ]
+        }
+      });
+      quillRef.current = quill;
+
+      if (createDescriptionRef.current) {
+        quill.root.innerHTML = createDescriptionRef.current;
+      }
+
+      quill.on('text-change', () => {
+        const html = quill.root.innerHTML;
+        setCreateDescription(html === '<p><br></p>' ? '' : html);
+      });
+    } else {
+      quillRef.current = null;
+    }
+  }, []);
+
   const [createRacesList, setCreateRacesList] = useState([
     { name: 'Op', date: '', startTime: '', endTime: '', laps: 1, horsesCount: 6, referee: '8' },
     { name: 'Gr', date: '', startTime: '', endTime: '', laps: 2, horsesCount: 8, referee: '12' }
@@ -119,122 +248,136 @@ export default function AdminDashboard({ onNavigate }) {
     setCreateRacesList(nextList);
   };
 
-  const handleSaveNewTournament = (e) => {
+  const handleSaveNewTournament = async (e) => {
     e.preventDefault();
     if (!createTourneyName || !createStartDate || !createEndDate) {
       alert("Please fill in the Tournament Name and Date Range.");
       return;
     }
 
-    const newId = `TRN-2024-${String(tournaments.length + 8).padStart(2, '0')}`;
-    
-    const formatDate = (dateStr) => {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    };
-    
-    const formattedDates = `${formatDate(createStartDate)} - ${formatDate(createEndDate)}`;
+    try {
+      const tourneyPayload = {
+        adminId: "admin-1",
+        name: createTourneyName,
+        startDate: createStartDate,
+        endDate: createEndDate,
+        allowedBreed: createBreed,
+        allowedHorseAge: createAgeReq || "3+",
+        status: "PUBLISHED"
+      };
 
-    const formattedRaces = createRacesList.map((r, index) => ({
-      id: index + 1,
-      name: r.name || `Race ${index + 1}`,
-      code: `RACE ${index + 1}`,
-      status: 'PUBLISHED',
-      time: r.startTime && r.endTime ? `${r.startTime} - ${r.endTime}` : '12:00 - 12:30',
-      laps: parseInt(r.laps, 10) || 3
-    }));
+      const createdTourney = await tournamentService.createTournament(tourneyPayload);
+      const tournamentId = createdTourney.id;
 
-    const totalHorsesCount = createRacesList.reduce((sum, r) => sum + (parseInt(r.horsesCount, 10) || 8), 0);
+      const racesPayload = {
+        tournamentId,
+        races: createRacesList.map(r => ({
+          name: r.name || 'Race',
+          date: r.date || createStartDate,
+          startTime: r.startTime || '12:00',
+          endTime: r.endTime || '12:30',
+          laps: parseInt(r.laps, 10) || 3,
+          numHorse: parseInt(r.horsesCount, 10) || 8
+        }))
+      };
 
-    const newTourney = {
-      id: newId,
-      name: createTourneyName,
-      dates: formattedDates,
-      raceCount: formattedRaces.length,
-      status: 'PUBLISHED',
-      totalEntries: `${totalHorsesCount} Horses`,
-      races: formattedRaces
-    };
+      await raceService.createRacesBatch(racesPayload);
+      alert("Tournament and races successfully created.");
 
-    setTournaments([...tournaments, newTourney]);
-    setSelectedId(newId);
-    
-    // Reset states
-    setCreateTourneyName('');
-    setCreateStartDate('');
-    setCreateEndDate('');
-    setCreateBreed('Thoroughbred');
-    setCreateAgeReq('');
-    setCreateDescription('');
-    setCreateRacesList([
-      { name: 'Op', date: '', startTime: '', endTime: '', laps: 1, horsesCount: 6, referee: '8' },
-      { name: 'Gr', date: '', startTime: '', endTime: '', laps: 2, horsesCount: 8, referee: '12' }
-    ]);
-    
-    setCurrentSubView('list');
+      await fetchDashboardTournaments(false);
+      setSelectedId(tournamentId);
+
+      // Reset states
+      setCreateTourneyName('');
+      setCreateStartDate('');
+      setCreateEndDate('');
+      setCreateBreed('Thoroughbred');
+      setCreateAgeReq('');
+      setCreateDescription('');
+      setCreateRacesList([
+        { name: 'Op', date: '', startTime: '', endTime: '', laps: 1, horsesCount: 6, referee: '8' },
+        { name: 'Gr', date: '', startTime: '', endTime: '', laps: 2, horsesCount: 8, referee: '12' }
+      ]);
+      
+      setCurrentSubView('list');
+    } catch (err) {
+      console.error("Error creating tournament and races:", err);
+      alert(err.message || "Failed to create tournament.");
+    }
   };
 
-  const selectedTourney = tournaments.find(t => t.id === selectedId) || tournaments[0];
+  const selectedTourney = tournaments.find(t => t.id === selectedId) || tournaments[0] || { races: [] };
+  const displayTourney = selectedTourneyDetails || selectedTourney;
 
-  const handleCreateTournament = (e) => {
+  const handleCreateTournament = async (e) => {
     e.preventDefault();
     if (!newTourneyName || !newTourneyDates) return;
-    
-    const newId = `TRN-2024-${String(tournaments.length + 8).padStart(2, '0')}`;
-    const newTourney = {
-      id: newId,
-      name: newTourneyName,
-      dates: newTourneyDates,
-      raceCount: 0,
-      status: 'DRAFT',
-      totalEntries: '0 Horses',
-      races: []
-    };
 
-    setTournaments([...tournaments, newTourney]);
-    setSelectedId(newId);
-    setNewTourneyName('');
-    setNewTourneyDates('');
-    setShowTournamentModal(false);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    try {
+      const tourneyPayload = {
+        adminId: "admin-1",
+        name: newTourneyName,
+        startDate: todayStr,
+        endDate: todayStr,
+        allowedBreed: "Thoroughbred",
+        allowedHorseAge: "3+",
+        status: "DRAFT"
+      };
+
+      const createdTourney = await tournamentService.createTournament(tourneyPayload);
+      alert("Draft tournament successfully created.");
+
+      await fetchDashboardTournaments(false);
+      setSelectedId(createdTourney.id);
+      setNewTourneyName('');
+      setNewTourneyDates('');
+      setShowTournamentModal(false);
+    } catch (err) {
+      console.error("Error creating draft tournament:", err);
+      alert(err.message || "Failed to create draft tournament.");
+    }
   };
 
-  const handleAddRace = (e) => {
+  const handleAddRace = async (e) => {
     e.preventDefault();
     if (!newRaceName || !newRaceStartTime || !newRaceEndTime) return;
 
-    const formattedTime = `${newRaceStartTime} - ${newRaceEndTime}`;
+    try {
+      const racePayload = {
+        tournamentId: selectedId,
+        races: [
+          {
+            name: newRaceName,
+            date: newRaceDate || new Date().toISOString().split('T')[0],
+            startTime: newRaceStartTime,
+            endTime: newRaceEndTime,
+            laps: parseInt(newRaceLaps, 10) || 3,
+            numHorse: parseInt(newRaceHorse, 10) || 8
+          }
+        ]
+      };
 
-    const updatedTourneys = tournaments.map(t => {
-      if (t.id === selectedId) {
-        const nextRaceNum = t.races.length + 1;
-        const newRace = {
-          id: nextRaceNum,
-          name: newRaceName,
-          code: `RACE ${nextRaceNum}`,
-          status: 'PUBLISHED',
-          time: formattedTime,
-          laps: parseInt(newRaceLaps, 10) || 3
-        };
-        return {
-          ...t,
-          raceCount: t.raceCount + 1,
-          races: [...t.races, newRace]
-        };
-      }
-      return t;
-    });
+      await raceService.createRacesBatch(racePayload);
+      alert("Race successfully added.");
+      
+      await fetchDashboardTournaments(false);
+      const details = await raceService.getTournamentRaceDetails(selectedId);
+      setSelectedTourneyDetails(details);
 
-    setTournaments(updatedTourneys);
-    setNewRaceName('');
-    setNewRaceDate('');
-    setNewRaceLaps(3);
-    setNewRaceStartTime('');
-    setNewRaceEndTime('');
-    setNewRaceHorse('');
-    setNewRaceReferee('');
-    setShowRaceModal(false);
+      setNewRaceName('');
+      setNewRaceDate('');
+      setNewRaceLaps(3);
+      setNewRaceStartTime('');
+      setNewRaceEndTime('');
+      setNewRaceHorse('');
+      setNewRaceReferee('');
+      setShowRaceModal(false);
+    } catch (err) {
+      console.error("Error adding race:", err);
+      alert(err.message || "Failed to add race.");
+    }
   };
 
   const menuItems = [
@@ -246,7 +389,7 @@ export default function AdminDashboard({ onNavigate }) {
   ];
 
   return (
-    <div className="admin-container d-flex">
+    <div className="admin-container d-flex flex-column">
       
       {/* ── Mobile Header/Navbar ── */}
       <header className="mobile-admin-header d-flex d-lg-none justify-content-between align-items-center px-3 py-2 bg-white border-bottom w-100 position-fixed top-0 start-0 z-3">
@@ -256,7 +399,7 @@ export default function AdminDashboard({ onNavigate }) {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle Menu"
           >
-            <i className="bi bi-list fs-2"></i>
+            <i className="bi bi-list fs-3"></i>
           </button>
           <span className="brand-logo fs-5 fw-bold text-primary-custom d-flex align-items-center gap-1">
             <i className="bi bi-award-fill"></i> HRTMS
@@ -275,7 +418,7 @@ export default function AdminDashboard({ onNavigate }) {
 
       {/* ── Left Sidebar ── */}
       <aside className={`admin-sidebar bg-white border-end d-flex flex-column justify-content-between ${sidebarOpen ? 'open' : ''}`}>
-        <div>
+        <div className="sidebar-brand-nav-group">
           {/* Logo Section */}
           <div className="sidebar-logo d-flex align-items-center gap-2.5 p-4 border-bottom">
             <div className="rounded" style={{ width: '36px', height: '36px', minWidth: '36px', backgroundColor: '#e2e8f0' }}></div>
@@ -468,13 +611,9 @@ export default function AdminDashboard({ onNavigate }) {
                       <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
                         Tournament Description
                       </label>
-                      <textarea 
-                        className="form-control py-2 px-3 form-input-custom"
-                        rows="3"
-                        placeholder="Describe the tournament rules, history, and prizes..."
-                        value={createDescription}
-                        onChange={(e) => setCreateDescription(e.target.value)}
-                      ></textarea>
+                      <div className="quill-editor-container">
+                        <div id="editor" ref={editorRef}></div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -644,111 +783,144 @@ export default function AdminDashboard({ onNavigate }) {
                 </div>
 
                 {/* Tournament List Table */}
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle custom-tourney-table mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col" className="text-secondary-custom fw-semibold">TOURNAMENT DETAILS</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold">DATES</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">RACES</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">STATUS</th>
-                        <th scope="col" style={{ width: '40px' }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tournaments.map(t => (
-                        <tr 
-                          key={t.id}
-                          className={`tourney-row-item ${selectedId === t.id ? 'table-active-selected' : ''}`}
-                          onClick={() => setSelectedId(t.id)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <td>
-                            <div className="fw-bold text-dark-navy tourney-title">{t.name}</div>
-                            <div className="text-secondary-custom font-monospace" style={{ fontSize: '11px' }}>{t.id}</div>
-                          </td>
-                          <td className="fw-semibold text-secondary-custom">{t.dates}</td>
-                          <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.raceCount} Races</td>
-                          <td className="d-none d-md-table-cell">
-                            <span className={`status-badge-custom ${t.status === 'PUBLISHED' ? 'published' : 'draft'}`}>
-                              {t.status}
-                            </span>
-                          </td>
-                          <td className="text-end text-muted pe-3">
-                            <i className="bi bi-chevron-right fs-5"></i>
-                          </td>
+                {loading ? (
+                  <div className="d-flex justify-content-center align-items-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                ) : error ? (
+                  <div className="alert alert-danger my-3" role="alert">
+                    {error}
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-hover align-middle custom-tourney-table mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col" className="text-secondary-custom fw-semibold">TOURNAMENT DETAILS</th>
+                          <th scope="col" className="text-secondary-custom fw-semibold">DATES</th>
+                          <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">RACES</th>
+                          <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">STATUS</th>
+                          <th scope="col" style={{ width: '40px' }}></th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                </div>
+                      </thead>
+                      <tbody>
+                        {tournaments.map(t => (
+                          <tr 
+                            key={t.id}
+                            className={`tourney-row-item ${selectedId === t.id ? 'table-active-selected' : ''}`}
+                            onClick={() => setSelectedId(t.id)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td>
+                              <div className="fw-bold text-dark-navy tourney-title">{t.name}</div>
+                              <div className="text-secondary-custom font-monospace" style={{ fontSize: '11px' }}>{t.id}</div>
+                            </td>
+                            <td className="fw-semibold text-secondary-custom">{t.dates || (t.startDate && t.endDate ? `${t.startDate} - ${t.endDate}` : '') || (t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'No dates set')}</td>
+                            <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.raceCount !== undefined ? t.raceCount : t.race_count !== undefined ? t.race_count : 0} Races</td>
+                            <td className="d-none d-md-table-cell">
+                              <span className={`status-badge-custom ${getStatusClass(t.status)}`}>
+                                {t.status}
+                              </span>
+                            </td>
+                            <td className="text-end text-muted pe-3">
+                              <i className="bi bi-chevron-right fs-5"></i>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Right Column: Selected Tournament Details Sidebar */}
             <div className="col-12 col-xl-4">
               <div className="card border-0 shadow-sm rounded-3 bg-white h-100 overflow-hidden">
-                {/* Details Header */}
-                <div className="card-header bg-white border-bottom p-4">
-                  <h3 className="h5 fw-bold text-dark-navy mb-4">Tournament Details</h3>
-                  <div className="d-flex flex-column gap-3">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>STATUS</span>
-                      <span className={`status-badge-custom ${selectedTourney.status === 'PUBLISHED' ? 'published' : 'draft'}`}>
-                        {selectedTourney.status}
-                      </span>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>TOTAL ENTRIES</span>
-                      <span className="fw-bold text-dark-navy">{selectedTourney.totalEntries}</span>
+                {loadingDetails ? (
+                  <div className="d-flex align-items-center justify-content-center h-100 py-5 my-auto" style={{ minHeight: '300px' }}>
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading details...</span>
                     </div>
                   </div>
-                </div>
-
-                {/* Race Schedule */}
-                <div className="card-body p-4">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h4 className="text-uppercase fw-bold text-secondary-custom m-0" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
-                      RACE SCHEDULE ({selectedTourney.races.length})
-                    </h4>
-                    <button 
-                      className="btn btn-link text-decoration-none p-0 text-primary-custom fw-semibold d-flex align-items-center gap-1"
-                      onClick={() => setShowRaceModal(true)}
-                      style={{ fontSize: '13px' }}
-                    >
-                      <i className="bi bi-plus-lg"></i> Add new races
-                    </button>
-                  </div>
-
-                  {/* Races list */}
-                  <div className="d-flex flex-column gap-3">
-                    {selectedTourney.races.length > 0 ? (
-                      selectedTourney.races.map(race => (
-                        <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
-                          <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
-                            <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
-                            <div className="d-flex gap-1.5 flex-wrap">
-                              <span className="badge-custom-code">{race.code}</span>
-                              <span className={`status-badge-custom ${race.status.toLowerCase()}`}>
-                                {race.status}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
-                            <i className="bi bi-clock"></i>
-                            <span>{race.time} • <strong>{race.laps} Laps</strong></span>
-                          </div>
+                ) : (
+                  <>
+                    {/* Details Header */}
+                    <div className="card-header bg-white border-bottom p-4">
+                      <h3 className="h5 fw-bold text-dark-navy mb-4">Tournament Details</h3>
+                      <div className="d-flex flex-column gap-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>STATUS</span>
+                          <span className={`status-badge-custom ${getStatusClass(displayTourney.status)}`}>
+                            {displayTourney.status}
+                          </span>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-5 text-muted border border-dashed rounded-3">
-                        <i className="bi bi-clipboard-x fs-1 mb-2 d-block"></i>
-                        <span>No races scheduled yet</span>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>TOTAL ENTRIES</span>
+                          <span className="fw-bold text-dark-navy">{displayTourney.totalEntries || displayTourney.total_entries || '0 Horses'}</span>
+                        </div>
+                        {displayTourney.id && displayTourney.status !== 'CANCELLED' && (
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-sm w-100 mt-2 py-2 fw-semibold"
+                            onClick={() => handleCancelTourney(displayTourney.id)}
+                            style={{ borderRadius: '6px' }}
+                          >
+                            <i className="bi bi-x-circle me-1.5"></i> Cancel Tournament
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+
+                    {/* Race Schedule */}
+                    <div className="card-body p-4">
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h4 className="text-uppercase fw-bold text-secondary-custom m-0" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
+                          RACE SCHEDULE ({(displayTourney.races || []).length})
+                        </h4>
+                        {displayTourney.status !== 'CANCELLED' && (
+                          <button 
+                            className="btn btn-link text-decoration-none p-0 text-primary-custom fw-semibold d-flex align-items-center gap-1"
+                            onClick={() => setShowRaceModal(true)}
+                            style={{ fontSize: '13px' }}
+                          >
+                            <i className="bi bi-plus-lg"></i> Add new races
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Races list */}
+                      <div className="d-flex flex-column gap-3">
+                        {(displayTourney.races || []).length > 0 ? (
+                          displayTourney.races.map(race => (
+                            <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
+                              <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
+                                <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
+                                <div className="d-flex gap-1.5 flex-wrap">
+                                  <span className="badge-custom-code">{race.code}</span>
+                                  <span className={`status-badge-custom ${(race.status || 'PUBLISHED').toLowerCase()}`}>
+                                    {race.status || 'PUBLISHED'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
+                                <i className="bi bi-clock"></i>
+                                <span>{race.time || (race.startTime && race.endTime ? `${race.startTime} - ${race.endTime}` : '12:00 - 12:30')} • <strong>{race.laps || 3} Laps</strong></span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-5 text-muted border border-dashed rounded-3">
+                            <i className="bi bi-clipboard-x fs-1 mb-2 d-block"></i>
+                            <span>No races scheduled yet</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
