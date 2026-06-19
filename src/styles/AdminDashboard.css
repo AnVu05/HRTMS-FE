@@ -408,3 +408,25 @@
   position: relative;
 }
 
+/* Quill Editor Custom Styling */
+.quill-editor-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+}
+
+.quill-editor-container .ql-toolbar.ql-snow {
+  border: none;
+  border-bottom: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.quill-editor-container .ql-container.ql-snow {
+  border: none;
+  min-height: 150px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+

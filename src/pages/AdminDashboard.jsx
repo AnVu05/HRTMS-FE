@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
 import '../styles/AdminDashboard.css';
 
 // ─── Initial Mock Data ────────────────────────────────────────────────────────
@@ -97,6 +99,46 @@ export default function AdminDashboard({ onNavigate }) {
   const [createBreed, setCreateBreed] = useState('Thoroughbred');
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  
+  const createDescriptionRef = useRef(createDescription);
+  useEffect(() => {
+    createDescriptionRef.current = createDescription;
+  }, [createDescription]);
+
+  const quillRef = useRef(null);
+  const editorRef = useCallback((node) => {
+    if (node !== null) {
+      if (node.classList.contains('ql-container')) {
+        return;
+      }
+      const quill = new Quill(node, {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            [{ 'font': [] }, { 'size': [] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link', 'image'],
+            ['clean']
+          ]
+        }
+      });
+      quillRef.current = quill;
+
+      if (createDescriptionRef.current) {
+        quill.root.innerHTML = createDescriptionRef.current;
+      }
+
+      quill.on('text-change', () => {
+        const html = quill.root.innerHTML;
+        setCreateDescription(html === '<p><br></p>' ? '' : html);
+      });
+    } else {
+      quillRef.current = null;
+    }
+  }, []);
+
   const [createRacesList, setCreateRacesList] = useState([
     { name: 'Op', date: '', startTime: '', endTime: '', laps: 1, horsesCount: 6, referee: '8' },
     { name: 'Gr', date: '', startTime: '', endTime: '', laps: 2, horsesCount: 8, referee: '12' }
@@ -468,13 +510,9 @@ export default function AdminDashboard({ onNavigate }) {
                       <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
                         Tournament Description
                       </label>
-                      <textarea 
-                        className="form-control py-2 px-3 form-input-custom"
-                        rows="3"
-                        placeholder="Describe the tournament rules, history, and prizes..."
-                        value={createDescription}
-                        onChange={(e) => setCreateDescription(e.target.value)}
-                      ></textarea>
+                      <div className="quill-editor-container">
+                        <div id="editor" ref={editorRef}></div>
+                      </div>
                     </div>
                   </div>
                 </div>

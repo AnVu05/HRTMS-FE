@@ -15,6 +15,7 @@ const HORSES = [
   { id: 10, name: 'Eclipse Rider', jockey: 'M. Thomas', odds: '25/1', img: '' }
 ];
 
+// eslint-disable-next-line no-unused-vars
 export default function SpectatorHome({ onNavigate }) {
   // Navigation active tab
   const [activeTab, setActiveTab] = useState('races');
