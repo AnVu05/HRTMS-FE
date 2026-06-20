@@ -389,7 +389,7 @@ export default function AdminDashboard({ onNavigate }) {
   ];
 
   return (
-    <div className="admin-container d-flex flex-column">
+    <div className="admin-container d-flex">
       
       {/* ── Mobile Header/Navbar ── */}
       <header className="mobile-admin-header d-flex d-lg-none justify-content-between align-items-center px-3 py-2 bg-white border-bottom w-100 position-fixed top-0 start-0 z-3">
@@ -399,7 +399,7 @@ export default function AdminDashboard({ onNavigate }) {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle Menu"
           >
-            <i className="bi bi-list fs-3"></i>
+            <i className="bi bi-list fs-2"></i>
           </button>
           <span className="brand-logo fs-5 fw-bold text-primary-custom d-flex align-items-center gap-1">
             <i className="bi bi-award-fill"></i> HRTMS
@@ -418,7 +418,7 @@ export default function AdminDashboard({ onNavigate }) {
 
       {/* ── Left Sidebar ── */}
       <aside className={`admin-sidebar bg-white border-end d-flex flex-column justify-content-between ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-brand-nav-group">
+        <div>
           {/* Logo Section */}
           <div className="sidebar-logo d-flex align-items-center gap-2.5 p-4 border-bottom">
             <div className="rounded" style={{ width: '36px', height: '36px', minWidth: '36px', backgroundColor: '#e2e8f0' }}></div>
