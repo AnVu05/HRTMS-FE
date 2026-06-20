@@ -59,6 +59,7 @@ export default function AdminDashboard({ onNavigate }) {
   const [createBreed, setCreateBreed] = useState('Thoroughbred');
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [updatingTourney, setUpdatingTourney] = useState(null);
 
   const [selectedTourneyDetails, setSelectedTourneyDetails] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -178,12 +179,87 @@ export default function AdminDashboard({ onNavigate }) {
     }
 
     try {
-      await tournamentService.cancelTournament(id, reason);
-      alert("Tournament successfully cancelled.");
+      const response = await tournamentService.cancelTournament(id, reason);
+      alert(response?.message || "Tournament successfully cancelled.");
       await fetchDashboardTournaments(false);
     } catch (err) {
       console.error("Error canceling tournament:", err);
       alert(err.message || "Failed to cancel tournament.");
+    }
+  };
+
+  const handleCancelUpdatingTourney = async () => {
+    if (!updatingTourney) return;
+    const reason = prompt("Please enter the reason for canceling this tournament:");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert("A reason is required to cancel the tournament.");
+      return;
+    }
+
+    try {
+      const response = await tournamentService.cancelTournament(updatingTourney.id, reason);
+      alert(response?.message || "Tournament successfully cancelled.");
+      await fetchDashboardTournaments(false);
+      setCurrentSubView('list');
+    } catch (err) {
+      console.error("Error canceling tournament:", err);
+      alert(err.message || "Failed to cancel tournament.");
+    }
+  };
+
+  const handleUpdateClick = (t) => {
+    setUpdatingTourney(t);
+    setCreateTourneyName(t.name || '');
+    setCreateStartDate(t.startDate || t.start_date || '');
+    setCreateEndDate(t.endDate || t.end_date || '');
+    setCreateBreed(t.allowedBreed || t.allowed_breed || 'Thoroughbred');
+    setCreateAgeReq(t.allowedHorseAge !== undefined ? t.allowedHorseAge.toString() : t.allowed_horse_age !== undefined ? t.allowed_horse_age.toString() : '');
+    setCreateDescription(t.tournamentDescription || t.tournament_description || '');
+    
+    if (t.races && t.races.length > 0) {
+      setCreateRacesList(t.races.map(r => ({
+        name: r.name || '',
+        date: r.date || '',
+        startTime: r.startTime || r.start_time || '',
+        endTime: r.endTime || r.end_time || '',
+        laps: r.laps || 3,
+        horsesCount: r.numHorse || r.num_horse || 8,
+        referee: r.refereeId || r.referee_id || ''
+      })));
+    } else {
+      setCreateRacesList([]);
+    }
+    
+    setCurrentSubView('update');
+  };
+
+  const handleSaveUpdateTournament = async (e) => {
+    e.preventDefault();
+    if (!createTourneyName || !createStartDate || !createEndDate) {
+      alert("Please fill in the Tournament Name and Date Range.");
+      return;
+    }
+
+    try {
+      const updatePayload = {
+        name: createTourneyName,
+        startDate: createStartDate,
+        endDate: createEndDate,
+        allowedBreed: createBreed,
+        allowedHorseAge: createAgeReq || "0",
+        tournamentDescription: createDescription,
+        status: updatingTourney?.status || "PUBLISHED"
+      };
+
+      const response = await tournamentService.updateTournament(updatingTourney.id, updatePayload);
+      alert(response?.message || "Tournament details successfully updated.");
+
+      await fetchDashboardTournaments(false);
+      setCurrentSubView('list');
+    } catch (err) {
+      console.error("Error updating tournament:", err);
+      alert(err.message || "Failed to update tournament.");
     }
   };
   
@@ -263,11 +339,12 @@ export default function AdminDashboard({ onNavigate }) {
         endDate: createEndDate,
         allowedBreed: createBreed,
         allowedHorseAge: createAgeReq || "3+",
+        tournamentDescription: createDescription,
         status: "PUBLISHED"
       };
 
       const createdTourney = await tournamentService.createTournament(tourneyPayload);
-      const tournamentId = createdTourney.id;
+      const tournamentId = createdTourney?.data?.id || createdTourney?.id;
 
       const racesPayload = {
         tournamentId,
@@ -282,7 +359,7 @@ export default function AdminDashboard({ onNavigate }) {
       };
 
       await raceService.createRacesBatch(racesPayload);
-      alert("Tournament and races successfully created.");
+      alert(createdTourney?.message || "Tournament and races successfully created.");
 
       await fetchDashboardTournaments(false);
       setSelectedId(tournamentId);
@@ -327,10 +404,11 @@ export default function AdminDashboard({ onNavigate }) {
       };
 
       const createdTourney = await tournamentService.createTournament(tourneyPayload);
-      alert("Draft tournament successfully created.");
+      alert(createdTourney?.message || "Draft tournament successfully created.");
 
       await fetchDashboardTournaments(false);
-      setSelectedId(createdTourney.id);
+      const tournamentId = createdTourney?.data?.id || createdTourney?.id;
+      setSelectedId(tournamentId);
       setNewTourneyName('');
       setNewTourneyDates('');
       setShowTournamentModal(false);
@@ -767,6 +845,149 @@ export default function AdminDashboard({ onNavigate }) {
 
               </form>
             </div>
+          ) : currentSubView === 'update' ? (
+            /* ── Update Tournament Subview ── */
+            <div className="create-tournament-view">
+              {/* Breadcrumbs */}
+              <div className="admin-breadcrumb mb-2" style={{ fontSize: '13px', fontWeight: '500' }}>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Admin</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Tournaments</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="text-dark fw-bold">Update</span>
+              </div>
+              <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <h1 className="h3 fw-bold text-dark-navy m-0">Update Tournament Details</h1>
+                {updatingTourney?.status !== 'CANCELLED' && (
+                  <button
+                    type="button"
+                    className="btn btn-danger d-flex align-items-center gap-2 px-4 py-2.5 fw-bold shadow-sm"
+                    onClick={handleCancelUpdatingTourney}
+                    style={{ borderRadius: '8px', fontSize: '14px' }}
+                  >
+                    <i className="bi bi-x-circle fs-5"></i>
+                    <span>CANCEL TOURNAMENT</span>
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveUpdateTournament}>
+                {/* Section 1: Tournament Details */}
+                <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
+                  <h3 className="h5 fw-bold text-dark-navy mb-3 create-section-title">Tournament Details</h3>
+                  
+                  <div className="row g-3">
+                    {/* Tournament Name */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Name
+                      </label>
+                      <input 
+                        type="text" 
+                        className="form-control py-2 px-3 form-input-custom"
+                        value={createTourneyName}
+                        onChange={(e) => setCreateTourneyName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Date Range */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Date Range
+                      </label>
+                      <div className="d-flex align-items-center gap-2">
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input 
+                            type="date" 
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createStartDate}
+                            onChange={(e) => setCreateStartDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <span className="text-secondary-custom" style={{ fontSize: '13px' }}>to</span>
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input 
+                            type="date" 
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createEndDate}
+                            onChange={(e) => setCreateEndDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Allowed Horse Breeds */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Allowed Horse Breeds
+                      </label>
+                      <select 
+                        className="form-select py-2 px-3 form-input-custom"
+                        value={createBreed}
+                        onChange={(e) => setCreateBreed(e.target.value)}
+                      >
+                        <option value="Thoroughbred">Thoroughbred</option>
+                        <option value="Quarter Horse">Quarter Horse</option>
+                        <option value="Arabian">Arabian</option>
+                        <option value="Standardbred">Standardbred</option>
+                      </select>
+                    </div>
+
+                    {/* Horse Age Requirement */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Horse Age Requirement (Years)
+                      </label>
+                      <input 
+                        type="text" 
+                        className="form-control py-2 px-3 form-input-custom"
+                        value={createAgeReq}
+                        onChange={(e) => setCreateAgeReq(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Tournament Description */}
+                    <div className="col-12">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Description
+                      </label>
+                      <div className="quill-editor-container">
+                        <div ref={editorRef}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="d-flex justify-content-end gap-3 mt-4">
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-secondary px-4 py-2"
+                    onClick={() => setCurrentSubView('list')}
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary px-4 py-2 fw-bold"
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+
+              </form>
+            </div>
           ) : (
             /* ── Active Tournaments List Subview ── */
             <div className="row g-4 mt-2 mt-lg-0">
@@ -802,7 +1023,7 @@ export default function AdminDashboard({ onNavigate }) {
                           <th scope="col" className="text-secondary-custom fw-semibold">DATES</th>
                           <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">RACES</th>
                           <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">STATUS</th>
-                          <th scope="col" style={{ width: '40px' }}></th>
+                          <th scope="col" className="text-secondary-custom fw-semibold text-end pe-3" style={{ width: '100px' }}>ACTIONS</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -824,8 +1045,17 @@ export default function AdminDashboard({ onNavigate }) {
                                 {t.status}
                               </span>
                             </td>
-                            <td className="text-end text-muted pe-3">
-                              <i className="bi bi-chevron-right fs-5"></i>
+                            <td className="text-end pe-3">
+                              <button
+                                className="btn btn-outline-primary btn-sm fw-semibold"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUpdateClick(t);
+                                }}
+                                style={{ borderRadius: '6px' }}
+                              >
+                                Update
+                              </button>
                             </td>
                           </tr>
                         ))}
