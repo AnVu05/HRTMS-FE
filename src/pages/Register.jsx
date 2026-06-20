@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { authService } from '../services/auth.service';
 
 function Register({ onNavigate }) {
   const [username, setUsername] = useState('');
@@ -10,6 +11,8 @@ function Register({ onNavigate }) {
   // Validation and Feedback States
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
     const newErrors = {};
@@ -41,17 +44,43 @@ function Register({ onNavigate }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccessMsg('');
+    setErrorMsg('');
 
     if (validateForm()) {
-      setSuccessMsg('Account registered successfully! Welcome to RoyalTurf.');
-      // Reset form fields
-      setUsername('');
-      setEmail('');
-      setPassword('');
-      setRole('');
+      setIsLoading(true);
+      try {
+        const response = await authService.register({
+          username,
+          email,
+          password,
+          role
+        });
+
+        // Helper function to check if response status is a "good code"
+        const isGoodStatus = (status) => {
+          if (!status) return false;
+          const s = String(status).toLowerCase();
+          return s === '200' || s === '201' || s === 'success' || s === 'ok' || s === 'created';
+        };
+
+        if (isGoodStatus(response.status)) {
+          setSuccessMsg(response.message || 'Account registered successfully! Welcome to RoyalTurf.');
+          // Reset form fields
+          setUsername('');
+          setEmail('');
+          setPassword('');
+          setRole('');
+        } else {
+          setErrorMsg(response.message || 'Registration failed.');
+        }
+      } catch (err) {
+        setErrorMsg(err.message || 'Something went wrong. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -69,6 +98,13 @@ function Register({ onNavigate }) {
           <div className="alert alert-success d-flex align-items-center py-2 px-3 my-3" role="alert">
             <i className="bi bi-check-circle-fill me-2 fs-6"></i>
             <span className="small">{successMsg}</span>
+          </div>
+        )}
+
+        {errorMsg && (
+          <div className="alert alert-danger d-flex align-items-center py-2 px-3 my-3" role="alert">
+            <i className="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+            <span className="small">{errorMsg}</span>
           </div>
         )}
 
@@ -166,9 +202,9 @@ function Register({ onNavigate }) {
                 }}
               >
                 <option value="" disabled>Select your role</option>
-                <option value="administrator">Administrator</option>
-                <option value="manager">Manager</option>
-                <option value="employee">Employee</option>
+                <option value="SPECTATOR">Spectator</option>
+                <option value="HORSE_OWNER">Horse Owner</option>
+                <option value="JOCKEY">Jockey</option>
               </select>
             </div>
             {errors.role && (
@@ -180,9 +216,19 @@ function Register({ onNavigate }) {
           <div>
             <button
               type="submit"
+              disabled={isLoading}
               className="btn btn-primary btn-register w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2 continue-btn"
             >
-              REGISTER <i className="bi bi-arrow-right"></i>
+              {isLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  REGISTERING...
+                </>
+              ) : (
+                <>
+                  REGISTER <i className="bi bi-arrow-right"></i>
+                </>
+              )}
             </button>
           </div>
         </form>

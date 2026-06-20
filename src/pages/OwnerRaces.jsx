@@ -112,141 +112,100 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
     }, 3000);
   };
 
+  // Nav items definition
+  const navItems = [
+    { key: 'race', label: 'Race', icon: 'bi-flag-fill', onClick: (e) => { e.preventDefault(); } },
+    { key: 'registration', label: 'Registration', icon: 'bi-clipboard-check', onClick: (e) => { e.preventDefault(); } },
+    { key: 'horse', label: 'Horse', icon: 'bi-award', onClick: (e) => { e.preventDefault(); if (onNavigate) onNavigate('stable-management'); } },
+    { key: 'alerts', label: 'Alerts', icon: 'bi-bell', onClick: (e) => { e.preventDefault(); } },
+    { key: 'profile', label: 'Profile', icon: 'bi-person-circle', onClick: (e) => { e.preventDefault(); } },
+  ];
+
+  const [activeNav, setActiveNav] = useState('race');
+
   return (
-    <div className="races-page-wrapper pb-5">
-      {/* Header Navigation Bar */}
-      <nav className="main-navbar d-flex justify-content-between align-items-center mb-4 py-2 px-3">
-        <div className="d-flex align-items-center gap-3">
-          <button className="btn border-0 p-0 text-dark-navy menu-toggle-btn" aria-label="Menu" onClick={() => setMenuOpen(!menuOpen)}>
-            <i className="bi bi-list fs-3"></i>
-          </button>
-          <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2" style={{ color: 'var(--primary-blue)', letterSpacing: '-0.5px' }}>
-            HRTMS
-          </span>
-        </div>
+    <div className="races-page-wrapper">
 
-        {/* Desktop Navigation Links */}
-        <div className="desktop-nav d-flex align-items-center gap-2">
-          <a
-            href="#race"
-            onClick={(e) => { e.preventDefault(); }}
-            className="nav-item-custom active-capsule"
-          >
-            <i className="bi bi-flag-fill"></i>
-            <span>Race</span>
-          </a>
-          <a
-            href="#registration"
-            onClick={(e) => { e.preventDefault(); }}
-            className="nav-item-custom"
-          >
-            <i className="bi bi-clipboard-check"></i>
-            <span>Registration</span>
-          </a>
-          <a
-            href="#horse"
-            onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('stable-management'); }}
-            className="nav-item-custom"
-          >
-            {/* Custom Horseshoe inline SVG */}
-            <svg
-              viewBox="0 0 116.9 122.88"
-              width="18"
-              height="18"
-              fill="currentColor"
-              style={{ margin: '5px 0 5px 0' }}
+      {/* ── Mobile Top Header (visible only on mobile) ── */}
+      <header className="races-mobile-header">
+        <button
+          className="btn border-0 p-1 text-dark-navy"
+          aria-label="Open Menu"
+          onClick={() => setMenuOpen(true)}
+        >
+          <i className="bi bi-list fs-3"></i>
+        </button>
+        <span className="brand-logo fw-bold" style={{ color: 'var(--primary-blue)', letterSpacing: '-0.5px', fontSize: '18px' }}>
+          HRTMS
+        </span>
+        <div
+          className="rounded-3"
+          style={{ width: '36px', height: '36px', backgroundColor: '#dbeafe', border: '1px solid #cbd5e1' }}
+        ></div>
+      </header>
+
+      {/* ── Layout wrapper: sidebar + main ── */}
+      <div className="races-layout">
+
+        {/* ── Left Vertical Sidebar (desktop always visible, mobile as drawer) ── */}
+        {menuOpen && (
+          <div className="drawer-overlay" onClick={() => setMenuOpen(false)}></div>
+        )}
+        <aside className={`races-sidebar ${menuOpen ? 'open' : ''}`}>
+          {/* Sidebar Header */}
+          <div className="races-sidebar-header">
+            <div className="d-flex align-items-center gap-2">
+              <div className="rounded-2" style={{ width: '32px', height: '32px', backgroundColor: '#e2e8f0', minWidth: '32px' }}></div>
+              <div>
+                <span className="fw-bold text-dark-navy d-block" style={{ fontSize: '15px', letterSpacing: '-0.3px' }}>HRTMS</span>
+                <span style={{ fontSize: '11px', color: 'var(--secondary-custom)' }}>Owner Portal</span>
+              </div>
+            </div>
+            {/* Close button - mobile only */}
+            <button
+              className="btn border-0 p-1 races-sidebar-close"
+              aria-label="Close sidebar"
+              onClick={() => setMenuOpen(false)}
             >
-              <path d="M25,80.18A33.31,33.31,0,0,0,36.67,94.3a38.86,38.86,0,0,0,43.44.09A33.37,33.37,0,0,0,92,80.18c5.83-13.42,4.56-36.7-1.84-50-1.67-3.46-3.81-6.34-7.25-12.4C80.1,13,78.79,8.63,83.73,4.59A22,22,0,0,1,97.47,0c4.67.14,7.54,3.4,9.14,7.61,1.07,2.78,2.25,8.35,1.5,11.35-.37,1.53-1.16,2-1.65,3-.72,1.46.09,2.95,1.18,5.07,16.4,32,11,69.78-15.88,86.81-17.14,10.86-41.64,11.89-60,3.55C-.75,102.61-8.4,61.46,9.27,27c1.08-2.12,1.89-3.61,1.17-5.07-.49-1-1.27-1.42-1.65-3-.74-3,.44-8.57,1.5-11.35C11.89,3.41,14.76.15,19.43,0A22,22,0,0,1,33.17,4.59c4.94,4,3.63,8.36.87,13.23-3.43,6.06-5.57,8.94-7.25,12.4-6.4,13.26-7.66,36.54-1.84,50ZM21.87,12.29a3.3,3.3,0,1,1-3.3,3.3,3.29,3.29,0,0,1,3.3-3.3Zm36.58,94.77a3.66,3.66,0,1,1-3.65,3.66,3.65,3.65,0,0,1,3.65-3.66Zm41-19.31a3.66,3.66,0,1,1-3.65,3.65,3.65,3.65,0,0,1,3.65-3.65Zm-81.9,0a3.66,3.66,0,1,1-3.65,3.65,3.66,3.66,0,0,1,3.65-3.65Zm88.76-26.1a3.65,3.65,0,1,1-3.66,3.65,3.65,3.65,0,0,1,3.66-3.65Zm-95.61,0A3.65,3.65,0,1,1,7,65.3a3.65,3.65,0,0,1,3.66-3.65Zm91.87-26.11a3.66,3.66,0,1,1-3.66,3.66,3.66,3.66,0,0,1,3.66-3.66Zm-88.13,0a3.66,3.66,0,1,1-3.66,3.66,3.66,3.66,0,0,1,3.66-3.66ZM95,12.29a3.3,3.3,0,1,1-3.3,3.3,3.29,3.29,0,0,1,3.3-3.3Z" />
-            </svg>
-            <span>Horse</span>
-          </a>
-          <a
-            href="#alerts"
-            onClick={(e) => { e.preventDefault(); }}
-            className="nav-item-custom"
-          >
-            <i className="bi bi-bell"></i>
-            <span>Alerts</span>
-          </a>
-          <a
-            href="#profile"
-            onClick={(e) => { e.preventDefault(); }}
-            className="nav-item-custom"
-          >
-            <i className="bi bi-person-circle"></i>
-            <span>Profile</span>
-          </a>
-        </div>
-
-        {/* Mobile Drawer */}
-        {menuOpen && <div className="drawer-overlay" onClick={() => setMenuOpen(false)}></div>}
-        <div className={`mobile-drawer ${menuOpen ? 'open' : ''}`}>
-          <div className="drawer-header d-flex justify-content-between align-items-center">
-            <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2" style={{ color: 'var(--primary-blue)', letterSpacing: '-0.5px' }}>
-              HRTMS
-            </span>
-            <button className="btn-close shadow-none border-0" onClick={() => setMenuOpen(false)} aria-label="Close"></button>
+              <i className="bi bi-x-lg text-secondary-custom"></i>
+            </button>
           </div>
-          <div className="drawer-body">
-            <a
-              href="#race"
-              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
-              className="drawer-link active"
-            >
-              <i className="bi bi-flag-fill"></i>
-              <span>Race</span>
-            </a>
-            <a
-              href="#registration"
-              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
-              className="drawer-link"
-            >
-              <i className="bi bi-clipboard-check"></i>
-              <span>Registration</span>
-            </a>
-            <a
-              href="#horse"
-              onClick={(e) => { e.preventDefault(); setMenuOpen(false); if (onNavigate) onNavigate('stable-management'); }}
-              className="drawer-link"
-            >
-              <i className="bi bi-award"></i>
-              <span>Horse</span>
-            </a>
-            <a
-              href="#alerts"
-              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
-              className="drawer-link"
-            >
-              <i className="bi bi-bell"></i>
-              <span>Alerts</span>
-            </a>
-            <a
-              href="#profile"
-              onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}
-              className="drawer-link"
-            >
-              <i className="bi bi-person-circle"></i>
-              <span>Profile</span>
-            </a>
+
+          {/* Navigation Links */}
+          <nav className="races-sidebar-nav">
+            {navItems.map((item) => (
+              <a
+                key={item.key}
+                href={`#${item.key}`}
+                className={`races-sidebar-link ${activeNav === item.key ? 'active' : ''}`}
+                onClick={(e) => {
+                  item.onClick(e);
+                  setActiveNav(item.key);
+                  setMenuOpen(false);
+                }}
+              >
+                <i className={`bi ${item.icon}`}></i>
+                <span>{item.label}</span>
+              </a>
+            ))}
+          </nav>
+
+          {/* Sidebar Footer: User Profile */}
+          <div className="races-sidebar-footer">
+            <div
+              className="rounded-3"
+              style={{ width: '36px', height: '36px', minWidth: '36px', backgroundColor: '#dbeafe', border: '1px solid #cbd5e1' }}
+            ></div>
+            <div>
+              <span className="fw-semibold text-dark-navy d-block" style={{ fontSize: '13px' }}>Horse Owner</span>
+              <span style={{ fontSize: '11px', color: 'var(--secondary-custom)' }}>owner@hrtms.com</span>
+            </div>
           </div>
-        </div>
+        </aside>
 
-        {/* Profile Placeholder Avatar */}
-        <div className="d-flex align-items-center gap-2">
-          <div
-            className="rounded-3"
-            style={{
-              width: '40px',
-              height: '40px',
-              backgroundColor: '#dbeafe',
-              border: '1px solid #cbd5e1'
-            }}
-          ></div>
-        </div>
-      </nav>
-
-      {/* Main Container */}
-      <div className="races-content-container px-3 px-md-4">
+        {/* ── Main Content Area ── */}
+        <main className="races-main pb-5">
+          <div className="races-content-container px-3 px-md-4">
         {/* Centered Title & Description */}
         <div className="events-intro-section mb-4">
           <h1 className="events-title mb-2">Events</h1>
@@ -440,7 +399,7 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
             })}
           </div>
         </div>
-      </div>
+          </div>
 
       {/* Horse Selection Modal */}
       {showRegModal && (
@@ -530,58 +489,7 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
           </div>
         ))}
       </div>
-
-      {/* Mobile Sticky Bottom Tab Bar */}
-      <div className="mobile-bottom-nav">
-        <a
-          href="#race"
-          onClick={(e) => { e.preventDefault(); }}
-          className="nav-item-custom active"
-        >
-          <i className="bi bi-flag-fill"></i>
-          <span>Race</span>
-        </a>
-        <a
-          href="#registration"
-          onClick={(e) => { e.preventDefault(); }}
-          className="nav-item-custom"
-        >
-          <i className="bi bi-clipboard-check"></i>
-          <span>Registration</span>
-        </a>
-        <a
-          href="#horse"
-          onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('stable-management'); }}
-          className="nav-item-custom"
-        >
-          {/* Custom Horseshoe inline SVG */}
-          <svg
-            viewBox="0 0 116.9 122.88"
-            width="18"
-            height="18"
-            fill="currentColor"
-            style={{ marginBottom: '2px' }}
-          >
-            <path d="M25,80.18A33.31,33.31,0,0,0,36.67,94.3a38.86,38.86,0,0,0,43.44.09A33.37,33.37,0,0,0,92,80.18c5.83-13.42,4.56-36.7-1.84-50-1.67-3.46-3.81-6.34-7.25-12.4C80.1,13,78.79,8.63,83.73,4.59A22,22,0,0,1,97.47,0c4.67.14,7.54,3.4,9.14,7.61,1.07,2.78,2.25,8.35,1.5,11.35-.37,1.53-1.16,2-1.65,3-.72,1.46.09,2.95,1.18,5.07,16.4,32,11,69.78-15.88,86.81-17.14,10.86-41.64,11.89-60,3.55C-.75,102.61-8.4,61.46,9.27,27c1.08-2.12,1.89-3.61,1.17-5.07-.49-1-1.27-1.42-1.65-3-.74-3,.44-8.57,1.5-11.35C11.89,3.41,14.76.15,19.43,0A22,22,0,0,1,33.17,4.59c4.94,4,3.63,8.36.87,13.23-3.43,6.06-5.57,8.94-7.25,12.4-6.4,13.26-7.66,36.54-1.84,50ZM21.87,12.29a3.3,3.3,0,1,1-3.3,3.3,3.29,3.29,0,0,1,3.3-3.3Zm36.58,94.77a3.66,3.66,0,1,1-3.65,3.66,3.65,3.65,0,0,1,3.65-3.66Zm41-19.31a3.66,3.66,0,1,1-3.65,3.65,3.65,3.65,0,0,1,3.65-3.65Zm-81.9,0a3.66,3.66,0,1,1-3.65,3.65,3.66,3.66,0,0,1,3.65-3.65Zm88.76-26.1a3.65,3.65,0,1,1-3.66,3.65,3.65,3.65,0,0,1,3.66-3.65Zm-95.61,0A3.65,3.65,0,1,1,7,65.3a3.65,3.65,0,0,1,3.66-3.65Zm91.87-26.11a3.66,3.66,0,1,1-3.66,3.66,3.66,3.66,0,0,1,3.66-3.66Zm-88.13,0a3.66,3.66,0,1,1-3.66,3.66,3.66,3.66,0,0,1,3.66-3.66ZM95,12.29a3.3,3.3,0,1,1-3.3,3.3,3.29,3.29,0,0,1,3.3-3.3Z" />
-          </svg>
-          <span>Horse</span>
-        </a>
-        <a
-          href="#alerts"
-          onClick={(e) => { e.preventDefault(); }}
-          className="nav-item-custom"
-        >
-          <i className="bi bi-bell"></i>
-          <span>Alerts</span>
-        </a>
-        <a
-          href="#profile"
-          onClick={(e) => { e.preventDefault(); }}
-          className="nav-item-custom"
-        >
-          <i className="bi bi-person-circle"></i>
-          <span>Profile</span>
-        </a>
+        </main>
       </div>
     </div>
   );

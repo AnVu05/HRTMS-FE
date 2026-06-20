@@ -405,16 +405,6 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
           )}
         </div>
 
-        {/* Global Ranking Card at the bottom left */}
-        <div className="ranking-card border p-4 mb-4 position-relative">
-          <i className="bi bi-trophy-fill text-warning position-absolute" style={{ right: '24px', top: '24px', fontSize: '20px' }}></i>
-          <span className="ranking-title d-block mb-3">Global Ranking</span>
-          <div className="ranking-value mb-1">
-            #12 <span>/ 450</span>
-          </div>
-          <span className="ranking-badge-green">Top 3% Worldwide</span>
-        </div>
-
       </div>
 
       {/* Add & Edit Modal */}
