@@ -45,4 +45,13 @@ export const jockeyService = {
       method: 'POST',
     });
   },
+  /**
+   * Lấy kết quả xác minh chứng chỉ (thông báo)
+   * @param {number|string} jockeyId 
+   */
+  getCertificateResults(jockeyId) {
+    return apiRequest(`/api/v1/notifications/jockeys/${jockeyId}/certificate-results`, {
+      method: 'GET',
+    });
+  },
 };

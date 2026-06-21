@@ -98,12 +98,47 @@ export default function JockeyProfile({ onNavigate, jockeyId }) {
     setLoading(true);
     setError(null);
 
-    jockeyService
-      .getProfile(jockeyId)
-      .then((res) => {
-        // API wraps data inside res.data
-        const data = res.data ?? res;
+    Promise.all([
+      jockeyService.getProfile(jockeyId),
+      jockeyService.getCertificateResults(jockeyId).catch((err) => {
+        console.warn('Failed to fetch certificate results:', err);
+        return { data: [] }; // fallback
+      })
+    ])
+      .then(([profileRes, notifRes]) => {
+        // Handle profile
+        const data = profileRes.data ?? profileRes;
         setProfile(mapApiToProfile(data));
+
+        // Handle notifications
+        const notifs = notifRes.data ?? [];
+        if (notifs && notifs.length > 0) {
+          const apiUpdates = notifs.map((n, i) => {
+            const isAccepted = n.type === 'ACCEPT_CERTIFICATE';
+            const isRejected = n.type === 'REJECT_CERTIFICATE';
+            
+            let iconType = 'info';
+            let iconClass = 'bi-info-circle-fill';
+            
+            if (isAccepted) {
+              iconType = 'success';
+              iconClass = 'bi-check-circle-fill';
+            } else if (isRejected) {
+              iconType = 'error';
+              iconClass = 'bi-x-circle-fill';
+            }
+
+            return {
+              id: `api-notif-${i}-${Date.now()}`,
+              icon: iconType,
+              iconClass: iconClass,
+              title: n.title,
+              desc: n.content,
+              time: new Date(n.createdAt).toLocaleString(),
+            };
+          });
+          setUpdates(apiUpdates);
+        }
       })
       .catch((err) => {
         console.error('Failed to fetch jockey profile:', err);

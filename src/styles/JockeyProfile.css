@@ -537,6 +537,11 @@
   color: #ca8a04;
 }
 
+.jp-update-icon.error {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
 .jp-update-heading {
   font-size: 13px;
   font-weight: 700;
