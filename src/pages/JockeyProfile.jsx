@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { jockeyService } from '../services/jockey.service';
 import '../styles/JockeyProfile.css';
 
-// ─── Mock Data ───
-const INITIAL_PROFILE = {
+// ─── Fallback Mock Data (used when API is unavailable) ───
+const FALLBACK_PROFILE = {
+  id: null,
   name: 'Marcus Sterling',
   yearsExp: 8,
   age: 28,
@@ -57,8 +59,24 @@ const SEASON_STATS = {
   topPlaced: 8,
 };
 
-export default function JockeyProfile({ onNavigate }) {
-  const [profile, setProfile] = useState(INITIAL_PROFILE);
+/**
+ * Map API response data → local profile state shape
+ */
+function mapApiToProfile(data) {
+  return {
+    id: data.id,
+    name: data.jockeyName || '',
+    yearsExp: data.yearOfExperience ?? 0,
+    age: data.age ?? 0,
+    bio: data.professionalBio || '',
+    email: data.email || '',
+    username: data.username || '',
+    status: data.status,
+  };
+}
+
+export default function JockeyProfile({ onNavigate, jockeyId }) {
+  const [profile, setProfile] = useState(FALLBACK_PROFILE);
   const [certificates, setCertificates] = useState(INITIAL_CERTIFICATES);
   const [invitations, setInvitations] = useState(INITIAL_INVITATIONS);
   const [updates, setUpdates] = useState(INITIAL_UPDATES);
@@ -66,11 +84,38 @@ export default function JockeyProfile({ onNavigate }) {
   const [toasts, setToasts] = useState([]);
   const [showCertModal, setShowCertModal] = useState(false);
   const [newCertName, setNewCertName] = useState('');
-  const [editingField, setEditingField] = useState(null);
+  const [newCertFile, setNewCertFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const [verifyingCerts, setVerifyingCerts] = useState(false);
+  const [error, setError] = useState(null);
+
+  // ─── Fetch profile from API on mount ───
+  useEffect(() => {
+    if (!jockeyId) return; // skip if no jockeyId provided (dev mode)
+
+    setLoading(true);
+    setError(null);
+
+    jockeyService
+      .getProfile(jockeyId)
+      .then((res) => {
+        // API wraps data inside res.data
+        const data = res.data ?? res;
+        setProfile(mapApiToProfile(data));
+      })
+      .catch((err) => {
+        console.error('Failed to fetch jockey profile:', err);
+        setError(err.message || 'Failed to load profile');
+        // keep fallback data so the UI stays usable
+      })
+      .finally(() => setLoading(false));
+  }, [jockeyId]);
 
   // Show a toast notification
-  const showToast = (message) => {
-    const toast = { id: Date.now(), message };
+  const showToast = (message, type = 'success') => {
+    const toast = { id: Date.now(), message, type };
     setToasts((prev) => [...prev, toast]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== toast.id));
@@ -82,9 +127,28 @@ export default function JockeyProfile({ onNavigate }) {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Save profile
-  const handleSaveProfile = () => {
-    showToast('Profile changes saved successfully!');
+  // Save profile — calls API when jockeyId is available
+  const handleSaveProfile = async () => {
+    if (jockeyId) {
+      setSaving(true);
+      try {
+        await jockeyService.updateProfile(jockeyId, {
+          jockeyName: profile.name,
+          yearOfExperience: Number(profile.yearsExp),
+          age: Number(profile.age),
+          professionalBio: profile.bio,
+        });
+        showToast('Profile changes saved successfully!');
+      } catch (err) {
+        console.error('Failed to save profile:', err);
+        showToast(err.message || 'Failed to save profile', 'error');
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      // Dev / demo mode — no API call
+      showToast('Profile changes saved successfully!');
+    }
   };
 
   // Accept / Decline invitation
@@ -110,46 +174,98 @@ export default function JockeyProfile({ onNavigate }) {
   };
 
   // Add certificate
-  const handleAddCertificate = (e) => {
+  const handleAddCertificate = async (e) => {
     e.preventDefault();
-    if (!newCertName.trim()) return;
-    const cert = {
-      id: Date.now(),
-      name: newCertName.trim(),
-      status: 'pending',
-      image: null,
-    };
-    setCertificates((prev) => [...prev, cert]);
-    setShowCertModal(false);
-    setNewCertName('');
-    showToast(`Certificate "${cert.name}" uploaded for review.`);
-    setUpdates((prev) => [
-      {
-        id: Date.now(),
-        icon: 'warning',
-        iconClass: 'bi-hourglass-split',
-        title: 'Certificate Pending',
-        desc: `${cert.name} is awaiting verification.`,
-        time: 'Just now',
-      },
-      ...prev,
-    ]);
+    if (!newCertName.trim() || !newCertFile) {
+      showToast('Please enter a name and select a file', 'warning');
+      return;
+    }
+
+    if (!jockeyId) {
+      showToast('No jockey context to upload certificate', 'error');
+      return;
+    }
+
+    setUploadingCert(true);
+    
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64String = reader.result.split(',')[1];
+        
+        try {
+          await jockeyService.addCertificate(jockeyId, {
+            certName: newCertName.trim(),
+            certImageBase64: base64String
+          });
+
+          const cert = {
+            id: Date.now(),
+            name: newCertName.trim(),
+            status: 'pending',
+            image: null,
+          };
+          setCertificates((prev) => [...prev, cert]);
+          setShowCertModal(false);
+          setNewCertName('');
+          setNewCertFile(null);
+          showToast(`Certificate "${cert.name}" uploaded successfully.`);
+          
+          setUpdates((prev) => [
+            {
+              id: Date.now(),
+              icon: 'warning',
+              iconClass: 'bi-hourglass-split',
+              title: 'Certificate Pending',
+              desc: `${cert.name} is awaiting verification.`,
+              time: 'Just now',
+            },
+            ...prev,
+          ]);
+        } catch (err) {
+          console.error('Failed to add certificate', err);
+          showToast(err.message || 'Failed to upload certificate', 'error');
+        } finally {
+          setUploadingCert(false);
+        }
+      };
+      reader.readAsDataURL(newCertFile);
+    } catch (err) {
+      console.error('Error reading file', err);
+      showToast('Error processing file', 'error');
+      setUploadingCert(false);
+    }
   };
 
   // Request global verification
-  const handleRequestVerification = () => {
-    showToast('Global verification request submitted!');
-    setUpdates((prev) => [
-      {
-        id: Date.now(),
-        icon: 'info',
-        iconClass: 'bi-shield-check',
-        title: 'Verification Requested',
-        desc: 'Your global verification request is being reviewed.',
-        time: 'Just now',
-      },
-      ...prev,
-    ]);
+  const handleRequestVerification = async () => {
+    if (!jockeyId) {
+      showToast('No jockey context to request verification', 'error');
+      return;
+    }
+
+    setVerifyingCerts(true);
+    try {
+      await jockeyService.requestVerification(jockeyId);
+      showToast('Global verification request submitted!');
+      setUpdates((prev) => [
+        {
+          id: Date.now(),
+          icon: 'info',
+          iconClass: 'bi-shield-check',
+          title: 'Verification Requested',
+          desc: 'Your global verification request is being reviewed.',
+          time: 'Just now',
+        },
+        ...prev,
+      ]);
+    } catch (err) {
+      console.error('Verification request failed', err);
+      showToast(err.message || 'Failed to request verification', 'error');
+    } finally {
+      setVerifyingCerts(false);
+    }
   };
 
   return (
@@ -241,7 +357,25 @@ export default function JockeyProfile({ onNavigate }) {
         </div>
       </nav>
 
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="d-flex justify-content-center align-items-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {error && !loading && (
+        <div className="alert alert-warning d-flex align-items-center gap-2 mx-auto mt-3" style={{ maxWidth: 1100, borderRadius: 12, fontSize: 14 }}>
+          <i className="bi bi-exclamation-triangle-fill"></i>
+          <span>{error} — showing demo data.</span>
+        </div>
+      )}
+
       {/* Main Content */}
+      {!loading && (
       <div className="jockey-profile-content">
         <div className="jockey-profile-grid">
           {/* ─── Left Column ─── */}
@@ -301,9 +435,20 @@ export default function JockeyProfile({ onNavigate }) {
                   className="jp-save-btn"
                   id="save-profile-btn"
                   onClick={handleSaveProfile}
+                  disabled={saving}
+                  style={{ opacity: saving ? 0.7 : 1 }}
                 >
-                  <i className="bi bi-floppy"></i>
-                  Save Changes
+                  {saving ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-floppy"></i>
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -355,9 +500,14 @@ export default function JockeyProfile({ onNavigate }) {
                   className="jp-verify-btn"
                   id="request-verification-btn"
                   onClick={handleRequestVerification}
+                  disabled={verifyingCerts}
+                  style={{ opacity: verifyingCerts ? 0.6 : 1 }}
                 >
-                  <i className="bi bi-shield-check"></i>
-                  Request Global Verification
+                  {verifyingCerts ? (
+                    <><span className="spinner-border spinner-border-sm me-2"></span>Requesting...</>
+                  ) : (
+                    <><i className="bi bi-shield-check"></i> Request Global Verification</>
+                  )}
                 </button>
               </div>
             </div>
@@ -457,6 +607,7 @@ export default function JockeyProfile({ onNavigate }) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Add Certificate Modal */}
       {showCertModal && (
@@ -485,15 +636,27 @@ export default function JockeyProfile({ onNavigate }) {
                 </div>
                 <div>
                   <label className="jp-label">Upload Document</label>
-                  <div className="jp-upload-zone">
+                  <label className="jp-upload-zone w-100 d-block m-0" style={{ cursor: 'pointer' }}>
+                    <input 
+                      type="file" 
+                      className="d-none" 
+                      accept="image/png, image/jpeg, application/pdf"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setNewCertFile(e.target.files[0]);
+                        }
+                      }}
+                    />
                     <i className="bi bi-cloud-arrow-up d-block"></i>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--dark-navy)' }}>
-                      Drag & drop or click to browse
+                      {newCertFile ? newCertFile.name : 'Drag & drop or click to browse'}
                     </div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                      PDF, JPG, or PNG · Max 10 MB
-                    </div>
-                  </div>
+                    {!newCertFile && (
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                        PDF, JPG, or PNG · Max 10 MB
+                      </div>
+                    )}
+                  </label>
                 </div>
               </div>
               <div className="jp-modal-footer">
@@ -502,17 +665,21 @@ export default function JockeyProfile({ onNavigate }) {
                   className="btn btn-outline-secondary px-4 py-2"
                   style={{ borderRadius: 10, fontSize: 14, fontWeight: 600 }}
                   onClick={() => setShowCertModal(false)}
+                  disabled={uploadingCert}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="jp-save-btn"
-                  disabled={!newCertName.trim()}
-                  style={{ opacity: !newCertName.trim() ? 0.5 : 1 }}
+                  disabled={!newCertName.trim() || !newCertFile || uploadingCert}
+                  style={{ opacity: (!newCertName.trim() || !newCertFile || uploadingCert) ? 0.5 : 1 }}
                 >
-                  <i className="bi bi-cloud-upload"></i>
-                  Upload Certificate
+                  {uploadingCert ? (
+                    <><span className="spinner-border spinner-border-sm me-2"></span>Uploading...</>
+                  ) : (
+                    <><i className="bi bi-cloud-upload"></i>Upload Certificate</>
+                  )}
                 </button>
               </div>
             </form>

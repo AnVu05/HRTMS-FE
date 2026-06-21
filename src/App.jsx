@@ -48,7 +48,7 @@ function App() {
       case 'admin-dashboard':   return <AdminDashboard onNavigate={setCurrentPage} />;
       case 'stable-management': return <StableManagement onNavigate={setCurrentPage} horses={horses} setHorses={setHorses} />;
       case 'owner-races':       return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
-      case 'jockey-profile':    return <JockeyProfile onNavigate={setCurrentPage} />;
+      case 'jockey-profile':    return <JockeyProfile onNavigate={setCurrentPage} jockeyId={1} />;
       default:                  return <LoginOtp onNavigate={setCurrentPage} />;
     }
   };
