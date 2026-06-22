@@ -1,0 +1,61 @@
+/* Dark themed invitations page styles */
+.dashboard-invitations-wrapper {
+  background: #0f1112;
+  min-height: 100vh;
+  color: #e6eef2;
+}
+
+.inv-card {
+  border-left: 6px solid #f1c40f;
+  background: #1a1b1c;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(2,2,2,0.6);
+}
+
+.inv-card-inner { 
+  align-items: center;
+}
+
+.inv-title {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.btn-accept {
+  background: #2bd36b;
+  color: #04210b;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.btn-decline {
+  background: #ffb6b6;
+  color: #5b1515;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.scheduled-list .scheduled-item {
+  background: #141516;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+}
+
+.scheduled-item .chev {
+  background: rgba(255,255,255,0.04);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+}
+
+/* Responsive tweaks */
+@media (max-width: 576px) {
+  .inv-card-inner { flex-direction: column; align-items: flex-start; }
+  .btn-accept, .btn-decline { width: 48%; }
+}

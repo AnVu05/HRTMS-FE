@@ -6,8 +6,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import StableManagement from './pages/StableManagement';
 import OwnerRaces from './pages/OwnerRaces';
 import JockeyProfile from './pages/JockeyProfile';
+import DashboardInvitations from './pages/DashboardInvitations';
 
-const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management', 'owner-races', 'jockey-profile'];
+const PAGES = ['dashboard-invitations','login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management', 'owner-races', 'jockey-profile'];
 
 const INITIAL_HORSES = [
   {
@@ -42,6 +43,7 @@ function App() {
 
   const renderPage = () => {
     switch (currentPage) {
+      case 'dashboard-invitations': return <DashboardInvitations onNavigate={setCurrentPage} horses={horses} />;
       case 'login':             return <LoginOtp onNavigate={setCurrentPage} />;
       case 'register':          return <Register onNavigate={setCurrentPage} />;
       case 'spectator-home':    return <SpectatorHome onNavigate={setCurrentPage} />;
