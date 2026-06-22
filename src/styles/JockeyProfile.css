@@ -1,0 +1,694 @@
+/* ╔══════════════════════════════════════════════════════════╗
+   ║           HRTMS – Jockey Profile Page CSS                ║
+   ╚══════════════════════════════════════════════════════════╝ */
+
+/* ─── Page Layout ─── */
+.jockey-profile-wrapper {
+  background-color: var(--bg-cool-gray);
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.jockey-profile-content {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+  box-sizing: border-box;
+}
+
+.jockey-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ─── Card Base ─── */
+.jp-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(9, 19, 44, 0.025);
+  padding: 28px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: jpCardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jp-card:hover {
+  box-shadow: 0 8px 24px rgba(9, 19, 44, 0.045);
+}
+
+@keyframes jpCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Section Headers ─── */
+.jp-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--dark-navy);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jp-section-title i {
+  color: var(--primary-blue);
+}
+
+/* ─── Form Labels ─── */
+.jp-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--secondary-custom);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ─── Form Inputs ─── */
+.jp-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: var(--font-sans);
+  color: var(--dark-navy);
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.jp-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(27, 96, 236, 0.12);
+}
+
+.jp-input::placeholder {
+  color: #94a3b8;
+}
+
+.jp-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.55;
+}
+
+/* ─── Input Row (multiple fields) ─── */
+.jp-input-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px;
+  gap: 16px;
+}
+
+/* ─── Save Button ─── */
+.jp-save-btn {
+  background-color: var(--primary-blue);
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  padding: 12px 28px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(27, 96, 236, 0.2);
+}
+
+.jp-save-btn:hover {
+  background-color: var(--primary-blue-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(27, 96, 236, 0.3);
+}
+
+.jp-save-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(27, 96, 236, 0.15);
+}
+
+/* ─── Certificates Grid ─── */
+.jp-cert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.jp-cert-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.jp-cert-item:hover {
+  border-color: var(--primary-blue);
+  box-shadow: 0 6px 18px rgba(27, 96, 236, 0.08);
+  transform: translateY(-2px);
+}
+
+.jp-cert-image {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
+  background-color: #f1f5f9;
+}
+
+.jp-cert-info {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jp-cert-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dark-navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jp-cert-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.jp-cert-badge.verified {
+  background-color: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.jp-cert-badge.pending {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+}
+
+.jp-cert-badge.expired {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+/* Add new certificate placeholder */
+.jp-cert-add {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  min-height: 180px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background-color: transparent;
+}
+
+.jp-cert-add:hover {
+  border-color: var(--primary-blue);
+  background-color: rgba(27, 96, 236, 0.03);
+}
+
+.jp-cert-add-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.jp-cert-add:hover .jp-cert-add-icon {
+  background-color: rgba(27, 96, 236, 0.08);
+  color: var(--primary-blue);
+}
+
+.jp-cert-add-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-blue);
+}
+
+.jp-cert-add-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* ─── Request Verification Button ─── */
+.jp-verify-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  color: var(--secondary-custom);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  transition: color 0.2s ease;
+}
+
+.jp-verify-btn:hover {
+  color: var(--primary-blue);
+}
+
+/* ─── Sidebar Cards ─── */
+.jp-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ─── Season Summary Card ─── */
+.jp-summary-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.jp-summary-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--secondary-custom);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.jp-summary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.jp-stat-box {
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.jp-stat-box:hover {
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 12px rgba(27, 96, 236, 0.06);
+}
+
+.jp-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--primary-blue);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.jp-stat-box:nth-child(2) .jp-stat-value {
+  color: #16a34a;
+}
+
+.jp-stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--secondary-custom);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jp-summary-icon {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  font-size: 22px;
+  color: #cbd5e1;
+}
+
+/* ─── Invitations Card ─── */
+.jp-invite-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.jp-invite-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dark-navy);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jp-invite-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  background-color: #ef4444;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.3px;
+}
+
+.jp-invite-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jp-invite-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.jp-invite-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.jp-invite-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.jp-invite-avatar.blue {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.jp-invite-avatar.purple {
+  background-color: #ede9fe;
+  color: #7c3aed;
+}
+
+.jp-invite-avatar.amber {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.jp-invite-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.jp-invite-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark-navy);
+  margin-bottom: 2px;
+}
+
+.jp-invite-desc {
+  font-size: 11px;
+  color: var(--secondary-custom);
+}
+
+.jp-invite-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.jp-invite-accept {
+  background-color: #16a34a;
+  border: none;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-sans);
+}
+
+.jp-invite-accept:hover {
+  background-color: #15803d;
+}
+
+.jp-invite-decline {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: var(--secondary-custom);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-sans);
+}
+
+.jp-invite-decline:hover {
+  border-color: #cbd5e1;
+  color: var(--dark-navy);
+  background-color: #f8fafc;
+}
+
+/* ─── Recent Updates Card ─── */
+.jp-update-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dark-navy);
+  margin-bottom: 16px;
+}
+
+.jp-update-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.jp-update-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.jp-update-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.jp-update-icon.success {
+  background-color: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.jp-update-icon.info {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.jp-update-icon.warning {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+}
+
+.jp-update-icon.error {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.jp-update-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dark-navy);
+  margin-bottom: 2px;
+}
+
+.jp-update-desc {
+  font-size: 11px;
+  color: var(--secondary-custom);
+  line-height: 1.4;
+}
+
+.jp-update-time {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+/* ─── Toast Notifications ─── */
+.jp-toast-container {
+  position: fixed;
+  bottom: 60px;
+  right: 24px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jp-toast-item {
+  background-color: #ffffff;
+  border-left: 4px solid #16a34a;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: jpToastSlideIn 0.3s ease-out;
+  min-width: 280px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark-navy);
+}
+
+@keyframes jpToastSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ─── Modal Overlay ─── */
+.jp-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(9, 19, 44, 0.4);
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.jp-modal-content {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 25px 50px rgba(9, 19, 44, 0.15);
+  animation: jpCardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.jp-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jp-modal-body {
+  padding: 24px;
+}
+
+.jp-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ─── File upload zone ─── */
+.jp-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.jp-upload-zone:hover {
+  border-color: var(--primary-blue);
+  background-color: rgba(27, 96, 236, 0.02);
+}
+
+.jp-upload-zone i {
+  font-size: 28px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .jockey-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jp-sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 576px) {
+  .jockey-profile-content {
+    padding: 16px 12px 60px;
+  }
+
+  .jp-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .jp-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .jp-cert-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .jp-summary-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
