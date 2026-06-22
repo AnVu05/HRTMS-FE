@@ -36,7 +36,6 @@ export default function AdminDashboard({ onNavigate }) {
   const [currentSubView, setCurrentSubView] = useState('list');
 
   // Nav
-  const [activeMenu, setActiveMenu] = useState("Tournaments");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // New Race State
@@ -60,6 +59,74 @@ export default function AdminDashboard({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState(null);
+
+  // Missing States for Add/Edit Tournaments and Races
+  const [newTourneyName, setNewTourneyName] = useState("");
+  const [newTourneyDates, setNewTourneyDates] = useState("");
+  const [showTournamentModal, setShowTournamentModal] = useState(false);
+  
+  const [editingRaceId, setEditingRaceId] = useState(null);
+  const [newRaceHorse, setNewRaceHorse] = useState("");
+  const [newRaceReferee, setNewRaceReferee] = useState("");
+  const [showRaceModal, setShowRaceModal] = useState(false);
+  const [showAddRaceModal, setShowAddRaceModal] = useState(false);
+
+  const [editTourneyName, setEditTourneyName] = useState("");
+  const [editTourneyStartDate, setEditTourneyStartDate] = useState("");
+  const [editTourneyEndDate, setEditTourneyEndDate] = useState("");
+  const [editTourneyBreed, setEditTourneyBreed] = useState("Thoroughbred");
+  const [editTourneyAgeReq, setEditTourneyAgeReq] = useState("3");
+  const [editTourneyDesc, setEditTourneyDesc] = useState("");
+  const [editTourneyStatus, setEditTourneyStatus] = useState("DRAFT");
+  const [showEditTourneyModal, setShowEditTourneyModal] = useState(false);
+
+  const [isFetchingReferees, setIsFetchingReferees] = useState(false);
+  const [availableReferees, setAvailableReferees] = useState(MOCK_REFEREES.map((name, i) => ({ id: String(i), name })));
+
+  const [showEditRaceModal, setShowEditRaceModal] = useState(false);
+  const [editRaceLaps, setEditRaceLaps] = useState(3);
+  const [editRaceHorsesCount, setEditRaceHorsesCount] = useState(8);
+  const [editRaceRefereeId, setEditRaceRefereeId] = useState("");
+  const [editRaceRefereeName, setEditRaceRefereeName] = useState("");
+  const [editingRace, setEditingRace] = useState(null);
+  const [isFetchingEditReferees, setIsFetchingEditReferees] = useState(false);
+  const [editAvailableReferees, setEditAvailableReferees] = useState(MOCK_REFEREES.map((name, i) => ({ id: String(i), name })));
+
+  const [notification, setNotification] = useState(null);
+  const showNotification = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const menuItems = [
+    { name: 'Dashboard', icon: 'bi-grid-1x2-fill' },
+    { name: 'Tournament management', icon: 'bi-trophy-fill' },
+    { name: 'Settings', icon: 'bi-gear-fill' },
+  ];
+
+  const fetchTournaments = () => {
+    if (fetchDashboardTournamentsRef.current) {
+      fetchDashboardTournamentsRef.current(false);
+    }
+  };
+
+  const openEditTournamentModal = (t) => {
+    setEditTourneyName(t.name || "");
+    setEditTourneyStartDate(t.startDate || "");
+    setEditTourneyEndDate(t.endDate || "");
+    setEditTourneyBreed(t.allowedBreed || "Thoroughbred");
+    setEditTourneyAgeReq(t.allowedHorseAge || "3");
+    setEditTourneyDesc(t.description || "");
+    setEditTourneyStatus(t.status || "DRAFT");
+    setSelectedId(t.id);
+    setShowEditTourneyModal(true);
+  };
+
+  const handleEditRace = (e) => {
+    e.preventDefault();
+    setShowEditRaceModal(false);
+  };
+
 
   const getStatusClass = (status) => {
     if (!status) return 'draft';
@@ -417,8 +484,6 @@ export default function AdminDashboard({ onNavigate }) {
       });
   };
 
-  const selectedTourney = tournaments.find((t) => t.id === selectedId) || null;
-
   return (
     <div className="admin-container d-flex flex-column">
 
@@ -584,8 +649,9 @@ export default function AdminDashboard({ onNavigate }) {
 
         {/* Dashboard Body */}
         <div className="p-4 lg:p-xl flex flex-col xl:flex-row gap-lg lg:gap-xl flex-1 overflow-auto">
-          {currentSubView === "create" ? (
-            /* Disabled Create Tournament Form */
+          {activeMenu === "Tournaments" || activeMenu === "Tournament management" ? (
+            currentSubView === "create" ? (
+              /* Disabled Create Tournament Form */
             <div className="w-full">
               <div className="flex items-center justify-between mb-lg">
                 <h2
@@ -602,8 +668,8 @@ export default function AdminDashboard({ onNavigate }) {
                   Back to List
                 </button>
               </div>
-              <div className="bg-white rounded-xl border border-outline-variant p-6 shadow-sm opacity-60 pointer-events-none">
                 <form>
+                  <div className="bg-white rounded-xl border border-outline-variant p-6 shadow-sm opacity-60 pointer-events-none">
                   <div className="mb-4">
                     <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
                       Tournament Name
@@ -1029,6 +1095,7 @@ export default function AdminDashboard({ onNavigate }) {
           </p>
         </div>
         )}
+        </div>
       </main>
 
       {/* ── Add Tournament Modal ── */}
@@ -1055,10 +1122,14 @@ export default function AdminDashboard({ onNavigate }) {
                   style={{ borderRadius: '8px' }}
                 />
               </div>
-            </>
-          )}
+              <div className="d-flex justify-content-end gap-2 mt-4">
+                <button type="button" className="btn btn-outline-secondary px-3" onClick={() => setShowTournamentModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary px-3">Create Draft</button>
+              </div>
+            </form>
           </div>
-        </main>
+        </div>
+      )}
 
       {/* Mobile Bottom Nav */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant px-4 py-2 flex justify-between items-center z-40">

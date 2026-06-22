@@ -42,12 +42,8 @@ const HORSES = [
 // eslint-disable-next-line no-unused-vars
 export default function SpectatorHome({ onNavigate }) {
   // Navigation active tab
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState("races");
-=======
   const [activeTab, setActiveTab] = useState('races');
   const [menuOpen, setMenuOpen] = useState(false);
->>>>>>> 229631a91896fa2950c9a1b981b23c4e6364261e
 
   // Accordion open/collapse states
   const [expandedTournament, setExpandedTournament] =

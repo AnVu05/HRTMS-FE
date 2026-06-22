@@ -3,10 +3,11 @@ import LoginOtp from './pages/LoginOtp';
 import Register from './pages/Register';
 import SpectatorHome from './pages/SpectatorHome';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminNotifications from './pages/AdminNotifications';
 import StableManagement from './pages/StableManagement';
 import OwnerRaces from './pages/OwnerRaces';
 
-const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management', 'owner-races'];
+const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'admin-notifications', 'stable-management', 'owner-races'];
 
 const INITIAL_HORSES = [
   {
@@ -48,6 +49,7 @@ function App() {
       case 'register':          return <Register onNavigate={setCurrentPage} />;
       case 'spectator-home':    return <SpectatorHome onNavigate={setCurrentPage} />;
       case 'admin-dashboard':   return <AdminDashboard onNavigate={setCurrentPage} />;
+      case 'admin-notifications':return <AdminNotifications onNavigate={setCurrentPage} />;
       case 'stable-management': return <StableManagement onNavigate={setCurrentPage} horses={horses} setHorses={setHorses} />;
       case 'owner-races':       return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
       default:                  return <LoginOtp onNavigate={setCurrentPage} />;
@@ -85,8 +87,8 @@ function App() {
 
       {/* Page content */}
       <div 
-        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 'full-width' : ''}`}
-        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 0 : 40 }}
+        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'admin-notifications' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 'full-width' : ''}`}
+        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'admin-notifications' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 0 : 40 }}
       >
         {renderPage()}
       </div>
