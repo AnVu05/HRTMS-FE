@@ -14,5 +14,31 @@ export const authService = {
       method: 'POST',
       body: JSON.stringify(data)
     });
+  },
+
+  /**
+   * Login (Requests OTP)
+   * @param {Object} data
+   * @param {string} data.email
+   * @param {string} data.password
+   */
+  login(data) {
+    return apiRequest('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  /**
+   * Verify OTP and complete login
+   * @param {Object} data
+   * @param {string} data.email
+   * @param {string} data.otpCode
+   */
+  verifyOtp(data) {
+    return apiRequest('/api/v1/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
   }
 };

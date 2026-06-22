@@ -14,13 +14,13 @@ export const tournamentService = {
    * @param {string} data.status DRAFT | PUBLISHED
    */
   createTournament(data) {
-    const adminIdParsed = parseInt(data.adminId || data.admin_id, 10);
+    const adminIdParsed = parseInt(data.adminId || data.admin_id || 3, 10);
     const horseAgeParsed = parseInt(data.allowedHorseAge || data.allowed_horse_age, 10);
 
     const payload = {
       name: data.name,
       status: data.status,
-      admin_id: isNaN(adminIdParsed) ? 1 : adminIdParsed,
+      admin_id: isNaN(adminIdParsed) ? 3 : adminIdParsed,
       start_date: data.startDate || data.start_date,
       end_date: data.endDate || data.end_date,
       allowed_breed: data.allowedBreed || data.allowed_breed,

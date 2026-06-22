@@ -75,7 +75,7 @@ function mapApiToProfile(data) {
   };
 }
 
-export default function JockeyProfile({ onNavigate, jockeyId }) {
+export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
   const [profile, setProfile] = useState(FALLBACK_PROFILE);
   const [certificates, setCertificates] = useState(INITIAL_CERTIFICATES);
   const [invitations, setInvitations] = useState(INITIAL_INVITATIONS);

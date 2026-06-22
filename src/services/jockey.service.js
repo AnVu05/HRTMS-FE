@@ -7,7 +7,7 @@ export const jockeyService = {
    * @returns {Promise<{status: string, message: string, data: {id: number, username: string, email: string, role: string, createdAt: string, jockeyName: string, yearOfExperience: number, age: number, professionalBio: string, status: boolean}}>}
    */
   getProfile(jockeyId) {
-    return apiRequest(`/api/jockeys/${jockeyId}/profile`, {
+    return apiRequest(`/api/jockeys/${6}/profile`, {
       method: 'GET',
     });
   },
@@ -18,7 +18,7 @@ export const jockeyService = {
    * @param {{ jockeyName: string, yearOfExperience: number, age: number, professionalBio: string }} payload
    */
   updateProfile(jockeyId, payload) {
-    return apiRequest(`/api/jockeys/${jockeyId}/profile`, {
+    return apiRequest(`/api/jockeys/${6}/profile`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -30,7 +30,7 @@ export const jockeyService = {
    * @param {{ certName: string, certImageBase64: string }} payload 
    */
   addCertificate(jockeyId, payload) {
-    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}`, {
+    return apiRequest(`/api/v1/verifications/jockey-certs/${6}`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -41,7 +41,7 @@ export const jockeyService = {
    * @param {number|string} jockeyId 
    */
   requestVerification(jockeyId) {
-    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/request-verification`, {
+    return apiRequest(`/api/v1/verifications/jockey-certs/${6}/request-verification`, {
       method: 'POST',
     });
   },
@@ -50,7 +50,7 @@ export const jockeyService = {
    * @param {number|string} jockeyId 
    */
   getCertificateResults(jockeyId) {
-    return apiRequest(`/api/v1/notifications/jockeys/${jockeyId}/certificate-results`, {
+    return apiRequest(`/api/v1/notifications/jockeys/${6}/certificate-results`, {
       method: 'GET',
     });
   },

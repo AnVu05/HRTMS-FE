@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import OTPInput from '../components/OTPInput';
+import { authService } from '../services/auth.service';
 
 function LoginOtp({ onNavigate }) {
-  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState(Array(6).fill(''));
   const [resendTimer, setResendTimer] = useState(0);
+  const [isOtpSent, setIsOtpSent] = useState(false);
   
   // Validation and Feedback States
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Countdown timer for OTP Resend
   useEffect(() => {
@@ -23,36 +26,62 @@ function LoginOtp({ onNavigate }) {
     return () => clearTimeout(timer);
   }, [resendTimer]);
 
+  const handleRequestOtp = async (e) => {
+    if (e) e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    
+    const newErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!email.trim()) {
+      newErrors.email = 'Please enter your email';
+    } else if (!emailRegex.test(email.trim())) {
+      newErrors.email = 'Invalid email format';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      const response = await authService.login({ email, password });
+      if (response.status === 'success') {
+        setSuccessMsg(response.message || 'Verification code sent to your email');
+        setIsOtpSent(true);
+        setResendTimer(60); // 60 seconds countdown
+      } else {
+        setErrorMsg(response.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      setErrorMsg(error.message || 'An error occurred while requesting OTP');
+    }
+  };
+
   const handleResend = () => {
     if (resendTimer > 0) return;
-    
-    // Simulate sending OTP
-    setSuccessMsg('A new secure access code has been sent!');
-    setResendTimer(30); // 30 seconds countdown
-    setTimeout(() => setSuccessMsg(''), 5000);
+    handleRequestOtp();
   };
 
   const validateForm = () => {
     const newErrors = {};
     
-    // Email or Phone validation
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^[0-9]{10,11}$/;
     
-    const trimmedInput = emailOrPhone.trim();
+    const trimmedInput = email.trim();
     if (!trimmedInput) {
-      newErrors.emailOrPhone = 'Please enter your email or phone number';
-    } else if (trimmedInput.includes('@')) {
-      if (!emailRegex.test(trimmedInput)) {
-        newErrors.emailOrPhone = 'Invalid email format';
-      }
-    } else {
-      // Clean phone number from non-numeric characters for check
-      const cleanPhone = trimmedInput.replace(/[^0-9]/g, '');
-      if (!phoneRegex.test(cleanPhone)) {
-        newErrors.emailOrPhone = 'Please enter a valid 10-11 digit phone number';
-      }
-    }
+      newErrors.email = 'Please enter your email';
+    } else if (!emailRegex.test(trimmedInput)) {
+      newErrors.email = 'Invalid email format';
+    } 
 
     // Password validation
     if (!password) {
@@ -62,23 +91,45 @@ function LoginOtp({ onNavigate }) {
     }
 
     // OTP validation
-    const fullOtp = otp.join('');
-    if (fullOtp.length < 6) {
-      newErrors.otp = 'Please enter the complete 6-digit secure access code';
+    if (isOtpSent) {
+      const fullOtp = otp.join('');
+      if (fullOtp.length < 6) {
+        newErrors.otp = 'Please enter the complete 6-digit secure access code';
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccessMsg('');
+    setErrorMsg('');
     
     if (validateForm()) {
-      const fullOtp = otp.join('');
-      setSuccessMsg(`Welcome to Elite! Access Code ${fullOtp} verified successfully.`);
-      // Clear inputs or redirect in real-world application
+      if (!isOtpSent) {
+        await handleRequestOtp();
+      } else {
+        const fullOtp = otp.join('');
+        try {
+          const response = await authService.verifyOtp({ email, otpCode: fullOtp });
+          if (response.status === 'success') {
+            setSuccessMsg(response.message || 'Login successful!');
+            if (response.data?.token) {
+              localStorage.setItem('token', response.data.token);
+              localStorage.setItem('user', JSON.stringify(response.data.user));
+            }
+            if (onNavigate) {
+              setTimeout(() => onNavigate('dashboard'), 1500);
+            }
+          } else {
+            setErrorMsg(response.message || 'Invalid OTP');
+          }
+        } catch (error) {
+          setErrorMsg(error.message || 'Failed to verify OTP');
+        }
+      }
     }
   };
 
@@ -118,30 +169,36 @@ function LoginOtp({ onNavigate }) {
             <span className="small">{successMsg}</span>
           </div>
         )}
+        {errorMsg && (
+          <div className="alert alert-danger d-flex align-items-center py-2 px-3 mb-3" role="alert">
+            <i className="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+            <span className="small">{errorMsg}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} noValidate>
-          {/* Email or Phone field */}
+          {/* Email field */}
           <div className="mb-3 text-start">
             <label className="form-label small fw-bold text-dark-navy mb-2" style={{ letterSpacing: '0.05em' }}>
-              EMAIL OR PHONE NUMBER
+              EMAIL
             </label>
-            <div className={`input-group input-group-custom ${errors.emailOrPhone ? 'is-invalid' : ''}`}>
+            <div className={`input-group input-group-custom ${errors.email ? 'is-invalid' : ''}`}>
               <span className="input-group-text bg-transparent text-muted">
                 <i className="bi bi-person-circle"></i>
               </span>
               <input
-                type="text"
-                className={`form-control border-start-0 ps-1 ${errors.emailOrPhone ? 'is-invalid' : ''}`}
-                placeholder="Enter details"
-                value={emailOrPhone}
+                type="email"
+                className={`form-control border-start-0 ps-1 ${errors.email ? 'is-invalid' : ''}`}
+                placeholder="Enter email"
+                value={email}
                 onChange={(e) => {
-                  setEmailOrPhone(e.target.value);
-                  if (errors.emailOrPhone) setErrors({ ...errors, emailOrPhone: '' });
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({ ...errors, email: '' });
                 }}
               />
             </div>
-            {errors.emailOrPhone && (
-              <div className="text-danger small mt-1">{errors.emailOrPhone}</div>
+            {errors.email && (
+              <div className="text-danger small mt-1">{errors.email}</div>
             )}
           </div>
 
@@ -173,40 +230,57 @@ function LoginOtp({ onNavigate }) {
                 <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
               </button>
             </div>
-            {errors.password && (
-              <div className="text-danger small mt-1">{errors.password}</div>
-            )}
+            <div className="d-flex justify-content-between mt-1">
+              {errors.password ? (
+                <div className="text-danger small">{errors.password}</div>
+              ) : <div></div>}
+              
+            </div>
           </div>
 
           {/* Secure Access Code (OTP) field */}
-          <div className="mb-2 text-start">
-            <label className="form-label small fw-bold text-dark-navy mb-2" style={{ letterSpacing: '0.05em' }}>
-              SECURE ACCESS CODE (OTP)
-            </label>
-            
-            <OTPInput 
-              value={otp} 
-              onChange={(newOtp) => {
-                setOtp(newOtp);
-                if (errors.otp) setErrors({ ...errors, otp: '' });
-              }} 
-            />
-            
-            {errors.otp && (
-              <div className="text-danger small mt-1 mb-2">{errors.otp}</div>
-            )}
-            
-            {/* Links Row */}
-            <div className="d-flex justify-content-between align-items-center mt-2 px-1">
-              <button
-                type="button"
-                className={`btn btn-link p-0 border-0 text-decoration-none small fw-semibold resend-btn ${resendTimer > 0 ? 'text-muted disabled' : 'text-primary'}`}
-                onClick={handleResend}
-                disabled={resendTimer > 0}
-              >
-                {resendTimer > 0 ? `Resend Code (${resendTimer}s)` : 'Resend Code'}
-              </button>
+          {isOtpSent && (
+            <div className="mb-2 text-start">
+              <label className="form-label small fw-bold text-dark-navy mb-2" style={{ letterSpacing: '0.05em' }}>
+                SECURE ACCESS CODE (OTP)
+              </label>
               
+              <OTPInput 
+                value={otp} 
+                onChange={(newOtp) => {
+                  setOtp(newOtp);
+                  if (errors.otp) setErrors({ ...errors, otp: '' });
+                }} 
+              />
+              
+              {errors.otp && (
+                <div className="text-danger small mt-1 mb-2">{errors.otp}</div>
+              )}
+              
+              {/* Links Row */}
+              <div className="d-flex justify-content-between align-items-center mt-2 px-1">
+                <button
+                  type="button"
+                  className={`btn btn-link p-0 border-0 text-decoration-none small fw-semibold resend-btn ${resendTimer > 0 ? 'text-muted disabled' : 'text-primary'}`}
+                  onClick={handleResend}
+                  disabled={resendTimer > 0}
+                >
+                  {resendTimer > 0 ? `Resend Code (${resendTimer}s)` : 'Resend Code'}
+                </button>
+                
+                <button
+                  type="button"
+                  className="btn btn-link p-0 border-0 text-decoration-none small text-primary fw-semibold"
+                  onClick={() => onNavigate('register')}
+                >
+                  Register
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!isOtpSent && (
+            <div className="d-flex justify-content-end mb-2 px-1">
               <button
                 type="button"
                 className="btn btn-link p-0 border-0 text-decoration-none small text-primary fw-semibold"
@@ -215,7 +289,7 @@ function LoginOtp({ onNavigate }) {
                 Register
               </button>
             </div>
-          </div>
+          )}
 
           {/* Continue Button */}
           <div className="mt-4">
