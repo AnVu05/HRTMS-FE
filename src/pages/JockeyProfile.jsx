@@ -11,20 +11,6 @@ const FALLBACK_PROFILE = {
   bio: 'Specializing in high-stakes sprint races. Known for strategic positioning and maintaining composure in tight fields. Consistently ranking in the top 10% for the past three seasons.',
 };
 
-const INITIAL_CERTIFICATES = [
-  {
-    id: 1,
-    name: 'Jockey License A',
-    status: 'verified',
-    image: null,
-  },
-  {
-    id: 2,
-    name: 'Safety Certification',
-    status: 'pending',
-    image: null,
-  },
-];
 
 const INITIAL_INVITATIONS = [
   {
@@ -77,7 +63,7 @@ function mapApiToProfile(data) {
 
 export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
   const [profile, setProfile] = useState(FALLBACK_PROFILE);
-  const [certificates, setCertificates] = useState(INITIAL_CERTIFICATES);
+  const [certificates, setCertificates] = useState([]);
   const [invitations, setInvitations] = useState(INITIAL_INVITATIONS);
   const [updates, setUpdates] = useState(INITIAL_UPDATES);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -103,9 +89,17 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
       jockeyService.getCertificateResults(jockeyId).catch((err) => {
         console.warn('Failed to fetch certificate results:', err);
         return { data: [] }; // fallback
+      }),
+      jockeyService.getJockeyCerts(jockeyId).catch((err) => {
+        console.warn('Failed to fetch jockey certs:', err);
+        return { data: [] };
+      }),
+      jockeyService.getJockeyCertImages(jockeyId).catch((err) => {
+        console.warn('Failed to fetch cert images:', err);
+        return { data: [] };
       })
     ])
-      .then(([profileRes, notifRes]) => {
+      .then(([profileRes, notifRes, certsRes, imagesRes]) => {
         // Handle profile
         const data = profileRes.data ?? profileRes;
         setProfile(mapApiToProfile(data));
@@ -139,6 +133,26 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
           });
           setUpdates(apiUpdates);
         }
+
+        // Handle certificates
+        const allCertsData = certsRes?.data || [];
+        // Match the jockey's data
+        const myCertData = allCertsData.find(c => String(c.jockey_id) === String(jockeyId));
+        const pendingNames = myCertData?.pending_certificates || [];
+        const imagesData = imagesRes?.data || [];
+
+        // Map over imagesData as the primary source of certificates to ensure all uploaded certificates are shown
+        const newCerts = imagesData.map((imgObj, index) => {
+          const name = pendingNames[index] || `Certificate ${index + 1}`;
+          return {
+            id: `cert-api-${index}`,
+            name: name,
+            status: 'pending', 
+            image: imgObj.cert_image_base64 ? `data:image/jpeg;base64,${imgObj.cert_image_base64}` : null
+          };
+        });
+
+        setCertificates(newCerts);
       })
       .catch((err) => {
         console.error('Failed to fetch jockey profile:', err);
@@ -498,12 +512,16 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
               <div className="jp-cert-grid">
                 {certificates.map((cert) => (
                   <div className="jp-cert-item" key={cert.id} id={`cert-${cert.id}`}>
-                    {/* Certificate placeholder image */}
-                    <div className="jp-cert-image d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1f5f9' }}>
-                      <div style={{ textAlign: 'center', padding: '12px' }}>
-                        <i className="bi bi-file-earmark-richtext" style={{ fontSize: '32px', color: '#94a3b8' }}></i>
-                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Certificate</div>
-                      </div>
+                    {/* Certificate image or placeholder */}
+                    <div className="jp-cert-image d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
+                      {cert.image ? (
+                        <img src={cert.image} alt={cert.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '12px' }}>
+                          <i className="bi bi-file-earmark-richtext" style={{ fontSize: '32px', color: '#94a3b8' }}></i>
+                          <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Certificate</div>
+                        </div>
+                      )}
                     </div>
                     <div className="jp-cert-info">
                       <span className="jp-cert-name">{cert.name}</span>
