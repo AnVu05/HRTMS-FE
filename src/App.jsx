@@ -6,8 +6,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminNotifications from './pages/AdminNotifications';
 import StableManagement from './pages/StableManagement';
 import OwnerRaces from './pages/OwnerRaces';
+import JockeyProfile from './pages/JockeyProfile';
 
-const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'admin-notifications', 'stable-management', 'owner-races'];
+const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'admin-notifications', 'stable-management', 'owner-races', 'jockey-profile'];
 
 const INITIAL_HORSES = [
   {
@@ -52,6 +53,7 @@ function App() {
       case 'admin-notifications':return <AdminNotifications onNavigate={setCurrentPage} />;
       case 'stable-management': return <StableManagement onNavigate={setCurrentPage} horses={horses} setHorses={setHorses} />;
       case 'owner-races':       return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
+      case 'jockey-profile':    return <JockeyProfile onNavigate={setCurrentPage} />;
       default:                  return <LoginOtp onNavigate={setCurrentPage} />;
     }
   };
@@ -87,8 +89,8 @@ function App() {
 
       {/* Page content */}
       <div 
-        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'admin-notifications' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 'full-width' : ''}`}
-        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'admin-notifications' || currentPage === 'stable-management' || currentPage === 'owner-races') ? 0 : 40 }}
+        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'admin-notifications' || currentPage === 'stable-management' || currentPage === 'owner-races' || currentPage === 'jockey-profile') ? 'full-width' : ''}`}
+        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'admin-notifications' || currentPage === 'stable-management' || currentPage === 'owner-races' || currentPage === 'jockey-profile') ? 0 : 40 }}
       >
         {renderPage()}
       </div>
