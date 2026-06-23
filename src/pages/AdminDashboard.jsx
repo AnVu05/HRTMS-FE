@@ -4,6 +4,7 @@ import 'quill/dist/quill.snow.css';
 import '../styles/AdminDashboard.css';
 import { tournamentService } from '../services/tournament.service';
 import { raceService } from '../services/race.service';
+import { jockeyService } from '../services/jockey.service';
 
 const MOCK_HORSES = [
   'Lightning Strike',
@@ -26,7 +27,7 @@ const MOCK_REFEREES = [
   'Charlie Davis (Ref)'
 ];
 
-export default function AdminDashboard({ onNavigate }) {
+export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   const [tournaments, setTournaments] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,12 +36,17 @@ export default function AdminDashboard({ onNavigate }) {
   // Subview State: 'list' or 'create'
   const [currentSubView, setCurrentSubView] = useState('list');
 
-  // Nav
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Modal / Form States
+  const [showTournamentModal, setShowTournamentModal] = useState(false);
+  const [showRaceModal, setShowRaceModal] = useState(false);
 
-  // New Race State
-  const [newRaceName, setNewRaceName] = useState("");
-  const [newRaceDate, setNewRaceDate] = useState("");
+  // New Tournament Input State
+  const [newTourneyName, setNewTourneyName] = useState('');
+  const [newTourneyDates, setNewTourneyDates] = useState('');
+
+  // New Race Input State
+  const [newRaceName, setNewRaceName] = useState('');
+  const [newRaceDate, setNewRaceDate] = useState('');
   const [newRaceLaps, setNewRaceLaps] = useState(3);
   const [newRaceStartTime, setNewRaceStartTime] = useState("");
   const [newRaceEndTime, setNewRaceEndTime] = useState("");
@@ -54,79 +60,100 @@ export default function AdminDashboard({ onNavigate }) {
   const [createBreed, setCreateBreed] = useState('Thoroughbred');
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [updatingTourney, setUpdatingTourney] = useState(null);
 
   const [selectedTourneyDetails, setSelectedTourneyDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState(null);
 
-  // Missing States for Add/Edit Tournaments and Races
-  const [newTourneyName, setNewTourneyName] = useState("");
-  const [newTourneyDates, setNewTourneyDates] = useState("");
-  const [showTournamentModal, setShowTournamentModal] = useState(false);
-  
-  const [editingRaceId, setEditingRaceId] = useState(null);
-  const [newRaceHorse, setNewRaceHorse] = useState("");
-  const [newRaceReferee, setNewRaceReferee] = useState("");
-  const [showRaceModal, setShowRaceModal] = useState(false);
-  const [showAddRaceModal, setShowAddRaceModal] = useState(false);
+  // Verify Jockey state
+  const [verifyRequests, setVerifyRequests] = useState([]);
+  const [loadingVerify, setLoadingVerify] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [reviewImages, setReviewImages] = useState([]);
+  const [loadingImages, setLoadingImages] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState(false);
 
-  const [editTourneyName, setEditTourneyName] = useState("");
-  const [editTourneyStartDate, setEditTourneyStartDate] = useState("");
-  const [editTourneyEndDate, setEditTourneyEndDate] = useState("");
-  const [editTourneyBreed, setEditTourneyBreed] = useState("Thoroughbred");
-  const [editTourneyAgeReq, setEditTourneyAgeReq] = useState("3");
-  const [editTourneyDesc, setEditTourneyDesc] = useState("");
-  const [editTourneyStatus, setEditTourneyStatus] = useState("DRAFT");
-  const [showEditTourneyModal, setShowEditTourneyModal] = useState(false);
+  const fetchVerifyRequests = useCallback(async () => {
+    setLoadingVerify(true);
+    try {
+      const res = await jockeyService.getJockeyCerts(adminId);
+      console.log("Verify API raw response:", res);
+      console.log("Verify API data:", res.data);
+      setVerifyRequests(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch verification requests:", err);
+    } finally {
+      setLoadingVerify(false);
+    }
+  }, [adminId]);
 
-  const [isFetchingReferees, setIsFetchingReferees] = useState(false);
-  const [availableReferees, setAvailableReferees] = useState(MOCK_REFEREES.map((name, i) => ({ id: String(i), name })));
+  useEffect(() => {
+    if (activeMenu === 'Verify profile Jockey') {
+      fetchVerifyRequests();
+    }
+  }, [activeMenu, fetchVerifyRequests]);
 
-  const [showEditRaceModal, setShowEditRaceModal] = useState(false);
-  const [editRaceLaps, setEditRaceLaps] = useState(3);
-  const [editRaceHorsesCount, setEditRaceHorsesCount] = useState(8);
-  const [editRaceRefereeId, setEditRaceRefereeId] = useState("");
-  const [editRaceRefereeName, setEditRaceRefereeName] = useState("");
-  const [editingRace, setEditingRace] = useState(null);
-  const [isFetchingEditReferees, setIsFetchingEditReferees] = useState(false);
-  const [editAvailableReferees, setEditAvailableReferees] = useState(MOCK_REFEREES.map((name, i) => ({ id: String(i), name })));
-
-  const [notification, setNotification] = useState(null);
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const menuItems = [
-    { name: 'Dashboard', icon: 'bi-grid-1x2-fill' },
-    { name: 'Tournament management', icon: 'bi-trophy-fill' },
-    { name: 'Settings', icon: 'bi-gear-fill' },
-  ];
-
-  const fetchTournaments = () => {
-    if (fetchDashboardTournamentsRef.current) {
-      fetchDashboardTournamentsRef.current(false);
+  const handleReviewCerts = async (req) => {
+    setSelectedRequest(req);
+    setLoadingImages(true);
+    setShowReviewModal(true);
+    try {
+      const res = await jockeyService.getJockeyCertImages(req.jockey_id);
+      setReviewImages(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch cert images:", err);
+      alert("Failed to load certificate images.");
+    } finally {
+      setLoadingImages(false);
     }
   };
 
-  const openEditTournamentModal = (t) => {
-    setEditTourneyName(t.name || "");
-    setEditTourneyStartDate(t.startDate || "");
-    setEditTourneyEndDate(t.endDate || "");
-    setEditTourneyBreed(t.allowedBreed || "Thoroughbred");
-    setEditTourneyAgeReq(t.allowedHorseAge || "3");
-    setEditTourneyDesc(t.description || "");
-    setEditTourneyStatus(t.status || "DRAFT");
-    setSelectedId(t.id);
-    setShowEditTourneyModal(true);
+  const handleAcceptCerts = async (jockeyId) => {
+    if (!window.confirm("Are you sure you want to verify and accept all certificates for this jockey?")) return;
+    setSubmittingAction(true);
+    try {
+      await jockeyService.acceptJockeyCert(jockeyId, adminId);
+      alert("Successfully verified and accepted jockey certificates!");
+      fetchVerifyRequests();
+      setShowReviewModal(false);
+    } catch (err) {
+      console.error("Failed to accept certs:", err);
+      alert(err.message || "Failed to accept certificates.");
+    } finally {
+      setSubmittingAction(false);
+    }
   };
 
-  const handleEditRace = (e) => {
-    e.preventDefault();
-    setShowEditRaceModal(false);
+  const handleOpenRejectModal = (req) => {
+    setSelectedRequest(req);
+    setRejectReason('');
+    setShowRejectModal(true);
   };
 
+  const handleRejectCerts = async () => {
+    if (!rejectReason.trim()) {
+      alert("Please provide a reason for rejection.");
+      return;
+    }
+    setSubmittingAction(true);
+    try {
+      await jockeyService.rejectJockeyCert(selectedRequest.jockey_id, adminId, rejectReason);
+      alert("Successfully rejected jockey certificates.");
+      fetchVerifyRequests();
+      setShowRejectModal(false);
+      setShowReviewModal(false);
+    } catch (err) {
+      console.error("Failed to reject certs:", err);
+      alert(err.message || "Failed to reject certificates.");
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
 
   const getStatusClass = (status) => {
     if (!status) return 'draft';
@@ -241,12 +268,87 @@ export default function AdminDashboard({ onNavigate }) {
     }
 
     try {
-      await tournamentService.cancelTournament(id, reason);
-      alert("Tournament successfully cancelled.");
+      const response = await tournamentService.cancelTournament(id, reason);
+      alert(response?.message || "Tournament successfully cancelled.");
       await fetchDashboardTournaments(false);
     } catch (err) {
       console.error("Error canceling tournament:", err);
       alert(err.message || "Failed to cancel tournament.");
+    }
+  };
+
+  const handleCancelUpdatingTourney = async () => {
+    if (!updatingTourney) return;
+    const reason = prompt("Please enter the reason for canceling this tournament:");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert("A reason is required to cancel the tournament.");
+      return;
+    }
+
+    try {
+      const response = await tournamentService.cancelTournament(updatingTourney.id, reason);
+      alert(response?.message || "Tournament successfully cancelled.");
+      await fetchDashboardTournaments(false);
+      setCurrentSubView('list');
+    } catch (err) {
+      console.error("Error canceling tournament:", err);
+      alert(err.message || "Failed to cancel tournament.");
+    }
+  };
+
+  const handleUpdateClick = (t) => {
+    setUpdatingTourney(t);
+    setCreateTourneyName(t.name || '');
+    setCreateStartDate(t.startDate || t.start_date || '');
+    setCreateEndDate(t.endDate || t.end_date || '');
+    setCreateBreed(t.allowedBreed || t.allowed_breed || 'Thoroughbred');
+    setCreateAgeReq(t.allowedHorseAge !== undefined ? t.allowedHorseAge.toString() : t.allowed_horse_age !== undefined ? t.allowed_horse_age.toString() : '');
+    setCreateDescription(t.tournamentDescription || t.tournament_description || '');
+
+    if (t.races && t.races.length > 0) {
+      setCreateRacesList(t.races.map(r => ({
+        name: r.name || '',
+        date: r.date || '',
+        startTime: r.startTime || r.start_time || '',
+        endTime: r.endTime || r.end_time || '',
+        laps: r.laps || 3,
+        horsesCount: r.numHorse || r.num_horse || 8,
+        referee: r.refereeId || r.referee_id || ''
+      })));
+    } else {
+      setCreateRacesList([]);
+    }
+
+    setCurrentSubView('update');
+  };
+
+  const handleSaveUpdateTournament = async (e) => {
+    e.preventDefault();
+    if (!createTourneyName || !createStartDate || !createEndDate) {
+      alert("Please fill in the Tournament Name and Date Range.");
+      return;
+    }
+
+    try {
+      const updatePayload = {
+        name: createTourneyName,
+        startDate: createStartDate,
+        endDate: createEndDate,
+        allowedBreed: createBreed,
+        allowedHorseAge: createAgeReq || "0",
+        tournamentDescription: createDescription,
+        status: updatingTourney?.status || "PUBLISHED"
+      };
+
+      const response = await tournamentService.updateTournament(updatingTourney.id, updatePayload);
+      alert(response?.message || "Tournament details successfully updated.");
+
+      await fetchDashboardTournaments(false);
+      setCurrentSubView('list');
+    } catch (err) {
+      console.error("Error updating tournament:", err);
+      alert(err.message || "Failed to update tournament.");
     }
   };
 
@@ -320,17 +422,18 @@ export default function AdminDashboard({ onNavigate }) {
 
     try {
       const tourneyPayload = {
-        adminId: "admin-1",
+        adminId: adminId,
         name: createTourneyName,
         startDate: createStartDate,
         endDate: createEndDate,
         allowedBreed: createBreed,
         allowedHorseAge: createAgeReq || "3+",
+        tournamentDescription: createDescription,
         status: "PUBLISHED"
       };
 
       const createdTourney = await tournamentService.createTournament(tourneyPayload);
-      const tournamentId = createdTourney.id;
+      const tournamentId = createdTourney?.data?.id || createdTourney?.id;
 
       const racesPayload = {
         tournamentId,
@@ -345,7 +448,7 @@ export default function AdminDashboard({ onNavigate }) {
       };
 
       await raceService.createRacesBatch(racesPayload);
-      alert("Tournament and races successfully created.");
+      alert(createdTourney?.message || "Tournament and races successfully created.");
 
       await fetchDashboardTournaments(false);
       setSelectedId(tournamentId);
@@ -380,7 +483,7 @@ export default function AdminDashboard({ onNavigate }) {
 
     try {
       const tourneyPayload = {
-        adminId: "admin-1",
+        adminId: adminId,
         name: newTourneyName,
         startDate: todayStr,
         endDate: todayStr,
@@ -390,10 +493,11 @@ export default function AdminDashboard({ onNavigate }) {
       };
 
       const createdTourney = await tournamentService.createTournament(tourneyPayload);
-      alert("Draft tournament successfully created.");
+      alert(createdTourney?.message || "Draft tournament successfully created.");
 
       await fetchDashboardTournaments(false);
-      setSelectedId(createdTourney.id);
+      const tournamentId = createdTourney?.data?.id || createdTourney?.id;
+      setSelectedId(tournamentId);
       setNewTourneyName('');
       setNewTourneyDates('');
       setShowTournamentModal(false);
@@ -485,7 +589,7 @@ export default function AdminDashboard({ onNavigate }) {
   };
 
   return (
-    <div className="admin-container d-flex flex-column">
+    <div className="admin-container d-flex">
 
       {/* ── Mobile Header/Navbar ── */}
       <header className="mobile-admin-header d-flex d-lg-none justify-content-between align-items-center px-3 py-2 bg-white border-bottom w-100 position-fixed top-0 start-0 z-3">
@@ -495,7 +599,7 @@ export default function AdminDashboard({ onNavigate }) {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle Menu"
           >
-            <i className="bi bi-list fs-3"></i>
+            <i className="bi bi-list fs-2"></i>
           </button>
           <span className="brand-logo fs-5 fw-bold text-primary-custom d-flex align-items-center gap-1">
             <i className="bi bi-award-fill"></i> HRTMS
@@ -514,7 +618,7 @@ export default function AdminDashboard({ onNavigate }) {
 
       {/* ── Left Sidebar ── */}
       <aside className={`admin-sidebar bg-white border-end d-flex flex-column justify-content-between ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-brand-nav-group">
+        <div>
           {/* Logo Section */}
           <div className="sidebar-logo d-flex align-items-center gap-2.5 p-4 border-bottom">
             <div className="rounded" style={{ width: '36px', height: '36px', minWidth: '36px', backgroundColor: '#e2e8f0' }}></div>
@@ -572,37 +676,26 @@ export default function AdminDashboard({ onNavigate }) {
         </div>
       </aside>
 
-      {/* Overlay for mobile sidebar */}
-      {mobileMenuOpen && (
+      {/* Overlay for Mobile Sidebar */}
+      {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-on-surface/40 z-40 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
+          className="sidebar-overlay d-lg-none"
+          onClick={() => setSidebarOpen(false)}
         ></div>
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 lg:ml-72 min-h-screen flex flex-col w-full overflow-hidden">
-        {/* Header */}
-        <header className="h-auto lg:h-20 bg-white border-b border-outline-variant px-md lg:px-xl py-4 lg:py-0 flex flex-col lg:flex-row items-center justify-between sticky top-0 z-30 gap-md">
-          <div className="flex items-center justify-between w-full lg:hidden">
-            <div className="flex items-center gap-2">
+      {/* ── Main Content Area ── */}
+      <main className="admin-main flex-grow-1 bg-cool-gray p-3 p-md-4">
+
+        {/* Header (Desktop only) */}
+        <div className="admin-main-header d-none d-lg-flex justify-content-between align-items-center mb-4">
+          <h2 className="h5 fw-bold text-dark-navy m-0" style={{ letterSpacing: '-0.3px' }}>Tournament Management</h2>
+          <div className="d-flex align-items-center gap-3">
+            {currentSubView === 'list' && (
               <button
-                className="cursor-pointer p-2 -ml-2 hover:bg-surface-container rounded-lg border-0 bg-transparent"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontVariationSettings:
-                      "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-                  }}
-                >
-                  menu
-                </span>
-              </button>
-              <span
-                className="font-headline-sm text-primary"
-                style={{ fontSize: "20px", fontWeight: 600 }}
+                className="btn btn-primary d-flex align-items-center gap-2 px-4 py-2.5 fw-bold"
+                onClick={() => setCurrentSubView('create')}
+                style={{ borderRadius: '8px', fontSize: '14px', letterSpacing: '0.5px' }}
               >
                 HRTMS
               </span>
@@ -624,93 +717,87 @@ export default function AdminDashboard({ onNavigate }) {
               </button>
             )}
           </div>
-          <div className="flex-1 w-full max-w-2xl relative hidden lg:block"></div>
-          {currentSubView === "list" && (
-            <div className="hidden lg:flex items-center gap-lg ml-xl">
-              <button
-                className="bg-primary text-white px-lg py-2.5 rounded-lg font-bold flex items-center gap-sm shadow-md hover:bg-primary-container transition-all whitespace-nowrap border-0"
-                onClick={() => setCurrentSubView("create")}
-                style={{ cursor: "pointer" }}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontVariationSettings:
-                      "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-                  }}
-                >
-                  add
-                </span>
-                CREATE NEW TOURNAMENT
-              </button>
-            </div>
-          )}
-        </header>
+        </div>
 
-        {/* Dashboard Body */}
-        <div className="p-4 lg:p-xl flex flex-col xl:flex-row gap-lg lg:gap-xl flex-1 overflow-auto">
-          {activeMenu === "Tournaments" || activeMenu === "Tournament management" ? (
-            currentSubView === "create" ? (
-              /* Disabled Create Tournament Form */
-            <div className="w-full">
-              <div className="flex items-center justify-between mb-lg">
-                <h2
-                  className="text-headline-sm font-bold text-on-surface"
-                  style={{ fontSize: "24px" }}
-                >
-                  Create New Tournament (Disabled)
-                </h2>
-                <button
-                  className="bg-surface-container text-on-surface px-4 py-2 rounded-lg font-bold hover:bg-surface-variant transition-all border-0"
-                  onClick={() => setCurrentSubView("list")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Back to List
-                </button>
+        {/* Dynamic content - Tournaments menu */}
+        {(activeMenu === 'Tournaments' || activeMenu === 'Tournament management') && (
+          currentSubView === 'create' ? (
+            /* ── Create New Tournament Subview ── */
+            <div className="create-tournament-view">
+              {/* Breadcrumbs */}
+              <div className="admin-breadcrumb mb-2" style={{ fontSize: '13px', fontWeight: '500' }}>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Admin</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Tournaments</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="text-dark fw-bold">New</span>
               </div>
-                <form>
-                  <div className="bg-white rounded-xl border border-outline-variant p-6 shadow-sm opacity-60 pointer-events-none">
-                  <div className="mb-4">
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                      Tournament Name
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border rounded-md"
-                      disabled
-                      placeholder="e.g. Royal Ascot 2024"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                        Start Date
+              <h1 className="h3 fw-bold text-dark-navy mb-4">Create New Tournament</h1>
+
+              <form onSubmit={handleSaveNewTournament}>
+                {/* Section 1: Tournament Details */}
+                <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
+                  <h3 className="h5 fw-bold text-dark-navy mb-3 create-section-title">Tournament Details</h3>
+
+                  <div className="row g-3">
+                    {/* Tournament Name */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Name
                       </label>
                       <input
-                        type="date"
-                        className="w-full px-3 py-2 border rounded-md"
-                        disabled
+                        type="text"
+                        className="form-control py-2 px-3 form-input-custom"
+                        placeholder="e.g., Royal Ascot 2024"
+                        value={createTourneyName}
+                        onChange={(e) => setCreateTourneyName(e.target.value)}
+                        required
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                        End Date
+
+                    {/* Date Range */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Date Range
                       </label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border rounded-md"
-                        disabled
-                      />
+                      <div className="d-flex align-items-center gap-2">
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input
+                            type="date"
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createStartDate}
+                            onChange={(e) => setCreateStartDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <span className="text-secondary-custom" style={{ fontSize: '13px' }}>to</span>
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input
+                            type="date"
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createEndDate}
+                            onChange={(e) => setCreateEndDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                        Allowed Breed
+
+                    {/* Allowed Horse Breeds */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Allowed Horse Breeds
                       </label>
                       <select
-                        className="w-full px-3 py-2 border rounded-md"
-                        disabled
+                        className="form-select py-2 px-3 form-input-custom"
+                        value={createBreed}
+                        onChange={(e) => setCreateBreed(e.target.value)}
                       >
                         <option>Thoroughbred</option>
                       </select>
@@ -720,10 +807,11 @@ export default function AdminDashboard({ onNavigate }) {
                         Age Requirement
                       </label>
                       <input
-                        type="number"
-                        className="w-full px-3 py-2 border rounded-md"
-                        disabled
-                        placeholder="3"
+                        type="text"
+                        className="form-control py-2 px-3 form-input-custom"
+                        placeholder="e.g., 3+"
+                        value={createAgeReq}
+                        onChange={(e) => setCreateAgeReq(e.target.value)}
                       />
                     </div>
 
@@ -739,18 +827,18 @@ export default function AdminDashboard({ onNavigate }) {
                   </div>
               </div>
 
-              {/* Section 2: Races */}
-              <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h3 className="h5 fw-bold text-dark-navy m-0 create-section-title">Races</h3>
-                  <button
-                    type="button"
-                    className="add-race-row-btn d-flex align-items-center gap-1"
-                    onClick={addCreateRaceRow}
-                  >
-                    <i className="bi bi-plus-lg"></i> Add Race Row
-                  </button>
-                </div>
+                {/* Section 2: Races */}
+                <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h3 className="h5 fw-bold text-dark-navy m-0 create-section-title">Races</h3>
+                    <button
+                      type="button"
+                      className="add-race-row-btn d-flex align-items-center gap-1"
+                      onClick={addCreateRaceRow}
+                    >
+                      <i className="bi bi-plus-lg"></i> Add Race Row
+                    </button>
+                  </div>
 
                 {/* Data Table Container */}
                 <div className="bg-white rounded-xl border border-outline-variant overflow-hidden shadow-sm flex-1">
@@ -801,191 +889,539 @@ export default function AdminDashboard({ onNavigate }) {
                           <th className="p-md" style={{ padding: "1rem" }}></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-outline-variant/30">
-                        {tournaments.map((t) => (
-                          <tr
-                            key={t.id}
-                            onClick={() => setSelectedId(t.id)}
-                            className={`${selectedId === t.id ? "bg-primary/10 border-l-4 border-l-primary" : "hover:bg-primary/5 group"} cursor-pointer transition-colors`}
-                          >
-                            <td className="p-md" style={{ padding: "1rem" }}>
-                              <div className="flex flex-col">
-                                <span
-                                  className={`font-bold text-body-md ${selectedId === t.id ? "text-primary" : "text-on-surface group-hover:text-primary"}`}
-                                  style={{ fontSize: "16px", fontWeight: 600 }}
-                                >
-                                  {t.name}
-                                </span>
-                                <span
-                                  className={`text-[11px] font-mono ${selectedId === t.id ? "text-primary/70" : "text-outline"}`}
-                                >
-                                  {t.id}
-                                </span>
-                              </div>
-                            </td>
-                            <td
-                              className={`p-md ${selectedId === t.id ? "text-on-surface" : "text-on-surface-variant"}`}
-                              style={{ padding: "1rem" }}
-                            >
-                              {t.dates ||
-                                (t.startDate && t.endDate
-                                  ? `${new Date(t.startDate).toLocaleDateString("en-US", { month: "short", day: "2-digit" })} - ${new Date(t.endDate).toLocaleDateString("en-US", { month: "short", day: "2-digit" })}`
-                                  : "N/A")}
-                            </td>
-                            <td
-                              className={`p-md ${selectedId === t.id ? "text-on-surface" : "text-on-surface-variant"}`}
-                              style={{ padding: "1rem" }}
-                            >
-                              {t.numRaces ?? t.raceCount ?? 0} Races
-                            </td>
-                            <td className="p-md" style={{ padding: "1rem" }}>
-                              {t.status === "PUBLISHED" ||
-                                t.status === "Published" ? (
-                                <span className="px-2.5 py-1 bg-success/10 rounded-full text-[10px] font-bold text-success uppercase">
-                                  Published
-                                </span>
-                              ) : t.status === "CANCELLED" ||
-                                t.status === "Cancelled" ? (
-                                <span className="px-2.5 py-1 bg-error-container rounded-full text-[10px] font-bold text-on-error-container uppercase">
-                                  Cancelled
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-1 bg-surface-container-highest rounded-full text-[10px] font-bold text-on-surface-variant uppercase">
-                                  Draft
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              className="p-md text-right"
-                              style={{ padding: "1rem" }}
-                            >
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  className={`flex items-center gap-1 px-3 py-1 rounded border border-primary/30 text-primary text-[11px] font-bold transition-colors ${t.status?.toUpperCase() !== "DRAFT" ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/5"}`}
-                                  disabled={t.status?.toUpperCase() !== "DRAFT"}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (t.status?.toUpperCase() === "DRAFT")
-                                      openEditTournamentModal(t);
-                                  }}
-                                  style={{
-                                    cursor:
-                                      t.status?.toUpperCase() !== "DRAFT"
-                                        ? "not-allowed"
-                                        : "pointer",
-                                  }}
-                                >
-                                  <span
-                                    className="material-symbols-outlined text-sm"
-                                    style={{
-                                      fontVariationSettings:
-                                        "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-                                      fontSize: "14px",
-                                    }}
+                      <tbody>
+                        {createRacesList.length > 0 ? (
+                          createRacesList.map((race, index) => (
+                            <tr key={index}>
+                              <td>
+                                <input
+                                  type="text"
+                                  className="table-input-custom"
+                                  placeholder="e.g. Op"
+                                  value={race.name}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'name', e.target.value)}
+                                  required
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="date"
+                                  className="table-input-custom"
+                                  value={race.date}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'date', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="time"
+                                  className="table-input-custom"
+                                  value={race.startTime}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'startTime', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="time"
+                                  className="table-input-custom"
+                                  value={race.endTime}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'endTime', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className="table-input-custom text-center"
+                                  value={race.laps}
+                                  min="1"
+                                  onChange={(e) => handleUpdateCreateRace(index, 'laps', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className="table-input-custom text-center"
+                                  value={race.horsesCount}
+                                  min="1"
+                                  onChange={(e) => handleUpdateCreateRace(index, 'horsesCount', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  className="table-input-custom text-center"
+                                  placeholder="e.g. 8"
+                                  value={race.referee}
+                                  onChange={(e) => handleUpdateCreateRace(index, 'referee', e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <div className="d-flex align-items-center gap-2">
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-secondary px-2.5 py-1 text-secondary-custom border-light-gray"
+                                    style={{ fontSize: '12.5px', borderRadius: '6px', backgroundColor: '#ffffff', borderColor: '#cbd5e1' }}
                                   >
-                                    edit
-                                  </span>
-                                  UPDATE
-                                </button>
-                                <span
-                                  className={`material-symbols-outlined ${selectedId === t.id ? "text-primary" : "text-outline group-hover:text-primary"}`}
-                                  style={{
-                                    fontVariationSettings:
-                                      "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-                                  }}
-                                >
-                                  chevron_right
-                                </span>
-                              </div>
+                                    Referee
+                                  </button>
+                                  {createRacesList.length > 1 && (
+                                    <button
+                                      type="button"
+                                      className="action-delete-btn text-secondary-custom"
+                                      onClick={() => removeCreateRaceRow(index)}
+                                      aria-label="Delete Race Row"
+                                      style={{ padding: '4px 8px', borderRadius: '6px' }}
+                                    >
+                                      <i className="bi bi-trash"></i>
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="8" className="text-center py-4 text-muted border border-dashed rounded-3">
+                              No races added. Use "+ Add Race Row" to create races.
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
               </div>
 
-              {/* Form Buttons */}
-              <div className="d-flex justify-content-end gap-3 mt-4">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary px-4 py-2"
-                  onClick={() => setCurrentSubView('list')}
-                  style={{ borderRadius: '8px' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary px-4 py-2 fw-bold"
-                  style={{ borderRadius: '8px' }}
-                >
-                  Save Tournament
-                </button>
+                {/* Form Buttons */}
+                <div className="d-flex justify-content-end gap-3 mt-4">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary px-4 py-2"
+                    onClick={() => setCurrentSubView('list')}
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary px-4 py-2 fw-bold"
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Save Tournament
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          ) : currentSubView === 'update' ? (
+            /* ── Update Tournament Subview ── */
+            <div className="create-tournament-view">
+              {/* Breadcrumbs */}
+              <div className="admin-breadcrumb mb-2" style={{ fontSize: '13px', fontWeight: '500' }}>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Admin</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="cursor-pointer" onClick={() => setCurrentSubView('list')} style={{ cursor: 'pointer', color: '#64748b' }}>Tournaments</span>
+                <span className="mx-2 text-muted">&gt;</span>
+                <span className="text-dark fw-bold">Update</span>
+              </div>
+              <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <h1 className="h3 fw-bold text-dark-navy m-0">Update Tournament Details</h1>
+                {updatingTourney?.status !== 'CANCELLED' && (
+                  <button
+                    type="button"
+                    className="btn btn-danger d-flex align-items-center gap-2 px-4 py-2.5 fw-bold shadow-sm"
+                    onClick={handleCancelUpdatingTourney}
+                    style={{ borderRadius: '8px', fontSize: '14px' }}
+                  >
+                    <i className="bi bi-x-circle fs-5"></i>
+                    <span>CANCEL TOURNAMENT</span>
+                  </button>
+                )}
               </div>
 
-            </form>
+              <form onSubmit={handleSaveUpdateTournament}>
+                {/* Section 1: Tournament Details */}
+                <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
+                  <h3 className="h5 fw-bold text-dark-navy mb-3 create-section-title">Tournament Details</h3>
+
+                  <div className="row g-3">
+                    {/* Tournament Name */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Name
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control py-2 px-3 form-input-custom"
+                        value={createTourneyName}
+                        onChange={(e) => setCreateTourneyName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Date Range */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Date Range
+                      </label>
+                      <div className="d-flex align-items-center gap-2">
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input
+                            type="date"
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createStartDate}
+                            onChange={(e) => setCreateStartDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <span className="text-secondary-custom" style={{ fontSize: '13px' }}>to</span>
+                        <div className="input-group input-group-custom">
+                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
+                            <i className="bi bi-calendar"></i>
+                          </span>
+                          <input
+                            type="date"
+                            className="form-control py-2 border-start-0 form-input-custom ps-0"
+                            value={createEndDate}
+                            onChange={(e) => setCreateEndDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Allowed Horse Breeds */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Allowed Horse Breeds
+                      </label>
+                      <select
+                        className="form-select py-2 px-3 form-input-custom"
+                        value={createBreed}
+                        onChange={(e) => setCreateBreed(e.target.value)}
+                      >
+                        <option value="Thoroughbred">Thoroughbred</option>
+                        <option value="Quarter Horse">Quarter Horse</option>
+                        <option value="Arabian">Arabian</option>
+                        <option value="Standardbred">Standardbred</option>
+                      </select>
+                    </div>
+
+                    {/* Horse Age Requirement */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Horse Age Requirement (Years)
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control py-2 px-3 form-input-custom"
+                        value={createAgeReq}
+                        onChange={(e) => setCreateAgeReq(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Tournament Description */}
+                    <div className="col-12">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Description
+                      </label>
+                      <div className="quill-editor-container">
+                        <div ref={editorRef}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="d-flex justify-content-end gap-3 mt-4">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary px-4 py-2"
+                    onClick={() => setCurrentSubView('list')}
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary px-4 py-2 fw-bold"
+                    style={{ borderRadius: '8px' }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+
+              </form>
             </div>
         ) : (
         /* ── Active Tournaments List Subview ── */
         <div className="row g-4 mt-2 mt-lg-0">
 
 
-          {/* Left Column: Active Tournaments Table */}
-          <div className="col-12 col-xl-8">
-            <div className="card border-0 shadow-sm rounded-3 p-3 p-md-4 bg-white h-100">
-              <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                <h1 className="h4 fw-bold text-dark-navy m-0">Active Tournaments</h1>
-                <span className="text-secondary-custom" style={{ fontSize: '13px' }}>
-                  Showing {tournaments.length} active tournaments
-                </span>
+              {/* Left Column: Active Tournaments Table */}
+              <div className="col-12 col-xl-8">
+                <div className="card border-0 shadow-sm rounded-3 p-3 p-md-4 bg-white h-100">
+                  <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h1 className="h4 fw-bold text-dark-navy m-0">Active Tournaments</h1>
+                    <span className="text-secondary-custom" style={{ fontSize: '13px' }}>
+                      Showing {tournaments.length} active tournaments
+                    </span>
+                  </div>
+
+                  {/* Tournament List Table */}
+                  {loading ? (
+                    <div className="d-flex justify-content-center align-items-center py-5">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    </div>
+                  ) : error ? (
+                    <div className="alert alert-danger my-3" role="alert">
+                      {error}
+                    </div>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle custom-tourney-table mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col" className="text-secondary-custom fw-semibold">TOURNAMENT DETAILS</th>
+                            <th scope="col" className="text-secondary-custom fw-semibold">DATES</th>
+                            <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">RACES</th>
+                            <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">STATUS</th>
+                            <th scope="col" className="text-secondary-custom fw-semibold text-end pe-3" style={{ width: '100px' }}>ACTIONS</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tournaments.map(t => (
+                            <tr
+                              key={t.id}
+                              className={`tourney-row-item ${selectedId === t.id ? 'table-active-selected' : ''}`}
+                              onClick={() => setSelectedId(t.id)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <td>
+                                <div className="fw-bold text-dark-navy tourney-title">{t.name}</div>
+                                <div className="text-secondary-custom font-monospace" style={{ fontSize: '11px' }}>{t.id}</div>
+                              </td>
+                              <td className="fw-semibold text-secondary-custom">{t.dates || (t.startDate && t.endDate ? `${t.startDate} - ${t.endDate}` : '') || (t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'No dates set')}</td>
+                              <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.raceCount !== undefined ? t.raceCount : t.race_count !== undefined ? t.race_count : 0} Races</td>
+                              <td className="d-none d-md-table-cell">
+                                <span className={`status-badge-custom ${getStatusClass(t.status)}`}>
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="text-end pe-3">
+                                <button
+                                  className="btn btn-outline-primary btn-sm fw-semibold"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUpdateClick(t);
+                                  }}
+                                  style={{ borderRadius: '6px' }}
+                                >
+                                  Update
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Tournament List Table */}
-              {loading ? (
+              {/* Right Column: Selected Tournament Details Sidebar */}
+              <div className="col-12 col-xl-4">
+                <div className="card border-0 shadow-sm rounded-3 bg-white h-100 overflow-hidden">
+                  {loadingDetails ? (
+                    <div className="d-flex align-items-center justify-content-center h-100 py-5 my-auto" style={{ minHeight: '300px' }}>
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Loading details...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Details Header */}
+                      <div className="card-header bg-white border-bottom p-4">
+                        <h3 className="h5 fw-bold text-dark-navy mb-4">Tournament Details</h3>
+                        <div className="d-flex flex-column gap-3">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>STATUS</span>
+                            <span className={`status-badge-custom ${getStatusClass(displayTourney.status)}`}>
+                              {displayTourney.status}
+                            </span>
+                          </div>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>TOTAL ENTRIES</span>
+                            <span className="fw-bold text-dark-navy">{displayTourney.totalEntries || displayTourney.total_entries || '0 Horses'}</span>
+                          </div>
+                          {displayTourney.id && displayTourney.status !== 'CANCELLED' && (
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm w-100 mt-2 py-2 fw-semibold"
+                              onClick={() => handleCancelTourney(displayTourney.id)}
+                              style={{ borderRadius: '6px' }}
+                            >
+                              <i className="bi bi-x-circle me-1.5"></i> Cancel Tournament
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Race Schedule */}
+                      <div className="card-body p-4">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <h4 className="text-uppercase fw-bold text-secondary-custom m-0" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
+                            RACE SCHEDULE ({(displayTourney.races || []).length})
+                          </h4>
+                          {displayTourney.status !== 'CANCELLED' && (
+                            <button
+                              className="btn btn-link text-decoration-none p-0 text-primary-custom fw-semibold d-flex align-items-center gap-1"
+                              onClick={() => setShowRaceModal(true)}
+                              style={{ fontSize: '13px' }}
+                            >
+                              <i className="bi bi-plus-lg"></i> Add new races
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Races list */}
+                        <div className="d-flex flex-column gap-3">
+                          {(displayTourney.races || []).length > 0 ? (
+                            displayTourney.races.map(race => (
+                              <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
+                                <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
+                                  <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
+                                  <div className="d-flex gap-1.5 flex-wrap">
+                                    <span className="badge-custom-code">{race.code}</span>
+                                    <span className={`status-badge-custom ${(race.status || 'PUBLISHED').toLowerCase()}`}>
+                                      {race.status || 'PUBLISHED'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
+                                  <i className="bi bi-clock"></i>
+                                  <span>{race.time || (race.startTime && race.endTime ? `${race.startTime} - ${race.endTime}` : '12:00 - 12:30')} • <strong>{race.laps || 3} Laps</strong></span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-5 text-muted border border-dashed rounded-3">
+                              <i className="bi bi-clipboard-x fs-1 mb-2 d-block"></i>
+                              <span>No races scheduled yet</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Verify Profile Jockey menu */}
+        {activeMenu === 'Verify profile Jockey' && (
+          <div className="verify-jockey-view">
+            <div className="d-flex justify-content-between align-items-start mb-4">
+              <div>
+                <h1 className="h3 fw-bold text-dark-navy mb-1">Verify Profile Jockey</h1>
+                <p className="text-secondary-custom m-0" style={{ fontSize: '14px' }}>
+                  Review and manage pending jockey verification requests.
+                </p>
+              </div>
+              <button
+                className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                onClick={fetchVerifyRequests}
+                disabled={loadingVerify}
+                style={{ borderRadius: '8px', fontSize: '13px' }}
+              >
+                <i className="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+
+            <div className="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
+              {loadingVerify ? (
                 <div className="d-flex justify-content-center align-items-center py-5">
                   <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                   </div>
                 </div>
-              ) : error ? (
-                <div className="alert alert-danger my-3" role="alert">
-                  {error}
+              ) : verifyRequests.length === 0 ? (
+                <div className="text-center py-5">
+                  <i className="bi bi-patch-check fs-1 text-success mb-3 d-block"></i>
+                  <h5 className="fw-bold text-dark-navy">All caught up!</h5>
+                  <p className="text-secondary-custom" style={{ fontSize: '14px' }}>No pending verification requests.</p>
                 </div>
               ) : (
                 <div className="table-responsive">
-                  <table className="table table-hover align-middle custom-tourney-table mb-0">
-                    <thead>
+                  <table className="table table-hover align-middle mb-0">
+                    <thead style={{ backgroundColor: '#f8fafc' }}>
                       <tr>
-                        <th scope="col" className="text-secondary-custom fw-semibold">TOURNAMENT DETAILS</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold">DATES</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">RACES</th>
-                        <th scope="col" className="text-secondary-custom fw-semibold d-none d-md-table-cell">STATUS</th>
-                        <th scope="col" style={{ width: '40px' }}></th>
+                        <th className="text-secondary-custom fw-semibold py-3 px-4" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>JOCKEY</th>
+                        <th className="text-secondary-custom fw-semibold py-3 px-3" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>CERTIFICATE NAME</th>
+                        <th className="text-secondary-custom fw-semibold py-3 px-3" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>STATUS</th>
+                        <th className="text-secondary-custom fw-semibold py-3 px-3 text-end" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {tournaments.map(t => (
-                        <tr
-                          key={t.id}
-                          className={`tourney-row-item ${selectedId === t.id ? 'table-active-selected' : ''}`}
-                          onClick={() => setSelectedId(t.id)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <td>
-                            <div className="fw-bold text-dark-navy tourney-title">{t.name}</div>
-                            <div className="text-secondary-custom font-monospace" style={{ fontSize: '11px' }}>{t.id}</div>
+                      {verifyRequests.map((req) => (
+                        <tr key={req.jockey_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td className="py-3 px-4">
+                            <div className="fw-bold text-dark-navy" style={{ fontSize: '14px' }}>{req.jockey_name}</div>
+                            <div className="text-primary" style={{ fontSize: '12px', fontFamily: 'monospace' }}>ID: J-{req.jockey_id}</div>
                           </td>
-                          <td className="fw-semibold text-secondary-custom">{t.dates || (t.startDate && t.endDate ? `${t.startDate} - ${t.endDate}` : '') || (t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'No dates set')}</td>
-                          <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.raceCount !== undefined ? t.raceCount : t.race_count !== undefined ? t.race_count : 0} Races</td>
-                          <td className="d-none d-md-table-cell">
-                            <span className={`status-badge-custom ${getStatusClass(t.status)}`}>
-                              {t.status}
+                          <td className="py-3 px-3">
+                            {(req.pending_certificates || []).length > 0 ? (
+                              <div className="d-flex flex-column gap-1">
+                                {(req.pending_certificates || []).map((cert, i) => (
+                                  <div key={i} className="d-flex align-items-center gap-1">
+                                    <i className="bi bi-file-earmark-check text-primary" style={{ fontSize: '12px' }}></i>
+                                    <span style={{ fontSize: '13px' }}>{cert}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-secondary-custom" style={{ fontSize: '13px' }}>—</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="badge" style={{ backgroundColor: '#fef3c7', color: '#b45309', borderRadius: '6px', fontWeight: 600, fontSize: '12px', padding: '4px 10px' }}>
+                              Pending
                             </span>
                           </td>
-                          <td className="text-end text-muted pe-3">
-                            <i className="bi bi-chevron-right fs-5"></i>
+                          <td className="py-3 px-3 text-end">
+                            <div className="d-flex align-items-center justify-content-end gap-2">
+                              <button
+                                className="btn btn-outline-secondary btn-sm fw-semibold"
+                                onClick={() => handleReviewCerts(req)}
+                                style={{ borderRadius: '6px', fontSize: '12px', padding: '4px 12px' }}
+                              >
+                                Review
+                              </button>
+                              <button
+                                className="btn btn-sm d-flex align-items-center justify-content-center"
+                                title="Accept"
+                                onClick={() => handleAcceptCerts(req.jockey_id)}
+                                disabled={submittingAction}
+                                style={{ borderRadius: '50%', width: '30px', height: '30px', padding: 0, border: '1.5px solid #22c55e', color: '#22c55e', backgroundColor: 'transparent' }}
+                              >
+                                <i className="bi bi-check-lg" style={{ fontSize: '14px' }}></i>
+                              </button>
+                              <button
+                                className="btn btn-sm d-flex align-items-center justify-content-center"
+                                title="Reject"
+                                onClick={() => handleOpenRejectModal(req)}
+                                disabled={submittingAction}
+                                style={{ borderRadius: '50%', width: '30px', height: '30px', padding: 0, border: '1.5px solid #ef4444', color: '#ef4444', backgroundColor: 'transparent' }}
+                              >
+                                <i className="bi bi-x-lg" style={{ fontSize: '14px' }}></i>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -995,105 +1431,17 @@ export default function AdminDashboard({ onNavigate }) {
               )}
             </div>
           </div>
+        )}
 
-          {/* Right Column: Selected Tournament Details Sidebar */}
-          <div className="col-12 col-xl-4">
-            <div className="card border-0 shadow-sm rounded-3 bg-white h-100 overflow-hidden">
-              {loadingDetails ? (
-                <div className="d-flex align-items-center justify-content-center h-100 py-5 my-auto" style={{ minHeight: '300px' }}>
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading details...</span>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Details Header */}
-                  <div className="card-header bg-white border-bottom p-4">
-                    <h3 className="h5 fw-bold text-dark-navy mb-4">Tournament Details</h3>
-                    <div className="d-flex flex-column gap-3">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>STATUS</span>
-                        <span className={`status-badge-custom ${getStatusClass(displayTourney.status)}`}>
-                          {displayTourney.status}
-                        </span>
-                      </div>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>TOTAL ENTRIES</span>
-                        <span className="fw-bold text-dark-navy">{displayTourney.totalEntries || displayTourney.total_entries || '0 Horses'}</span>
-                      </div>
-                      {displayTourney.id && displayTourney.status !== 'CANCELLED' && (
-                        <button
-                          type="button"
-                          className="btn btn-outline-danger btn-sm w-100 mt-2 py-2 fw-semibold"
-                          onClick={() => handleCancelTourney(displayTourney.id)}
-                          style={{ borderRadius: '6px' }}
-                        >
-                          <i className="bi bi-x-circle me-1.5"></i> Cancel Tournament
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Race Schedule */}
-                  <div className="card-body p-4">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <h4 className="text-uppercase fw-bold text-secondary-custom m-0" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
-                        RACE SCHEDULE ({(displayTourney.races || []).length})
-                      </h4>
-                      {displayTourney.status !== 'CANCELLED' && (
-                        <button
-                          className="btn btn-link text-decoration-none p-0 text-primary-custom fw-semibold d-flex align-items-center gap-1"
-                          onClick={() => setShowRaceModal(true)}
-                          style={{ fontSize: '13px' }}
-                        >
-                          <i className="bi bi-plus-lg"></i> Add new races
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Races list */}
-                    <div className="d-flex flex-column gap-3">
-                      {(displayTourney.races || []).length > 0 ? (
-                        displayTourney.races.map(race => (
-                          <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
-                            <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
-                              <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
-                              <div className="d-flex gap-1.5 flex-wrap">
-                                <span className="badge-custom-code">{race.code}</span>
-                                <span className={`status-badge-custom ${(race.status || 'PUBLISHED').toLowerCase()}`}>
-                                  {race.status || 'PUBLISHED'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
-                              <i className="bi bi-clock"></i>
-                              <span>{race.time || (race.startTime && race.endTime ? `${race.startTime} - ${race.endTime}` : '12:00 - 12:30')} • <strong>{race.laps || 3} Laps</strong></span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-5 text-muted border border-dashed rounded-3">
-                          <i className="bi bi-clipboard-x fs-1 mb-2 d-block"></i>
-                          <span>No races scheduled yet</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+        {/* Fallback for other menus */}
+        {activeMenu !== 'Tournaments' && activeMenu !== 'Tournament management' && activeMenu !== 'Verify profile Jockey' && (
+          <div className="card border-0 shadow-sm rounded-3 p-5 text-center bg-white mt-2 mt-lg-0">
+            <i className="bi bi-gear-wide-connected fs-1 text-muted mb-3 d-block"></i>
+            <h2 className="h4 fw-bold text-dark-navy mb-2">{activeMenu}</h2>
+            <p className="text-secondary-custom max-width-md mx-auto mb-0" style={{ fontSize: '14px' }}>
+              This section is under construction.
+            </p>
           </div>
-
-        </div>
-        )
-        ) : (
-        <div className="card border-0 shadow-sm rounded-3 p-5 text-center bg-white mt-2 mt-lg-0">
-          <i className="bi bi-gear-wide-connected fs-1 text-muted mb-3 d-block"></i>
-          <h2 className="h4 fw-bold text-dark-navy mb-2">{activeMenu}</h2>
-          <p className="text-secondary-custom max-width-md mx-auto mb-0" style={{ fontSize: '14px' }}>
-            This section is currently being simulated. Only the <strong>Tournaments</strong> menu is active for this mock.
-          </p>
-        </div>
         )}
         </div>
       </main>
@@ -1122,133 +1470,67 @@ export default function AdminDashboard({ onNavigate }) {
                   style={{ borderRadius: '8px' }}
                 />
               </div>
+              <div className="mb-3">
+                <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '13px' }}>Tournament Dates</label>
+                <input
+                  type="text"
+                  className="form-control py-2 px-3"
+                  placeholder="e.g. Nov 02 - Nov 05"
+                  value={newTourneyDates}
+                  onChange={(e) => setNewTourneyDates(e.target.value)}
+                  required
+                  style={{ borderRadius: '8px' }}
+                />
+              </div>
               <div className="d-flex justify-content-end gap-2 mt-4">
-                <button type="button" className="btn btn-outline-secondary px-3" onClick={() => setShowTournamentModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary px-3">Create Draft</button>
+                <button
+                  type="button"
+                  className="btn btn-light px-4"
+                  onClick={() => setShowTournamentModal(false)}
+                  style={{ borderRadius: '8px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary px-4 fw-bold"
+                  style={{ borderRadius: '8px' }}
+                >
+                  Create
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Mobile Bottom Nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant px-4 py-2 flex justify-between items-center z-40">
-        <a
-          className="flex flex-col items-center gap-1 text-primary no-underline"
-          href="#"
-          style={{ textDecoration: "none" }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            military_tech
-          </span>
-          <span className="text-[10px] font-bold">Events</span>
-        </a>
-        <a
-          className="flex flex-col items-center gap-1 text-on-surface-variant no-underline"
-          href="#"
-          style={{ textDecoration: "none" }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{
-              fontVariationSettings:
-                "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-            }}
-          >
-            fact_check
-          </span>
-          <span className="text-[10px] font-bold">Approvals</span>
-        </a>
-        <a
-          className="flex flex-col items-center gap-1 text-on-surface-variant no-underline"
-          href="#"
-          style={{ textDecoration: "none" }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{
-              fontVariationSettings:
-                "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-            }}
-          >
-            verified_user
-          </span>
-          <span className="text-[10px] font-bold">Jockeys</span>
-        </a>
-        <a
-          className="flex flex-col items-center gap-1 text-on-surface-variant no-underline"
-          href="#"
-          style={{ textDecoration: "none" }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{
-              fontVariationSettings:
-                "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-            }}
-          >
-            health_and_safety
-          </span>
-          <span className="text-[10px] font-bold">Health</span>
-        </a>
-      </div>
+      {/* ── Add Race Modal ── */}
+      {showRaceModal && (
+        <div className="modal-backdrop-custom d-flex align-items-center justify-content-center">
+          <div className="modal-card-custom bg-white rounded-3 shadow-lg position-relative border overflow-hidden" style={{ maxWidth: '400px' }}>
 
-      {/* Modals */}
-
-      {/* Add Race Modal */}
-      {showAddRaceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-on-surface/40 backdrop-blur-sm"
-            onClick={() => setShowAddRaceModal(false)}
-          ></div>
-          <div className="relative w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
-            <div
-              className="p-lg border-b border-outline-variant flex items-center justify-between"
-              style={{ padding: "1.5rem" }}
-            >
-              <h3
-                className="text-headline-sm font-bold text-on-surface"
-                style={{ fontSize: "20px", margin: 0 }}
-              >
-                Add New Race
-              </h3>
+            {/* Modal Header */}
+            <div className="d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+              <h4 className="fw-bold text-dark-navy mb-0" style={{ fontSize: '18px' }}>Add New Race</h4>
               <button
-                className="p-2 hover:bg-surface-container rounded-full transition-colors border-0 bg-transparent"
-                onClick={() => setShowAddRaceModal(false)}
-                style={{ cursor: "pointer" }}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontVariationSettings:
-                      "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-                  }}
-                >
-                  close
-                </span>
-              </button>
+                type="button"
+                className="btn-close"
+                onClick={() => setShowRaceModal(false)}
+                aria-label="Close"
+              ></button>
             </div>
-            <form
-              className="p-lg space-y-md"
-              style={{
-                padding: "1.5rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-              }}
-              onSubmit={handleAddRace}
-            >
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                  Race Name
+
+            {/* Modal Body */}
+            <form onSubmit={handleAddRace} className="p-4">
+
+              {/* Race Name */}
+              <div className="mb-3">
+                <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                  RACE NAME
                 </label>
                 <input
-                  required
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  type="text"
+                  className="form-control py-2 px-3 border-light-gray"
                   placeholder="e.g. Platinum Jubilee Stakes"
                   type="text"
                   value={newRaceName}
@@ -1269,9 +1551,8 @@ export default function AdminDashboard({ onNavigate }) {
                     Date
                   </label>
                   <input
-                    required
-                    className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     type="date"
+                    className="form-control py-2 px-2 border-light-gray"
                     value={newRaceDate}
                     onChange={(e) => setNewRaceDate(e.target.value)}
                     style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
@@ -1282,11 +1563,8 @@ export default function AdminDashboard({ onNavigate }) {
                     Laps
                   </label>
                   <input
-                    required
-                    className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    min="1"
-                    placeholder="3"
                     type="number"
+                    className="form-control py-2 px-3 border-light-gray"
                     value={newRaceLaps}
                     onChange={(e) => setNewRaceLaps(e.target.value)}
                     style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
@@ -1306,9 +1584,8 @@ export default function AdminDashboard({ onNavigate }) {
                     Start Time
                   </label>
                   <input
-                    required
-                    className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     type="time"
+                    className="form-control py-2 px-2 border-light-gray"
                     value={newRaceStartTime}
                     onChange={(e) => setNewRaceStartTime(e.target.value)}
                     style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
@@ -1319,9 +1596,8 @@ export default function AdminDashboard({ onNavigate }) {
                     End Time
                   </label>
                   <input
-                    required
-                    className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     type="time"
+                    className="form-control py-2 px-2 border-light-gray"
                     value={newRaceEndTime}
                     onChange={(e) => setNewRaceEndTime(e.target.value)}
                     style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
@@ -1348,17 +1624,10 @@ export default function AdminDashboard({ onNavigate }) {
                   Referee
                 </label>
                 <select
-                  required
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all bg-white disabled:opacity-60 disabled:cursor-not-allowed"
-                  value={newRaceRefereeId}
-                  onChange={(e) => setNewRaceRefereeId(e.target.value)}
-                  disabled={
-                    !newRaceDate ||
-                    !newRaceStartTime ||
-                    !newRaceEndTime ||
-                    isFetchingReferees
-                  }
-                  style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
+                  className="form-select py-2 px-3 border-light-gray"
+                  value={newRaceHorse}
+                  onChange={(e) => setNewRaceHorse(e.target.value)}
+                  style={{ borderRadius: '6px', fontSize: '14px' }}
                 >
                   <option value="">
                     {!newRaceDate || !newRaceStartTime || !newRaceEndTime
@@ -1469,16 +1738,10 @@ export default function AdminDashboard({ onNavigate }) {
                   Referee
                 </label>
                 <select
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all bg-white disabled:opacity-60 disabled:cursor-not-allowed"
-                  value={editRaceRefereeId}
-                  onChange={(e) => setEditRaceRefereeId(e.target.value)}
-                  disabled={
-                    !editingRace?.date ||
-                    !editingRace?.startTime ||
-                    !editingRace?.endTime ||
-                    isFetchingEditReferees
-                  }
-                  style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
+                  className="form-select py-2 px-3 border-light-gray"
+                  value={newRaceReferee}
+                  onChange={(e) => setNewRaceReferee(e.target.value)}
+                  style={{ borderRadius: '6px', fontSize: '14px' }}
                 >
                   <option value="">
                     {!editingRace?.date ||
@@ -1508,219 +1771,176 @@ export default function AdminDashboard({ onNavigate }) {
                     )}
                 </select>
               </div>
-              <div
-                className="pt-md flex gap-md"
-                style={{ paddingTop: "1rem", display: "flex", gap: "1rem" }}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="btn btn-primary w-100 py-2.5 fw-bold text-uppercase text-center"
+                style={{ borderRadius: '6px', fontSize: '13px', letterSpacing: '0.5px' }}
               >
-                <button
-                  className="flex-1 bg-surface-container text-on-surface py-3 rounded-lg font-bold hover:bg-surface-container-highest transition-all border-0"
-                  onClick={() => setShowEditRaceModal(false)}
-                  type="button"
-                  style={{ cursor: "pointer" }}
-                >
-                  CANCEL
-                </button>
-                <button
-                  className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-md hover:bg-primary-container transition-all border-0"
-                  type="submit"
-                  style={{ cursor: "pointer" }}
-                >
-                  SAVE CHANGES
-                </button>
-              </div>
+                ADD NEW RACE
+              </button>
+
             </form>
           </div>
         </div>
       )}
 
-      {/* Edit Tournament Modal */}
-      {showEditTourneyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-on-surface/40 backdrop-blur-sm"
-            onClick={() => setShowEditTourneyModal(false)}
-          ></div>
-          <div className="relative w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
-            <div
-              className="p-lg border-b border-outline-variant flex items-center justify-between"
-              style={{ padding: "1.5rem" }}
-            >
-              <h3
-                className="text-headline-sm font-bold text-on-surface"
-                style={{ fontSize: "20px", margin: 0 }}
-              >
-                Update Tournament
-              </h3>
+      {/* ── Review Certificate Modal ── */}
+      {showReviewModal && selectedRequest && (
+        <div className="modal-backdrop-custom d-flex align-items-center justify-content-center" style={{ zIndex: 1050 }}>
+          <div className="bg-white rounded-4 shadow-lg position-relative" style={{ width: '90%', maxWidth: '760px', maxHeight: '85vh', overflowY: 'auto' }}>
+            {/* Modal Header */}
+            <div className="d-flex justify-content-between align-items-center p-4 border-bottom">
+              <div>
+                <h5 className="fw-bold text-dark-navy m-0">
+                  <i className="bi bi-patch-check-fill me-2" style={{ color: '#3b82f6' }}></i>
+                  Review Certificates
+                </h5>
+                <p className="text-secondary-custom m-0" style={{ fontSize: '13px' }}>
+                  {selectedRequest.jockey_name} · ID: J-{selectedRequest.jockey_id}
+                </p>
+              </div>
+              <button className="btn-close" onClick={() => setShowReviewModal(false)} aria-label="Close"></button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4">
+              {/* Pending certs list */}
+              {(selectedRequest.pending_certificates || []).length > 0 && (
+                <div className="mb-4">
+                  <h6 className="fw-bold text-dark-navy mb-2">Pending Certificates</h6>
+                  <div className="d-flex flex-wrap gap-2">
+                    {(selectedRequest.pending_certificates || []).map((cert, i) => (
+                      <span key={i} className="badge" style={{ backgroundColor: '#eff6ff', color: '#2563eb', borderRadius: '8px', fontWeight: 600, fontSize: '12px', padding: '5px 12px' }}>
+                        <i className="bi bi-file-earmark-check me-1"></i>{cert}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Certificate Images */}
+              <h6 className="fw-bold text-dark-navy mb-3">Certificate Images</h6>
+              {loadingImages ? (
+                <div className="d-flex justify-content-center py-4">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : reviewImages.length === 0 ? (
+                <div className="text-center py-4 text-secondary-custom" style={{ fontSize: '14px' }}>
+                  <i className="bi bi-image fs-2 d-block mb-2"></i>
+                  No certificate images found.
+                </div>
+              ) : (
+                <div className="row g-3">
+                  {reviewImages.map((img, i) => (
+                    <div key={i} className="col-6 col-md-4">
+                      <div className="rounded-3 overflow-hidden border" style={{ aspectRatio: '4/3' }}>
+                        {img.cert_image_base64 ? (
+                          <img
+                            src={`data:image/jpeg;base64,${img.cert_image_base64}`}
+                            alt={`Certificate ${i + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div className="d-flex align-items-center justify-content-center h-100 bg-light">
+                            <i className="bi bi-file-earmark-richtext fs-2 text-secondary"></i>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-secondary-custom mt-1 text-center" style={{ fontSize: '11px' }}>Certificate {i + 1}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="d-flex justify-content-end gap-2 p-4 border-top">
               <button
-                className="p-2 hover:bg-surface-container rounded-full transition-colors border-0 bg-transparent"
-                onClick={() => setShowEditTourneyModal(false)}
-                style={{ cursor: "pointer" }}
+                className="btn btn-outline-secondary px-4"
+                onClick={() => setShowReviewModal(false)}
+                style={{ borderRadius: '8px', fontWeight: 600 }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontVariationSettings:
-                      "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-                  }}
-                >
-                  close
-                </span>
+                Close
+              </button>
+              <button
+                className="btn px-4 fw-bold"
+                onClick={() => { setShowReviewModal(false); handleOpenRejectModal(selectedRequest); }}
+                style={{ borderRadius: '8px', backgroundColor: '#fee2e2', color: '#ef4444', border: 'none' }}
+                disabled={submittingAction}
+              >
+                <i className="bi bi-x-circle me-1"></i> Reject
+              </button>
+              <button
+                className="btn btn-success px-4 fw-bold"
+                onClick={() => handleAcceptCerts(selectedRequest.jockey_id)}
+                style={{ borderRadius: '8px' }}
+                disabled={submittingAction}
+              >
+                {submittingAction ? (
+                  <><span className="spinner-border spinner-border-sm me-2"></span>Processing...</>
+                ) : (
+                  <><i className="bi bi-check-circle me-1"></i> Accept All</>
+                )}
               </button>
             </div>
-            <form
-              className="p-lg space-y-md"
-              style={{
-                padding: "1.5rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-              }}
-              onSubmit={handleUpdateTournament}
-            >
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                  Status
-                </label>
-                <select
-                  required
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all bg-white"
-                  value={editTourneyStatus}
-                  onChange={(e) => setEditTourneyStatus(e.target.value)}
-                  style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
-                >
-                  <option value="DRAFT">Draft</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                  Tournament Name
-                </label>
-                <input
-                  required
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="Enter tournament name"
-                  type="text"
-                  value={editTourneyName}
-                  onChange={(e) => setEditTourneyName(e.target.value)}
-                  style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
-                />
-              </div>
-              <div
-                className="grid grid-cols-2 gap-md"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: "1rem",
-                }}
-              >
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    required
-                    className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    type="date"
-                    value={editTourneyStartDate}
-                    onChange={(e) => setEditTourneyStartDate(e.target.value)}
-                    style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                    End Date
-                  </label>
-                  <input
-                    required
-                    className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    type="date"
-                    value={editTourneyEndDate}
-                    onChange={(e) => setEditTourneyEndDate(e.target.value)}
-                    style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                  Allowed Horse Breed
-                </label>
-                <input
-                  required
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all bg-white"
-                  type="text"
-                  placeholder="e.g. Thoroughbred"
-                  value={editTourneyBreed}
-                  onChange={(e) => setEditTourneyBreed(e.target.value)}
-                  style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                  Horse Age Requirement (Years)
-                </label>
-                <input
-                  required
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  min="0"
-                  placeholder="e.g. 3"
-                  type="number"
-                  value={editTourneyAgeReq}
-                  onChange={(e) => setEditTourneyAgeReq(e.target.value)}
-                  style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">
-                  Tournament Description
-                </label>
-                <textarea
-                  required
-                  className="w-full px-md py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  rows="3"
-                  placeholder="Enter details about the tournament..."
-                  value={editTourneyDesc}
-                  onChange={(e) => setEditTourneyDesc(e.target.value)}
-                  style={{ padding: "0.625rem 1rem", borderWidth: "1px" }}
-                ></textarea>
-              </div>
-              <div
-                className="pt-md flex gap-md"
-                style={{ paddingTop: "1rem", display: "flex", gap: "1rem" }}
-              >
-                <button
-                  className="flex-1 bg-surface-container text-on-surface py-3 rounded-lg font-bold hover:bg-surface-container-highest transition-all border-0"
-                  onClick={() => setShowEditTourneyModal(false)}
-                  type="button"
-                  style={{ cursor: "pointer" }}
-                >
-                  CANCEL
-                </button>
-                <button
-                  className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-md hover:bg-primary-container transition-all border-0"
-                  type="submit"
-                  style={{ cursor: "pointer" }}
-                >
-                  SAVE CHANGES
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
 
-      {/* Toast Notification */}
-      {notification && (
-        <div
-          className={`fixed bottom-4 right-4 z-[100] px-6 py-4 rounded-xl shadow-2xl text-sm font-bold border transition-all ${notification.type === "error"
-              ? "bg-red-100 text-red-800 border-red-200"
-              : "bg-green-100 text-green-800 border-green-200"
-            }`}
-        >
-          {notification.message}
+      {/* ── Reject Certificate Modal ── */}
+      {showRejectModal && selectedRequest && (
+        <div className="modal-backdrop-custom d-flex align-items-center justify-content-center" style={{ zIndex: 1060 }}>
+          <div className="bg-white rounded-4 shadow-lg position-relative" style={{ width: '90%', maxWidth: '480px' }}>
+            <div className="d-flex justify-content-between align-items-center p-4 border-bottom">
+              <h5 className="fw-bold text-dark-navy m-0">
+                <i className="bi bi-x-circle-fill me-2" style={{ color: '#ef4444' }}></i>
+                Reject Certificates
+              </h5>
+              <button className="btn-close" onClick={() => setShowRejectModal(false)} aria-label="Close"></button>
+            </div>
+            <div className="p-4">
+              <p className="text-secondary-custom mb-3" style={{ fontSize: '14px' }}>
+                You are rejecting all certificates for <strong>{selectedRequest.jockey_name}</strong>.
+              </p>
+              <label className="fw-bold text-dark-navy mb-1" style={{ fontSize: '13px' }}>Reason for Rejection <span className="text-danger">*</span></label>
+              <textarea
+                className="form-control"
+                rows={4}
+                placeholder="e.g., The certificate image is unclear..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                style={{ borderRadius: '8px', fontSize: '14px' }}
+              />
+            </div>
+            <div className="d-flex justify-content-end gap-2 p-4 border-top">
+              <button
+                className="btn btn-outline-secondary px-4"
+                onClick={() => setShowRejectModal(false)}
+                style={{ borderRadius: '8px', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger px-4 fw-bold"
+                onClick={handleRejectCerts}
+                disabled={submittingAction || !rejectReason.trim()}
+                style={{ borderRadius: '8px' }}
+              >
+                {submittingAction ? (
+                  <><span className="spinner-border spinner-border-sm me-2"></span>Rejecting...</>
+                ) : (
+                  'Confirm Reject'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
     </div>
   );
 }

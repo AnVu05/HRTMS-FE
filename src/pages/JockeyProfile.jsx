@@ -1,307 +1,954 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { jockeyService } from "../services/jockey.service";
+import "../styles/JockeyProfile.css";
 
-const MOCK_JOCKEY = {
-  id: "J-8472",
-  name: "Alexander Pierce",
-  status: "Active",
-  rank: "Elite Tier",
-  location: "Lexington, KY",
-  joined: "2018",
-  avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-  stats: {
-    races: 342,
-    wins: 87,
-    winRate: "25.4%",
-    topThree: 156,
-    earnings: "$1.2M",
-    rating: 9.4
-  },
-  bio: "Alexander has been riding professionally for over 6 years. Known for his tactical pacing and strong finishes, he's a crowd favorite and a reliable choice for long-distance derbies. He recently secured a major victory at the Spring Prestige cup.",
-  recentRaces: [
-    { id: "R-102", date: "May 12, 2026", name: "Spring Prestige - Race 1", horse: "Lightning Strike", finish: "1st", odds: "2/1", points: "+500" },
-    { id: "R-098", date: "May 05, 2026", name: "Derby Qualifier", horse: "Midnight Runner", finish: "3rd", odds: "5/2", points: "+150" },
-    { id: "R-085", date: "Apr 28, 2026", name: "Lexington Sprint", horse: "Silver Swift", finish: "2nd", odds: "4/1", points: "+250" },
-    { id: "R-072", date: "Apr 15, 2026", name: "Golden Cup Prelims", horse: "Stormy Sea", finish: "5th", odds: "8/1", points: "+50" },
-  ],
-  achievements: [
-    { title: "Champion Sprint 2025", icon: "bi-trophy-fill", color: "text-warning", bg: "bg-warning" },
-    { title: "100+ Wins Club", icon: "bi-star-fill", color: "text-primary", bg: "bg-primary" },
-    { title: "Fastest Lap (May)", icon: "bi-lightning-fill", color: "text-danger", bg: "bg-danger" }
-  ]
+// ─── Fallback Mock Data (used when API is unavailable) ───
+const FALLBACK_PROFILE = {
+  id: null,
+  name: "Marcus Sterling",
+  yearsExp: 8,
+  age: 28,
+  bio: "Specializing in high-stakes sprint races. Known for strategic positioning and maintaining composure in tight fields. Consistently ranking in the top 10% for the past three seasons.",
 };
 
-export default function JockeyProfile({ onNavigate }) {
-  const [activeTab, setActiveTab] = useState('overview');
+const INITIAL_INVITATIONS = [
+  {
+    id: 1,
+    orgName: "Crestwood Syndicate",
+    orgDesc: "Elite Class Racing",
+    avatarType: "blue",
+    avatarIcon: "bi-trophy-fill",
+  },
+  {
+    id: 2,
+    orgName: "Apex Equine Group",
+    orgDesc: "Regional Circuit",
+    avatarType: "purple",
+    avatarText: "AE",
+  },
+];
+
+const INITIAL_UPDATES = [
+  {
+    id: 1,
+    icon: "success",
+    iconClass: "bi-check-circle-fill",
+    title: "Certificate Verified",
+    desc: "Professional Jockey License A has been successfully validated.",
+    time: "2 hours ago",
+  },
+];
+
+const SEASON_STATS = {
+  racesEntered: 24,
+  topPlaced: 8,
+};
+
+/**
+ * Map API response data → local profile state shape
+ */
+function mapApiToProfile(data) {
+  return {
+    id: data.id,
+    name: data.jockeyName || "",
+    yearsExp: data.yearOfExperience ?? 0,
+    age: data.age ?? 0,
+    bio: data.professionalBio || "",
+    email: data.email || "",
+    username: data.username || "",
+    status: data.status,
+  };
+}
+
+export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
+  const [profile, setProfile] = useState(FALLBACK_PROFILE);
+  const [certificates, setCertificates] = useState([]);
+  const [invitations, setInvitations] = useState(INITIAL_INVITATIONS);
+  const [updates, setUpdates] = useState(INITIAL_UPDATES);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const [showCertModal, setShowCertModal] = useState(false);
+  const [newCertName, setNewCertName] = useState("");
+  const [newCertFile, setNewCertFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const [verifyingCerts, setVerifyingCerts] = useState(false);
+  const [error, setError] = useState(null);
+
+  // ─── Fetch profile from API on mount ───
+  useEffect(() => {
+    if (!jockeyId) return; // skip if no jockeyId provided (dev mode)
+
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      jockeyService.getProfile(jockeyId),
+      jockeyService.getCertificateResults(jockeyId).catch((err) => {
+        console.warn("Failed to fetch certificate results:", err);
+        return { data: [] }; // fallback
+      }),
+      jockeyService.getJockeyCerts(jockeyId).catch((err) => {
+        console.warn("Failed to fetch jockey certs:", err);
+        return { data: [] };
+      }),
+      jockeyService.getJockeyCertImages(jockeyId).catch((err) => {
+        console.warn("Failed to fetch cert images:", err);
+        return { data: [] };
+      }),
+    ])
+      .then(([profileRes, notifRes, certsRes, imagesRes]) => {
+        // Handle profile
+        const data = profileRes.data ?? profileRes;
+        setProfile(mapApiToProfile(data));
+
+        // Handle notifications
+        const notifs = notifRes.data ?? [];
+        if (notifs && notifs.length > 0) {
+          const apiUpdates = notifs.map((n, i) => {
+            const isAccepted = n.type === "ACCEPT_CERTIFICATE";
+            const isRejected = n.type === "REJECT_CERTIFICATE";
+
+            let iconType = "info";
+            let iconClass = "bi-info-circle-fill";
+
+            if (isAccepted) {
+              iconType = "success";
+              iconClass = "bi-check-circle-fill";
+            } else if (isRejected) {
+              iconType = "error";
+              iconClass = "bi-x-circle-fill";
+            }
+
+            return {
+              id: `api-notif-${i}-${Date.now()}`,
+              icon: iconType,
+              iconClass: iconClass,
+              title: n.title,
+              desc: n.content,
+              time: new Date(n.createdAt).toLocaleString(),
+            };
+          });
+          setUpdates(apiUpdates);
+        }
+
+        // Handle certificates
+        const allCertsData = certsRes?.data || [];
+        // Match the jockey's data
+        const myCertData = allCertsData.find(
+          (c) => String(c.jockey_id) === String(jockeyId),
+        );
+        const pendingNames = myCertData?.pending_certificates || [];
+        const imagesData = imagesRes?.data || [];
+
+        // Map over imagesData as the primary source of certificates to ensure all uploaded certificates are shown
+        const newCerts = imagesData.map((imgObj, index) => {
+          const name = pendingNames[index] || `Certificate ${index + 1}`;
+          return {
+            id: `cert-api-${index}`,
+            name: name,
+            status: "pending",
+            image: imgObj.cert_image_base64
+              ? `data:image/jpeg;base64,${imgObj.cert_image_base64}`
+              : null,
+          };
+        });
+
+        setCertificates(newCerts);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch jockey profile:", err);
+        setError(err.message || "Failed to load profile");
+        // keep fallback data so the UI stays usable
+      })
+      .finally(() => setLoading(false));
+  }, [jockeyId]);
+
+  // Show a toast notification
+  const showToast = (message, type = "success") => {
+    const toast = { id: Date.now(), message, type };
+    setToasts((prev) => [...prev, toast]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+    }, 3500);
+  };
+
+  // Handle profile field change
+  const handleProfileChange = (field, value) => {
+    setProfile((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Save profile — calls API when jockeyId is available
+  const handleSaveProfile = async () => {
+    if (jockeyId) {
+      setSaving(true);
+      try {
+        await jockeyService.updateProfile(jockeyId, {
+          jockeyName: profile.name,
+          yearOfExperience: Number(profile.yearsExp),
+          age: Number(profile.age),
+          professionalBio: profile.bio,
+        });
+        showToast("Profile changes saved successfully!");
+      } catch (err) {
+        console.error("Failed to save profile:", err);
+        showToast(err.message || "Failed to save profile", "error");
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      // Dev / demo mode — no API call
+      showToast("Profile changes saved successfully!");
+    }
+  };
+
+  // Accept / Decline invitation
+  const handleInvitation = (invId, action) => {
+    const inv = invitations.find((i) => i.id === invId);
+    setInvitations((prev) => prev.filter((i) => i.id !== invId));
+    if (action === "accept") {
+      showToast(`Accepted invitation from ${inv?.orgName}`);
+      setUpdates((prev) => [
+        {
+          id: Date.now(),
+          icon: "info",
+          iconClass: "bi-person-plus-fill",
+          title: "Invitation Accepted",
+          desc: `You joined ${inv?.orgName}.`,
+          time: "Just now",
+        },
+        ...prev,
+      ]);
+    } else {
+      showToast(`Declined invitation from ${inv?.orgName}`);
+    }
+  };
+
+  // Add certificate
+  const handleAddCertificate = async (e) => {
+    e.preventDefault();
+    if (!newCertName.trim() || !newCertFile) {
+      showToast("Please enter a name and select a file", "warning");
+      return;
+    }
+
+    if (!jockeyId) {
+      showToast("No jockey context to upload certificate", "error");
+      return;
+    }
+
+    setUploadingCert(true);
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64String = reader.result.split(",")[1];
+
+        try {
+          await jockeyService.addCertificate(jockeyId, {
+            certName: newCertName.trim(),
+            certImageBase64: base64String,
+          });
+
+          const cert = {
+            id: Date.now(),
+            name: newCertName.trim(),
+            status: "pending",
+            image: null,
+          };
+          setCertificates((prev) => [...prev, cert]);
+          setShowCertModal(false);
+          setNewCertName("");
+          setNewCertFile(null);
+          showToast(`Certificate "${cert.name}" uploaded successfully.`);
+
+          setUpdates((prev) => [
+            {
+              id: Date.now(),
+              icon: "warning",
+              iconClass: "bi-hourglass-split",
+              title: "Certificate Pending",
+              desc: `${cert.name} is awaiting verification.`,
+              time: "Just now",
+            },
+            ...prev,
+          ]);
+        } catch (err) {
+          console.error("Failed to add certificate", err);
+          showToast(err.message || "Failed to upload certificate", "error");
+        } finally {
+          setUploadingCert(false);
+        }
+      };
+      reader.readAsDataURL(newCertFile);
+    } catch (err) {
+      console.error("Error reading file", err);
+      showToast("Error processing file", "error");
+      setUploadingCert(false);
+    }
+  };
+
+  // Request global verification
+  const handleRequestVerification = async () => {
+    if (!jockeyId) {
+      showToast("No jockey context to request verification", "error");
+      return;
+    }
+
+    setVerifyingCerts(true);
+    try {
+      await jockeyService.requestVerification(jockeyId);
+      showToast("Global verification request submitted!");
+      setUpdates((prev) => [
+        {
+          id: Date.now(),
+          icon: "info",
+          iconClass: "bi-shield-check",
+          title: "Verification Requested",
+          desc: "Your global verification request is being reviewed.",
+          time: "Just now",
+        },
+        ...prev,
+      ]);
+    } catch (err) {
+      console.error("Verification request failed", err);
+      showToast(err.message || "Failed to request verification", "error");
+    } finally {
+      setVerifyingCerts(false);
+    }
+  };
 
   return (
-    <div className="spectator-page-wrapper pb-5" style={{ backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-      {/* Top Navbar */}
-      <nav className="main-navbar d-flex justify-content-between align-items-center mb-4 shadow-sm py-2 px-3 bg-white">
+    <div className="jockey-profile-wrapper pb-5">
+      {/* Header Navigation Bar */}
+      <nav className="main-navbar d-flex justify-content-between align-items-center mb-0 py-2 px-3">
         <div className="d-flex align-items-center gap-3">
-          <button className="btn border-0 p-0 text-dark-navy menu-toggle-btn d-md-none" aria-label="Menu" onClick={() => setMenuOpen(!menuOpen)}>
+          <button
+            className="btn border-0 p-0 text-dark-navy menu-toggle-btn"
+            aria-label="Menu"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
             <i className="bi bi-list fs-3"></i>
           </button>
-          <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2" style={{ cursor: 'pointer' }} onClick={() => onNavigate('spectator-home')}>
+          <span
+            className="brand-logo fs-4 fw-bold d-flex align-items-center gap-2"
+            style={{ color: "var(--dark-navy)", letterSpacing: "-0.5px" }}
+          >
             HRTMS
           </span>
         </div>
-        
-        {/* Profile specific header actions */}
-        <div className="d-flex gap-3 align-items-center">
-            <button className="btn btn-outline-primary btn-sm fw-semibold d-none d-sm-block" style={{ borderRadius: '8px' }}>
-                <i className="bi bi-share me-1"></i> Share
-            </button>
-            <button className="btn btn-primary btn-sm fw-semibold" style={{ borderRadius: '8px', backgroundColor: 'var(--primary-blue)', border: 'none' }}>
-                <i className="bi bi-heart me-1"></i> Favorite
-            </button>
+
+        {/* Desktop Navigation Links */}
+        <div className="desktop-nav d-flex align-items-center gap-2">
+          <a
+            href="#race"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onNavigate) onNavigate("owner-races");
+            }}
+            className="nav-item-custom"
+          >
+            <i className="bi bi-flag-fill"></i>
+            <span>Races</span>
+          </a>
+          <a
+            href="#profile"
+            onClick={(e) => e.preventDefault()}
+            className="nav-item-custom active"
+          >
+            <i className="bi bi-person-circle"></i>
+            <span>Profile</span>
+          </a>
+          <a
+            href="#alerts"
+            onClick={(e) => e.preventDefault()}
+            className="nav-item-custom"
+          >
+            <i className="bi bi-bell"></i>
+            <span>Alerts</span>
+          </a>
+        </div>
+
+        {/* Mobile Drawer */}
+        {menuOpen && (
+          <div
+            className="drawer-overlay"
+            onClick={() => setMenuOpen(false)}
+          ></div>
+        )}
+        <div className={`mobile-drawer ${menuOpen ? "open" : ""}`}>
+          <div className="drawer-header d-flex justify-content-between align-items-center">
+            <span
+              className="brand-logo fs-4 fw-bold d-flex align-items-center gap-2"
+              style={{ color: "var(--dark-navy)", letterSpacing: "-0.5px" }}
+            >
+              HRTMS
+            </span>
+            <button
+              className="btn-close shadow-none border-0"
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close"
+            ></button>
+          </div>
+          <div className="drawer-body">
+            <a
+              href="#race"
+              onClick={(e) => {
+                e.preventDefault();
+                setMenuOpen(false);
+                if (onNavigate) onNavigate("owner-races");
+              }}
+              className="drawer-link"
+            >
+              <i className="bi bi-flag-fill"></i>
+              <span>Races</span>
+            </a>
+            <a
+              href="#profile"
+              onClick={(e) => {
+                e.preventDefault();
+                setMenuOpen(false);
+              }}
+              className="drawer-link active"
+            >
+              <i className="bi bi-person-circle"></i>
+              <span>Profile</span>
+            </a>
+            <a
+              href="#alerts"
+              onClick={(e) => {
+                e.preventDefault();
+                setMenuOpen(false);
+              }}
+              className="drawer-link"
+            >
+              <i className="bi bi-bell"></i>
+              <span>Alerts</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Sign Out */}
+        <div className="d-flex align-items-center gap-2">
+          <button
+            className="btn border-0 d-flex align-items-center gap-2"
+            style={{ color: "#ef4444", fontWeight: 700, fontSize: 14 }}
+            onClick={() => {
+              if (onNavigate) onNavigate("login");
+            }}
+          >
+            <i className="bi bi-box-arrow-right"></i>
+            <span className="d-none d-sm-inline">Sign Out</span>
+          </button>
         </div>
       </nav>
 
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="d-flex justify-content-center align-items-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {error && !loading && (
+        <div
+          className="alert alert-warning d-flex align-items-center gap-2 mx-auto mt-3"
+          style={{ maxWidth: 1100, borderRadius: 12, fontSize: 14 }}
+        >
+          <i className="bi bi-exclamation-triangle-fill"></i>
+          <span>{error} — showing demo data.</span>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="spectator-content-container">
-        <div className="container-fluid px-3 px-md-4">
-          
-          {/* Breadcrumb */}
-          <nav aria-label="breadcrumb" className="mb-3 d-none d-sm-block">
-            <ol className="breadcrumb" style={{ fontSize: '13px' }}>
-              <li className="breadcrumb-item"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('spectator-home'); }} className="text-secondary-custom text-decoration-none hover-primary">Home</a></li>
-              <li className="breadcrumb-item"><a href="#" className="text-secondary-custom text-decoration-none hover-primary">Jockeys</a></li>
-              <li className="breadcrumb-item active text-dark-navy fw-semibold" aria-current="page">{MOCK_JOCKEY.name}</li>
-            </ol>
-          </nav>
+      {!loading && (
+        <div className="jockey-profile-content">
+          <div className="jockey-profile-grid">
+            {/* ─── Left Column ─── */}
+            <div className="d-flex flex-column gap-4">
+              {/* Personal Profile Card */}
+              <div className="jp-card" id="personal-profile-card">
+                <h2 className="jp-section-title">
+                  <i className="bi bi-person-vcard"></i>
+                  Personal Profile
+                </h2>
 
-          <div className="row g-4">
-            {/* Left Column: Profile Card */}
-            <div className="col-12 col-lg-4">
-              <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 mb-lg-0" style={{ transition: 'all 0.3s ease' }}>
-                <div className="position-relative" style={{ height: '120px', background: 'linear-gradient(135deg, #1b60ec 0%, #09132c 100%)' }}>
-                   {/* Background pattern */}
-                   <div className="position-absolute w-100 h-100" style={{ opacity: 0.1, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '20px 20px' }}></div>
-                </div>
-                
-                <div className="card-body px-4 pb-4 pt-0 text-center position-relative">
-                  <div className="position-relative d-inline-block" style={{ marginTop: '-60px', marginBottom: '16px' }}>
-                    <img 
-                        src={MOCK_JOCKEY.avatar} 
-                        alt={MOCK_JOCKEY.name}
-                        className="rounded-circle border border-4 border-white shadow-sm"
-                        style={{ width: '120px', height: '120px', objectFit: 'cover', backgroundColor: '#e2e8f0' }}
+                <div className="jp-input-row mb-3">
+                  <div>
+                    <label className="jp-label">Jockey Name</label>
+                    <input
+                      type="text"
+                      className="jp-input"
+                      id="jockey-name-input"
+                      value={profile.name}
+                      onChange={(e) =>
+                        handleProfileChange("name", e.target.value)
+                      }
                     />
-                    <div className="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle" style={{ width: '20px', height: '20px', right: '10px', bottom: '5px' }} title="Active"></div>
                   </div>
-                  
-                  <h2 className="h4 fw-bold text-dark-navy mb-1">{MOCK_JOCKEY.name}</h2>
-                  <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
-                    <span className="badge bg-light text-primary-custom border px-2 py-1" style={{ fontSize: '12px' }}>{MOCK_JOCKEY.rank}</span>
-                    <span className="badge bg-light text-secondary-custom border px-2 py-1" style={{ fontSize: '12px' }}>{MOCK_JOCKEY.id}</span>
+                  <div>
+                    <label className="jp-label">Years Exp</label>
+                    <input
+                      type="number"
+                      className="jp-input"
+                      id="jockey-exp-input"
+                      value={profile.yearsExp}
+                      onChange={(e) =>
+                        handleProfileChange("yearsExp", e.target.value)
+                      }
+                    />
                   </div>
+                  <div>
+                    <label className="jp-label">Age</label>
+                    <input
+                      type="number"
+                      className="jp-input"
+                      id="jockey-age-input"
+                      value={profile.age}
+                      onChange={(e) =>
+                        handleProfileChange("age", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
 
-                  <p className="text-secondary-custom mb-4" style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    {MOCK_JOCKEY.bio}
-                  </p>
+                <div className="mb-3">
+                  <label className="jp-label">Professional Bio</label>
+                  <textarea
+                    className="jp-input jp-textarea"
+                    id="jockey-bio-input"
+                    value={profile.bio}
+                    onChange={(e) => handleProfileChange("bio", e.target.value)}
+                  />
+                </div>
 
-                  <div className="d-flex justify-content-between text-start border-top pt-3">
-                    <div>
-                        <div className="text-secondary-custom mb-1" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</div>
-                        <div className="fw-semibold text-dark-navy" style={{ fontSize: '14px' }}><i className="bi bi-geo-alt-fill text-primary-custom me-1"></i>{MOCK_JOCKEY.location}</div>
-                    </div>
-                    <div className="text-end">
-                        <div className="text-secondary-custom mb-1" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Joined</div>
-                        <div className="fw-semibold text-dark-navy" style={{ fontSize: '14px' }}><i className="bi bi-calendar-check text-primary-custom me-1"></i>{MOCK_JOCKEY.joined}</div>
-                    </div>
-                  </div>
+                <div className="d-flex justify-content-end">
+                  <button
+                    className="jp-save-btn"
+                    id="save-profile-btn"
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                    style={{ opacity: saving ? 0.7 : 1 }}
+                  >
+                    {saving ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-floppy"></i>
+                        Save Changes
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* Achievements Card */}
-              <div className="card border-0 shadow-sm rounded-4 mt-4 d-none d-lg-block">
-                <div className="card-header bg-white border-0 pt-4 pb-2 px-4">
-                    <h3 className="h6 fw-bold text-dark-navy m-0 text-uppercase" style={{ letterSpacing: '0.5px' }}>Achievements</h3>
-                </div>
-                <div className="card-body px-4 pb-4 pt-2">
-                    <div className="d-flex flex-column gap-3">
-                        {MOCK_JOCKEY.achievements.map((ach, idx) => (
-                            <div key={idx} className="d-flex align-items-center p-3 rounded-3" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                <div className={`${ach.bg} bg-opacity-10 ${ach.color} rounded-circle d-flex align-items-center justify-content-center me-3`} style={{ width: '40px', height: '40px', minWidth: '40px' }}>
-                                    <i className={`bi ${ach.icon} fs-5`}></i>
-                                </div>
-                                <span className="fw-semibold text-dark-navy" style={{ fontSize: '14px' }}>{ach.title}</span>
+              {/* Professional Certificates Card */}
+              <div className="jp-card" id="certificates-card">
+                <h2 className="jp-section-title">
+                  <i className="bi bi-patch-check-fill"></i>
+                  Professional Certificates
+                </h2>
+
+                <div className="jp-cert-grid">
+                  {certificates.map((cert) => (
+                    <div
+                      className="jp-cert-item"
+                      key={cert.id}
+                      id={`cert-${cert.id}`}
+                    >
+                      {/* Certificate image or placeholder */}
+                      <div
+                        className="jp-cert-image d-flex align-items-center justify-content-center"
+                        style={{
+                          backgroundColor: "#f1f5f9",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {cert.image ? (
+                          <img
+                            src={cert.image}
+                            alt={cert.name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <div style={{ textAlign: "center", padding: "12px" }}>
+                            <i
+                              className="bi bi-file-earmark-richtext"
+                              style={{ fontSize: "32px", color: "#94a3b8" }}
+                            ></i>
+                            <div
+                              style={{
+                                fontSize: "9px",
+                                fontWeight: 700,
+                                color: "#94a3b8",
+                                marginTop: 4,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                              }}
+                            >
+                              Certificate
                             </div>
-                        ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="jp-cert-info">
+                        <span className="jp-cert-name">{cert.name}</span>
+                        <span className={`jp-cert-badge ${cert.status}`}>
+                          {cert.status === "verified" && (
+                            <>
+                              <i className="bi bi-check-circle-fill me-1"></i>
+                              Verified
+                            </>
+                          )}
+                          {cert.status === "pending" && (
+                            <>
+                              <i className="bi bi-clock-fill me-1"></i>Pending
+                            </>
+                          )}
+                          {cert.status === "expired" && (
+                            <>
+                              <i className="bi bi-x-circle-fill me-1"></i>
+                              Expired
+                            </>
+                          )}
+                        </span>
+                      </div>
                     </div>
+                  ))}
+
+                  {/* Add new cert placeholder */}
+                  <div
+                    className="jp-cert-add"
+                    id="add-certificate-btn"
+                    onClick={() => setShowCertModal(true)}
+                  >
+                    <div className="jp-cert-add-icon">
+                      <i className="bi bi-plus-lg"></i>
+                    </div>
+                    <span className="jp-cert-add-title">
+                      Add New Certificate
+                    </span>
+                    <span className="jp-cert-add-desc">
+                      Upload verified racing credentials
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-center mt-2">
+                  <button
+                    className="jp-verify-btn"
+                    id="request-verification-btn"
+                    onClick={handleRequestVerification}
+                    disabled={verifyingCerts}
+                    style={{ opacity: verifyingCerts ? 0.6 : 1 }}
+                  >
+                    {verifyingCerts ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Requesting...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-shield-check"></i> Request Global
+                        Verification
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Stats & Recent Races */}
-            <div className="col-12 col-lg-8">
-              
-              {/* Stats Grid */}
-              <div className="row g-3 mb-4">
-                <div className="col-6 col-md-4">
-                    <div className="card border-0 shadow-sm rounded-4 h-100 p-3" style={{ transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                        <div className="text-secondary-custom mb-2 d-flex align-items-center gap-2" style={{ fontSize: '13px', fontWeight: '600' }}>
-                            <i className="bi bi-flag-fill text-primary-custom"></i> Total Races
-                        </div>
-                        <div className="fs-3 fw-bold text-dark-navy">{MOCK_JOCKEY.stats.races}</div>
+            {/* ─── Right Sidebar ─── */}
+            <div className="jp-sidebar">
+              {/* Season Summary */}
+              <div
+                className="jp-card jp-summary-card"
+                id="season-summary-card"
+                style={{ position: "relative" }}
+              >
+                <span className="jp-summary-icon">
+                  <i className="bi bi-bar-chart-line-fill"></i>
+                </span>
+                <h3 className="jp-summary-title">Season Summary</h3>
+                <div className="jp-summary-stats">
+                  <div className="jp-stat-box">
+                    <div className="jp-stat-value">
+                      {SEASON_STATS.racesEntered}
                     </div>
-                </div>
-                <div className="col-6 col-md-4">
-                    <div className="card border-0 shadow-sm rounded-4 h-100 p-3" style={{ transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                        <div className="text-secondary-custom mb-2 d-flex align-items-center gap-2" style={{ fontSize: '13px', fontWeight: '600' }}>
-                            <i className="bi bi-trophy-fill text-warning"></i> Total Wins
-                        </div>
-                        <div className="fs-3 fw-bold text-dark-navy">{MOCK_JOCKEY.stats.wins}</div>
+                    <div className="jp-stat-label">Races Entered</div>
+                  </div>
+                  <div className="jp-stat-box">
+                    <div className="jp-stat-value">
+                      {SEASON_STATS.topPlaced}
                     </div>
-                </div>
-                <div className="col-6 col-md-4">
-                    <div className="card border-0 shadow-sm rounded-4 h-100 p-3 bg-primary text-white" style={{ transition: 'transform 0.2s', cursor: 'pointer', background: 'linear-gradient(135deg, #1b60ec 0%, #0d4ed1 100%)' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                        <div className="text-white-50 mb-2 d-flex align-items-center gap-2" style={{ fontSize: '13px', fontWeight: '600' }}>
-                            <i className="bi bi-graph-up-arrow text-white"></i> Win Rate
-                        </div>
-                        <div className="fs-3 fw-bold text-white">{MOCK_JOCKEY.stats.winRate}</div>
-                    </div>
-                </div>
-                <div className="col-6 col-md-4">
-                    <div className="card border-0 shadow-sm rounded-4 h-100 p-3" style={{ transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                        <div className="text-secondary-custom mb-2 d-flex align-items-center gap-2" style={{ fontSize: '13px', fontWeight: '600' }}>
-                            <i className="bi bi-award-fill text-info"></i> Top 3 Finishes
-                        </div>
-                        <div className="fs-3 fw-bold text-dark-navy">{MOCK_JOCKEY.stats.topThree}</div>
-                    </div>
-                </div>
-                <div className="col-6 col-md-4">
-                    <div className="card border-0 shadow-sm rounded-4 h-100 p-3" style={{ transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                        <div className="text-secondary-custom mb-2 d-flex align-items-center gap-2" style={{ fontSize: '13px', fontWeight: '600' }}>
-                            <i className="bi bi-cash-stack text-success"></i> Earnings
-                        </div>
-                        <div className="fs-3 fw-bold text-dark-navy">{MOCK_JOCKEY.stats.earnings}</div>
-                    </div>
-                </div>
-                <div className="col-6 col-md-4">
-                    <div className="card border-0 shadow-sm rounded-4 h-100 p-3" style={{ transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                        <div className="text-secondary-custom mb-2 d-flex align-items-center gap-2" style={{ fontSize: '13px', fontWeight: '600' }}>
-                            <i className="bi bi-star-fill text-warning"></i> Rating
-                        </div>
-                        <div className="fs-3 fw-bold text-dark-navy">{MOCK_JOCKEY.stats.rating}<span className="fs-6 text-muted fw-normal">/10</span></div>
-                    </div>
-                </div>
-              </div>
-              
-              {/* Mobile Achievements - Render here on small screens */}
-              <div className="card border-0 shadow-sm rounded-4 mb-4 d-block d-lg-none">
-                <div className="card-header bg-white border-0 pt-4 pb-2 px-4">
-                    <h3 className="h6 fw-bold text-dark-navy m-0 text-uppercase" style={{ letterSpacing: '0.5px' }}>Achievements</h3>
-                </div>
-                <div className="card-body px-4 pb-4 pt-2">
-                    <div className="d-flex flex-column gap-3">
-                        {MOCK_JOCKEY.achievements.map((ach, idx) => (
-                            <div key={idx} className="d-flex align-items-center p-3 rounded-3" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                <div className={`${ach.bg} bg-opacity-10 ${ach.color} rounded-circle d-flex align-items-center justify-content-center me-3`} style={{ width: '40px', height: '40px', minWidth: '40px' }}>
-                                    <i className={`bi ${ach.icon} fs-5`}></i>
-                                </div>
-                                <span className="fw-semibold text-dark-navy" style={{ fontSize: '14px' }}>{ach.title}</span>
-                            </div>
-                        ))}
-                    </div>
+                    <div className="jp-stat-label">Top 3 Placed</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Tabs for detailed sections */}
-              <div className="bg-white rounded-4 shadow-sm border-0 overflow-hidden mb-4">
-                <div className="d-flex border-bottom px-2 px-sm-3 pt-3 flex-nowrap overflow-auto" style={{ whiteSpace: 'nowrap' }}>
-                  <button 
-                    className={`btn border-0 fw-semibold px-3 px-sm-4 pb-3 rounded-0 flex-shrink-0 ${activeTab === 'overview' ? 'text-primary-custom border-bottom border-primary border-3' : 'text-secondary-custom'}`}
-                    onClick={() => setActiveTab('overview')}
-                    style={{ fontSize: '14px' }}
-                  >
-                    Recent Races
-                  </button>
-                  <button 
-                    className={`btn border-0 fw-semibold px-3 px-sm-4 pb-3 rounded-0 flex-shrink-0 ${activeTab === 'horses' ? 'text-primary-custom border-bottom border-primary border-3' : 'text-secondary-custom'}`}
-                    onClick={() => setActiveTab('horses')}
-                    style={{ fontSize: '14px' }}
-                  >
-                    Associated Horses
-                  </button>
-                  <button 
-                    className={`btn border-0 fw-semibold px-3 px-sm-4 pb-3 rounded-0 flex-shrink-0 ${activeTab === 'media' ? 'text-primary-custom border-bottom border-primary border-3' : 'text-secondary-custom'}`}
-                    onClick={() => setActiveTab('media')}
-                    style={{ fontSize: '14px' }}
-                  >
-                    Media
-                  </button>
-                </div>
+              {/* Invitations */}
+              {invitations.length > 0 && (
+                <div className="jp-card" id="invitations-card">
+                  <div className="jp-invite-header">
+                    <span className="jp-invite-title">
+                      <i
+                        className="bi bi-envelope-open-fill"
+                        style={{ color: "var(--primary-blue)" }}
+                      ></i>
+                      Invitations
+                    </span>
+                    <span className="jp-invite-badge">
+                      {invitations.length} NEW
+                    </span>
+                  </div>
 
-                <div className="p-3 p-sm-4">
-                  {activeTab === 'overview' && (
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h3 className="h6 fw-bold text-dark-navy m-0">Recent Race History</h3>
-                        <button className="btn btn-sm btn-link text-decoration-none p-0 text-primary-custom fw-semibold d-none d-sm-block" style={{ fontSize: '13px' }}>View Full History <i className="bi bi-arrow-right"></i></button>
+                  <div className="jp-invite-list">
+                    {invitations.map((inv) => (
+                      <div
+                        className="jp-invite-item"
+                        key={inv.id}
+                        id={`invite-${inv.id}`}
+                      >
+                        <div className={`jp-invite-avatar ${inv.avatarType}`}>
+                          {inv.avatarIcon ? (
+                            <i className={`bi ${inv.avatarIcon}`}></i>
+                          ) : (
+                            inv.avatarText
+                          )}
+                        </div>
+                        <div className="jp-invite-details">
+                          <div className="jp-invite-name">{inv.orgName}</div>
+                          <div className="jp-invite-desc">{inv.orgDesc}</div>
+                          <div className="jp-invite-actions">
+                            <button
+                              className="jp-invite-accept"
+                              onClick={() => handleInvitation(inv.id, "accept")}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              className="jp-invite-decline"
+                              onClick={() =>
+                                handleInvitation(inv.id, "decline")
+                              }
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                      <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0" style={{ fontSize: '14px', minWidth: '600px' }}>
-                          <thead className="table-light text-secondary-custom" style={{ fontSize: '12px', textTransform: 'uppercase' }}>
-                            <tr>
-                              <th className="fw-semibold rounded-start py-3 ps-3 border-0">Race Info</th>
-                              <th className="fw-semibold py-3 border-0">Horse</th>
-                              <th className="fw-semibold py-3 border-0">Odds</th>
-                              <th className="fw-semibold py-3 text-center border-0">Finish</th>
-                              <th className="fw-semibold rounded-end py-3 text-end pe-3 border-0">Points</th>
-                            </tr>
-                          </thead>
-                          <tbody className="border-top-0">
-                            {MOCK_JOCKEY.recentRaces.map((race, idx) => (
-                              <tr key={idx} className="border-bottom" style={{ borderColor: '#e2e8f0' }}>
-                                <td className="py-3 ps-3">
-                                  <div className="fw-bold text-dark-navy mb-1" style={{ fontSize: '14px' }}>{race.name}</div>
-                                  <div className="text-secondary-custom" style={{ fontSize: '12px' }}><i className="bi bi-calendar2-week me-1"></i>{race.date} • {race.id}</div>
-                                </td>
-                                <td className="py-3">
-                                  <span className="fw-semibold text-primary-custom bg-light px-2 py-1 rounded-2 d-inline-block" style={{ fontSize: '13px' }}><i className="bi bi-suit-spade-fill me-1"></i>{race.horse}</span>
-                                </td>
-                                <td className="py-3 text-secondary-custom fw-semibold">{race.odds}</td>
-                                <td className="py-3 text-center">
-                                  <span className={`badge ${race.finish === '1st' ? 'bg-warning text-dark' : race.finish === '2nd' ? 'bg-secondary' : race.finish === '3rd' ? 'bg-danger text-white' : 'bg-light text-secondary-custom border'} rounded-pill px-3 py-2 d-inline-block`} style={{ fontSize: '12px', fontWeight: '700' }}>
-                                    {race.finish === '1st' && <i className="bi bi-trophy-fill me-1"></i>}
-                                    {race.finish}
-                                  </span>
-                                </td>
-                                <td className="py-3 text-end pe-3 fw-bold text-success">{race.points}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+              {/* Recent Updates */}
+              <div className="jp-card" id="recent-updates-card">
+                <h3 className="jp-update-title">
+                  <i
+                    className="bi bi-clock-history me-2"
+                    style={{ color: "var(--primary-blue)" }}
+                  ></i>
+                  Recent Updates
+                </h3>
+                <div className="jp-update-list">
+                  {updates.map((upd) => (
+                    <div className="jp-update-item" key={upd.id}>
+                      <div className={`jp-update-icon ${upd.icon}`}>
+                        <i className={`bi ${upd.iconClass}`}></i>
                       </div>
-                      
-                      <button className="btn btn-outline-primary w-100 d-block d-sm-none mt-3 fw-semibold">View Full History</button>
+                      <div>
+                        <div className="jp-update-heading">{upd.title}</div>
+                        <div className="jp-update-desc">{upd.desc}</div>
+                        <div className="jp-update-time">{upd.time}</div>
+                      </div>
                     </div>
-                  )}
-
-                  {activeTab === 'horses' && (
-                    <div className="text-center py-5 text-secondary-custom">
-                        <i className="bi bi-suit-spade-fill fs-1 text-light mb-3 d-block" style={{ color: '#cbd5e1' }}></i>
-                        <h4 className="h6 fw-bold text-dark-navy">No associated horses found</h4>
-                        <p style={{ fontSize: '14px' }}>This jockey does not have specific associated horses currently in the database.</p>
-                    </div>
-                  )}
-
-                  {activeTab === 'media' && (
-                    <div className="text-center py-5 text-secondary-custom">
-                        <i className="bi bi-image fs-1 text-light mb-3 d-block" style={{ color: '#cbd5e1' }}></i>
-                        <h4 className="h6 fw-bold text-dark-navy">Media Gallery Empty</h4>
-                        <p style={{ fontSize: '14px' }}>There are no photos or videos available for this jockey yet.</p>
+                  ))}
+                  {updates.length === 0 && (
+                    <div
+                      className="text-center py-3"
+                      style={{ fontSize: 13, color: "#94a3b8" }}
+                    >
+                      No recent updates.
                     </div>
                   )}
                 </div>
               </div>
-
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Certificate Modal */}
+      {showCertModal && (
+        <div
+          className="jp-modal-backdrop"
+          onClick={() => setShowCertModal(false)}
+        >
+          <div
+            className="jp-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="jp-modal-header">
+              <h5 className="fw-bold text-dark-navy m-0">
+                <i
+                  className="bi bi-upload me-2"
+                  style={{ color: "var(--primary-blue)" }}
+                ></i>
+                Add Certificate
+              </h5>
+              <button
+                className="btn-close shadow-none border-0"
+                onClick={() => setShowCertModal(false)}
+              ></button>
+            </div>
+            <form onSubmit={handleAddCertificate}>
+              <div className="jp-modal-body d-flex flex-column gap-3">
+                <div>
+                  <label className="jp-label">Certificate Name</label>
+                  <input
+                    type="text"
+                    className="jp-input"
+                    id="cert-name-input"
+                    placeholder="e.g., Professional Jockey License B"
+                    value={newCertName}
+                    onChange={(e) => setNewCertName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="jp-label">Upload Document</label>
+                  <label
+                    className="jp-upload-zone w-100 d-block m-0"
+                    style={{ cursor: "pointer" }}
+                  >
+                    <input
+                      type="file"
+                      className="d-none"
+                      accept="image/png, image/jpeg, application/pdf"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setNewCertFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <i className="bi bi-cloud-arrow-up d-block"></i>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--dark-navy)",
+                      }}
+                    >
+                      {newCertFile
+                        ? newCertFile.name
+                        : "Drag & drop or click to browse"}
+                    </div>
+                    {!newCertFile && (
+                      <div
+                        style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}
+                      >
+                        PDF, JPG, or PNG · Max 10 MB
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </div>
+              <div className="jp-modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary px-4 py-2"
+                  style={{ borderRadius: 10, fontSize: 14, fontWeight: 600 }}
+                  onClick={() => setShowCertModal(false)}
+                  disabled={uploadingCert}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="jp-save-btn"
+                  disabled={
+                    !newCertName.trim() || !newCertFile || uploadingCert
+                  }
+                  style={{
+                    opacity:
+                      !newCertName.trim() || !newCertFile || uploadingCert
+                        ? 0.5
+                        : 1,
+                  }}
+                >
+                  {uploadingCert ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-cloud-upload"></i>Upload Certificate
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Alerts */}
+      <div className="jp-toast-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="jp-toast-item">
+            <i className="bi bi-check-circle-fill text-success"></i>
+            {toast.message}
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Bottom Nav */}
+      <div className="mobile-bottom-nav">
+        <a
+          href="#race"
+          onClick={(e) => {
+            e.preventDefault();
+            if (onNavigate) onNavigate("owner-races");
+          }}
+          className="nav-item-custom"
+        >
+          <i className="bi bi-flag-fill"></i>
+          <span>Races</span>
+        </a>
+        <a
+          href="#profile"
+          onClick={(e) => e.preventDefault()}
+          className="nav-item-custom active"
+        >
+          <i className="bi bi-person-circle"></i>
+          <span>Profile</span>
+        </a>
+        <a
+          href="#alerts"
+          onClick={(e) => e.preventDefault()}
+          className="nav-item-custom"
+        >
+          <i className="bi bi-bell"></i>
+          <span>Alerts</span>
+        </a>
       </div>
     </div>
   );

@@ -15,10 +15,10 @@
   /* Badges */
   --badge-active-bg: #d1fae5;
   --badge-active-txt: #065f46;
-  --badge-training-bg: #fef3c7;
-  --badge-training-txt: #92400e;
-  --badge-resting-bg: #f1f5f9;
-  --badge-resting-txt: #475569;
+  --badge-injured-bg: #fee2e2;
+  --badge-injured-txt: #991b1b;
+  --badge-retired-bg: #f1f5f9;
+  --badge-retired-txt: #475569;
 }
 
 /* Page wrapper & overall layout */
@@ -187,14 +187,14 @@
   color: var(--badge-active-txt);
 }
 
-.badge-status.training {
-  background-color: var(--badge-training-bg);
-  color: var(--badge-training-txt);
+.badge-status.injured {
+  background-color: var(--badge-injured-bg);
+  color: var(--badge-injured-txt);
 }
 
-.badge-status.resting {
-  background-color: var(--badge-resting-bg);
-  color: var(--badge-resting-txt);
+.badge-status.retired {
+  background-color: var(--badge-retired-bg);
+  color: var(--badge-retired-txt);
 }
 
 /* Action Buttons */

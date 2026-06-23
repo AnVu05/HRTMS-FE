@@ -42,7 +42,7 @@ const HORSES = [
 // eslint-disable-next-line no-unused-vars
 export default function SpectatorHome({ onNavigate }) {
   // Navigation active tab
-  const [activeTab, setActiveTab] = useState('races');
+  const [activeTab, setActiveTab] = useState("races");
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Accordion open/collapse states
@@ -52,18 +52,7 @@ export default function SpectatorHome({ onNavigate }) {
 
   // Simulation states for live tracking positions
   const [isSimulating, setIsSimulating] = useState(true);
-  const [runnerPositions, setRunnerPositions] = useState({
-    runner1: 62,
-    runner2: 45,
-    runner3: 20,
-    runner4: 35,
-    runner5: 55,
-    runner6: 30,
-    runner7: 15,
-    runner8: 50,
-    runner9: 25,
-    runner10: 40,
-  });
+  const [liveRaceData, setLiveRaceData] = useState({});
 
   // Betting / Prediction Form states
   const [walletBalance, setWalletBalance] = useState(1250);
@@ -77,30 +66,22 @@ export default function SpectatorHome({ onNavigate }) {
   useEffect(() => {
     if (!isSimulating) return;
 
-    const interval = setInterval(() => {
-      setRunnerPositions((prev) => {
-        const next = { ...prev };
-        let resetAll = false;
-
-        for (let i = 1; i <= 10; i++) {
-          const key = `runner${i}`;
-          next[key] =
-            (prev[key] || 15) +
-            (Math.random() > 0.45 ? Math.floor(Math.random() * 4) + 1 : 0);
-          if (next[key] >= 80) {
-            resetAll = true;
-          }
+    const fetchLiveData = async () => {
+      try {
+        const response = await fetch(
+          "https://game-dua-ngua-api.onrender.com/api/data",
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setLiveRaceData(data);
         }
+      } catch (err) {
+        console.error("Failed to fetch live race data:", err);
+      }
+    };
 
-        if (resetAll) {
-          for (let i = 1; i <= 10; i++) {
-            next[`runner${i}`] = 10 + Math.floor(Math.random() * 10);
-          }
-        }
-
-        return next;
-      });
-    }, 1800);
+    fetchLiveData(); // Initial fetch
+    const interval = setInterval(fetchLiveData, 200);
 
     return () => clearInterval(interval);
   }, [isSimulating]);
@@ -145,18 +126,7 @@ export default function SpectatorHome({ onNavigate }) {
   };
 
   const resetPositions = () => {
-    setRunnerPositions({
-      runner1: 15,
-      runner2: 15,
-      runner3: 15,
-      runner4: 15,
-      runner5: 15,
-      runner6: 15,
-      runner7: 15,
-      runner8: 15,
-      runner9: 15,
-      runner10: 15,
-    });
+    setLiveRaceData({});
   };
 
   return (
@@ -164,7 +134,11 @@ export default function SpectatorHome({ onNavigate }) {
       {/* Top Navbar */}
       <nav className="main-navbar d-flex justify-content-between align-items-center mb-4 shadow-sm py-2 px-3">
         <div className="d-flex align-items-center gap-3">
-          <button className="btn border-0 p-0 text-dark-navy menu-toggle-btn" aria-label="Menu" onClick={() => setMenuOpen(!menuOpen)}>
+          <button
+            className="btn border-0 p-0 text-dark-navy menu-toggle-btn"
+            aria-label="Menu"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
             <i className="bi bi-list fs-3"></i>
           </button>
           <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2">
@@ -232,51 +206,83 @@ export default function SpectatorHome({ onNavigate }) {
         </div>
 
         {/* Mobile Drawer */}
-        {menuOpen && <div className="drawer-overlay" onClick={() => setMenuOpen(false)}></div>}
-        <div className={`mobile-drawer ${menuOpen ? 'open' : ''}`}>
+        {menuOpen && (
+          <div
+            className="drawer-overlay"
+            onClick={() => setMenuOpen(false)}
+          ></div>
+        )}
+        <div className={`mobile-drawer ${menuOpen ? "open" : ""}`}>
           <div className="drawer-header d-flex justify-content-between align-items-center">
-            <span className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2" style={{ color: 'var(--primary-blue)', letterSpacing: '-0.5px' }}>
+            <span
+              className="brand-logo fs-4 fw-bold text-primary-custom d-flex align-items-center gap-2"
+              style={{ color: "var(--primary-blue)", letterSpacing: "-0.5px" }}
+            >
               HRTMS
             </span>
-            <button className="btn-close shadow-none border-0" onClick={() => setMenuOpen(false)} aria-label="Close"></button>
+            <button
+              className="btn-close shadow-none border-0"
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close"
+            ></button>
           </div>
           <div className="drawer-body">
             <a
               href="#races"
-              onClick={(e) => { e.preventDefault(); setActiveTab('races'); setMenuOpen(false); }}
-              className={`drawer-link ${activeTab === 'races' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("races");
+                setMenuOpen(false);
+              }}
+              className={`drawer-link ${activeTab === "races" ? "active" : ""}`}
             >
               <i className="bi bi-flag-fill"></i>
               <span>Races</span>
             </a>
             <a
               href="#wallet"
-              onClick={(e) => { e.preventDefault(); setActiveTab('wallet'); setMenuOpen(false); }}
-              className={`drawer-link ${activeTab === 'wallet' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("wallet");
+                setMenuOpen(false);
+              }}
+              className={`drawer-link ${activeTab === "wallet" ? "active" : ""}`}
             >
               <i className="bi bi-wallet2"></i>
               <span>Wallet</span>
             </a>
             <a
               href="#horse"
-              onClick={(e) => { e.preventDefault(); setActiveTab('horse'); setMenuOpen(false); }}
-              className={`drawer-link ${activeTab === 'horse' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("horse");
+                setMenuOpen(false);
+              }}
+              className={`drawer-link ${activeTab === "horse" ? "active" : ""}`}
             >
               <i className="bi bi-award"></i>
               <span>Horse</span>
             </a>
             <a
               href="#alerts"
-              onClick={(e) => { e.preventDefault(); setActiveTab('alerts'); setMenuOpen(false); }}
-              className={`drawer-link ${activeTab === 'alerts' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("alerts");
+                setMenuOpen(false);
+              }}
+              className={`drawer-link ${activeTab === "alerts" ? "active" : ""}`}
             >
               <i className="bi bi-bell"></i>
               <span>Alerts</span>
             </a>
             <a
               href="#profile"
-              onClick={(e) => { e.preventDefault(); setActiveTab('profile'); setMenuOpen(false); }}
-              className={`drawer-link ${activeTab === 'profile' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("profile");
+                setMenuOpen(false);
+              }}
+              className={`drawer-link ${activeTab === "profile" ? "active" : ""}`}
             >
               <i className="bi bi-person-circle"></i>
               <span>Profile</span>
@@ -443,8 +449,11 @@ export default function SpectatorHome({ onNavigate }) {
 
                               {/* Dynamically render all 10 runners */}
                               {HORSES.map((horse) => {
-                                const pos =
-                                  runnerPositions[`runner${horse.id}`] || 15;
+                                const horseData = liveRaceData[
+                                  horse.id.toString()
+                                ] || { percent: 0, rank: 0 };
+                                const pos = horseData.percent || 0;
+                                const rank = horseData.rank || 0;
                                 const topPercent = 8 + (horse.id - 1) * 9.2;
                                 const isYellow = horse.id % 2 === 0;
                                 return (
@@ -456,6 +465,10 @@ export default function SpectatorHome({ onNavigate }) {
                                       transform: "translateY(-50%)",
                                       top: `${topPercent}%`,
                                       zIndex: horse.id,
+                                      transition: "left 0.2s linear",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "6px",
                                     }}
                                     title={horse.name}
                                   >
@@ -467,9 +480,31 @@ export default function SpectatorHome({ onNavigate }) {
                                         fontSize: 9,
                                         borderWidth: 1.5,
                                         boxShadow: "none",
+                                        flexShrink: 0,
                                       }}
                                     >
                                       {horse.id}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: "10px",
+                                        fontWeight: "bold",
+                                        color: "var(--dark-navy)",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {pos.toFixed(1)}%
+                                      {rank > 0 && (
+                                        <span
+                                          style={{
+                                            color: "#d97706",
+                                            marginLeft: "4px",
+                                            fontWeight: 800,
+                                          }}
+                                        >
+                                          🏆 Hạng {rank}
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 );
