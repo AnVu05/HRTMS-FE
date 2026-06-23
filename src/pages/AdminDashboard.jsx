@@ -369,6 +369,19 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setCurrentSubView('update');
   };
 
+  const handleCreateClick = () => {
+    setUpdatingTourney(null);
+    setCreateTourneyName('');
+    setCreateStartDate('');
+    setCreateEndDate('');
+    setCreateBreed('Thoroughbred');
+    setCreateAgeReq('');
+    setCreateDescription('');
+    setCreateStatus('DRAFT');
+    setCreateRacesList([]);
+    setCurrentSubView('create');
+  };
+
   const handleSaveUpdateTournament = async (e) => {
     e.preventDefault();
     if (!createTourneyName || !createStartDate || !createEndDate) {
@@ -398,12 +411,18 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     }
   };
 
-  const createDescriptionRef = useRef(createDescription);
+  const quillRef = useRef(null);
+
   useEffect(() => {
-    createDescriptionRef.current = createDescription;
+    if (quillRef.current) {
+      const currentHtml = quillRef.current.root.innerHTML;
+      if (createDescription !== currentHtml) {
+        if (!createDescription && currentHtml === '<p><br></p>') return;
+        quillRef.current.root.innerHTML = createDescription || '';
+      }
+    }
   }, [createDescription]);
 
-  const quillRef = useRef(null);
   const editorRef = useCallback((node) => {
     if (node !== null) {
       if (node.classList.contains('ql-container')) {
@@ -423,10 +442,6 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
         }
       });
       quillRef.current = quill;
-
-      if (createDescriptionRef.current) {
-        quill.root.innerHTML = createDescriptionRef.current;
-      }
 
       quill.on('text-change', () => {
         const html = quill.root.innerHTML;
@@ -733,7 +748,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
             {currentSubView === 'list' && (
               <button
                 className="btn btn-primary d-flex align-items-center gap-2 px-4 py-2.5 fw-bold"
-                onClick={() => setCurrentSubView('create')}
+                onClick={handleCreateClick}
                 style={{ borderRadius: '8px', fontSize: '14px', letterSpacing: '0.5px' }}
               >
                 <i className="bi bi-plus-lg fs-5"></i>
@@ -1669,7 +1684,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 </select>
                 {(!editRaceDate || !editRaceStartTime || !editRaceEndTime) && (
                   <div className="form-text text-danger mt-1" style={{ fontSize: '11px' }}>
-                    Vui lòng chọn ngày, thời gian bắt đầu và kết thúc để cập nhật trọng tài.
+                    Please select the start and end dates and times to update the referees.
                   </div>
                 )}
               </div>
