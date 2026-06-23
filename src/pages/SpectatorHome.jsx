@@ -27,18 +27,7 @@ export default function SpectatorHome({ onNavigate }) {
 
   // Simulation states for live tracking positions
   const [isSimulating, setIsSimulating] = useState(true);
-  const [runnerPositions, setRunnerPositions] = useState({
-    runner1: 62,
-    runner2: 45,
-    runner3: 20,
-    runner4: 35,
-    runner5: 55,
-    runner6: 30,
-    runner7: 15,
-    runner8: 50,
-    runner9: 25,
-    runner10: 40,
-  });
+  const [liveRaceData, setLiveRaceData] = useState({});
 
   // Betting / Prediction Form states
   const [walletBalance, setWalletBalance] = useState(1250);
@@ -52,28 +41,20 @@ export default function SpectatorHome({ onNavigate }) {
   useEffect(() => {
     if (!isSimulating) return;
 
-    const interval = setInterval(() => {
-      setRunnerPositions(prev => {
-        const next = { ...prev };
-        let resetAll = false;
-        
-        for (let i = 1; i <= 10; i++) {
-          const key = `runner${i}`;
-          next[key] = (prev[key] || 15) + (Math.random() > 0.45 ? Math.floor(Math.random() * 4) + 1 : 0);
-          if (next[key] >= 80) {
-            resetAll = true;
-          }
+    const fetchLiveData = async () => {
+      try {
+        const response = await fetch('https://game-dua-ngua-api.onrender.com/api/data');
+        if (response.ok) {
+          const data = await response.json();
+          setLiveRaceData(data);
         }
+      } catch (err) {
+        console.error('Failed to fetch live race data:', err);
+      }
+    };
 
-        if (resetAll) {
-          for (let i = 1; i <= 10; i++) {
-            next[`runner${i}`] = 10 + Math.floor(Math.random() * 10);
-          }
-        }
-
-        return next;
-      });
-    }, 1800);
+    fetchLiveData(); // Initial fetch
+    const interval = setInterval(fetchLiveData, 200);
 
     return () => clearInterval(interval);
   }, [isSimulating]);
@@ -114,10 +95,7 @@ export default function SpectatorHome({ onNavigate }) {
   };
 
   const resetPositions = () => {
-    setRunnerPositions({
-      runner1: 15, runner2: 15, runner3: 15, runner4: 15, runner5: 15,
-      runner6: 15, runner7: 15, runner8: 15, runner9: 15, runner10: 15
-    });
+    setLiveRaceData({});
   };
 
   return (
@@ -335,7 +313,9 @@ export default function SpectatorHome({ onNavigate }) {
                             
                             {/* Dynamically render all 10 runners */}
                             {HORSES.map(horse => {
-                              const pos = runnerPositions[`runner${horse.id}`] || 15;
+                              const horseData = liveRaceData[horse.id.toString()] || { percent: 0, rank: 0 };
+                              const pos = horseData.percent || 0;
+                              const rank = horseData.rank || 0;
                               const topPercent = 8 + ((horse.id - 1) * 9.2);
                               const isYellow = horse.id % 2 === 0;
                               return (
@@ -346,12 +326,24 @@ export default function SpectatorHome({ onNavigate }) {
                                     left: `${pos}%`,
                                     transform: 'translateY(-50%)',
                                     top: `${topPercent}%`,
-                                    zIndex: horse.id
+                                    zIndex: horse.id,
+                                    transition: 'left 0.2s linear',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
                                   }}
                                   title={horse.name}
                                 >
-                                  <div className={`runner-badge ${isYellow ? 'runner-yellow' : 'runner-blue'}`} style={{ width: 18, height: 18, fontSize: 9, borderWidth: 1.5, boxShadow: 'none' }}>
+                                  <div className={`runner-badge ${isYellow ? 'runner-yellow' : 'runner-blue'}`} style={{ width: 18, height: 18, fontSize: 9, borderWidth: 1.5, boxShadow: 'none', flexShrink: 0 }}>
                                     {horse.id}
+                                  </div>
+                                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--dark-navy)', whiteSpace: 'nowrap' }}>
+                                    {pos.toFixed(1)}%
+                                    {rank > 0 && (
+                                      <span style={{ color: '#d97706', marginLeft: '4px', fontWeight: 800 }}>
+                                        🏆 Hạng {rank}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               );

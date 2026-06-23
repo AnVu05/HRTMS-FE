@@ -10,7 +10,7 @@ const INITIAL_RACES = [
     location: 'Gulfstream Park, FL',
     date: 'Oct 12, 2024',
     prizePool: '$3,000,000',
-    status: 'Open', // 'Open' | 'Registered' | 'Closed'
+    status: 'PUBLISHED', // 'PUBLISHED' | 'Registered' | 'Closed'
     registeredHorse: null,
   },
   {
@@ -46,14 +46,14 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
 
   // Mock stable horses if none passed (fallback)
   const stableHorses = horses.length > 0 ? horses : [
-    { id: 1, name: 'Thunder Dash', status: 'Active', breed: 'THOROUGHBRED' },
-    { id: 2, name: 'Silver Mist', status: 'Training', breed: 'ARABIAN' },
-    { id: 3, name: 'Midnight Ace', status: 'Resting', breed: 'QUARTER HORSE' },
+    { id: 1, name: 'Thunder Dash', status: 'ACTIVE', breed: 'THOROUGHBRED' },
+    { id: 2, name: 'Silver Mist', status: 'INJURED', breed: 'ARABIAN' },
+    { id: 3, name: 'Midnight Ace', status: 'RETIRED', breed: 'QUARTER HORSE' },
   ];
 
-  // Filter horses that are eligible to register (Active or Training status)
+  // Filter horses that are eligible to register (ACTIVE status)
   const eligibleHorses = stableHorses.filter(
-    (h) => h.status === 'Active' || h.status === 'Training'
+    (h) => h.status === 'ACTIVE'
   );
 
   // Toggle card details drawer
@@ -113,7 +113,7 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
   };
 
   return (
-    <div className="races-page-wrapper pb-5">
+    <div className="stable-page-wrapper pb-5">
       {/* Header Navigation Bar */}
       <nav className="main-navbar d-flex justify-content-between align-items-center mb-4 py-2 px-3">
         <div className="d-flex align-items-center gap-3">
@@ -148,7 +148,6 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
             onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('stable-management'); }}
             className="nav-item-custom"
           >
-            {/* Custom Horseshoe inline SVG */}
             <svg
               viewBox="0 0 116.9 122.88"
               width="18"
@@ -245,7 +244,6 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
         </div>
       </nav>
 
-      {/* Main Container */}
       <div className="races-content-container px-3 px-md-4">
         {/* Centered Title & Description */}
         <div className="events-intro-section mb-4">
@@ -337,7 +335,7 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
           </div>
 
           <div className="d-flex flex-column gap-4">
-            {races.map((race) => {
+            {races.filter(race => race.status === 'PUBLISHED').map((race) => {
               const isExpanded = expandedRaceId === race.id;
               return (
                 <div key={race.id} className="race-event-card">
@@ -348,8 +346,8 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
                       <div className="d-flex flex-column gap-2" style={{ flex: '1 1 auto', minWidth: '250px' }}>
                         <div className="d-flex align-items-center gap-2">
                           <span className="badge-grade">{race.grade}</span>
-                          <span className={`badge-entry-status ${race.status.toLowerCase()}`}>
-                            {race.status === 'Open' ? 'Entry Open' : race.status}
+                          <span className={`badge-entry-status ${race.status === 'PUBLISHED' ? 'open' : race.status.toLowerCase()}`}>
+                            {race.status === 'PUBLISHED' ? 'Entry Open' : race.status}
                           </span>
                         </div>
                         <h3 className="race-event-name m-0">{race.title}</h3>
@@ -373,7 +371,7 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
                       {/* Right: Action Button and Accordion Toggle */}
                       <div className="d-flex align-items-center justify-content-end" style={{ flex: '0 0 auto', minWidth: '180px' }}>
                         <div className="register-btn-group">
-                          {race.status === 'Open' && (
+                          {race.status === 'PUBLISHED' && (
                             <button
                               className="btn btn-register-action"
                               onClick={() => handleRegisterClick(race)}
@@ -428,7 +426,7 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
                           ) : (
                             <p className="text-secondary-custom mb-0" style={{ fontSize: '13px' }}>
                               No horse currently registered for this event.
-                              {race.status === 'Open' && ' Click "REGISTER" above to enter one of your equine athletes.'}
+                              {race.status === 'PUBLISHED' && ' Click "REGISTER" above to enter one of your equine athletes.'}
                             </p>
                           )}
                         </div>
@@ -554,7 +552,6 @@ export default function OwnerRaces({ onNavigate, horses = [] }) {
           onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('stable-management'); }}
           className="nav-item-custom"
         >
-          {/* Custom Horseshoe inline SVG */}
           <svg
             viewBox="0 0 116.9 122.88"
             width="18"

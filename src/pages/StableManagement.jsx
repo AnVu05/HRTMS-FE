@@ -19,9 +19,9 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
     name: '',
     breed: '',
     age: '',
-    weight: '',
+    // weight: '',
     wins: '',
-    status: 'Active',
+    status: 'ACTIVE',
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -48,9 +48,9 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
       name: '',
       breed: '',
       age: '',
-      weight: '',
+      // weight: '',
       wins: '0',
-      status: 'Active',
+      status: 'ACTIVE',
     });
     setFormErrors({});
     setShowModal(true);
@@ -64,7 +64,7 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
       name: horse.name,
       breed: horse.breed,
       age: horse.age.toString(),
-      weight: horse.weight.toString(),
+      // weight: horse.weight ? horse.weight.toString() : '',
       wins: horse.wins.toString(),
       status: horse.status,
     });
@@ -87,10 +87,10 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
       errors.age = 'Age must be a positive number of years.';
     }
 
-    const weightNum = parseInt(formData.weight, 10);
-    if (!formData.weight || isNaN(weightNum) || weightNum <= 0) {
-      errors.weight = 'Weight must be a positive number of kg.';
-    }
+    // const weightNum = parseInt(formData.weight, 10);
+    // if (!formData.weight || isNaN(weightNum) || weightNum <= 0) {
+    //   errors.weight = 'Weight must be a positive number of kg.';
+    // }
 
     const winsNum = parseInt(formData.wins, 10);
     if (formData.wins === '' || isNaN(winsNum) || winsNum < 0) {
@@ -111,7 +111,7 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
       name: formData.name.trim(),
       breed: formData.breed.trim().toUpperCase(),
       age: parseInt(formData.age, 10),
-      weight: parseInt(formData.weight, 10),
+      // weight: formData.weight ? parseInt(formData.weight, 10) : undefined,
       wins: parseInt(formData.wins, 10),
       status: formData.status,
     };
@@ -329,7 +329,7 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
 
             {/* Filter Tabs */}
             <div className="col-12 col-md-7 d-flex justify-content-md-end gap-2 overflow-x-auto">
-              {['All', 'Active', 'Training', 'Resting'].map((status) => (
+              {['All', 'ACTIVE', 'INJURED', 'RETIRED'].map((status) => (
                 <button
                   key={status}
                   className={`filter-btn ${activeFilter === status ? 'active' : ''}`}
@@ -366,10 +366,10 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
                       <span className="metric-label">Age</span>
                       <span className="metric-value">{horse.age} Years</span>
                     </div>
-                    <div className="metric-item d-flex flex-column align-items-start">
+                    {/* <div className="metric-item d-flex flex-column align-items-start">
                       <span className="metric-label">Weight</span>
                       <span className="metric-value">{horse.weight} kg</span>
-                    </div>
+                    </div> */}
                     <div className="metric-item d-flex flex-column align-items-start">
                       <span className="metric-label">Wins</span>
                       <span className="metric-value">{horse.wins}</span>
@@ -403,16 +403,6 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
               <p className="text-secondary-custom fw-semibold mb-0">No horses found matching the filters.</p>
             </div>
           )}
-        </div>
-
-        {/* Global Ranking Card at the bottom left */}
-        <div className="ranking-card border p-4 mb-4 position-relative">
-          <i className="bi bi-trophy-fill text-warning position-absolute" style={{ right: '24px', top: '24px', fontSize: '20px' }}></i>
-          <span className="ranking-title d-block mb-3">Global Ranking</span>
-          <div className="ranking-value mb-1">
-            #12 <span>/ 450</span>
-          </div>
-          <span className="ranking-badge-green">Top 3% Worldwide</span>
         </div>
 
       </div>
@@ -470,7 +460,7 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
 
                 <div className="row g-3">
                   {/* Age */}
-                  <div className="col-6">
+                  <div className="col-12">
                     <label className="form-label-custom">Age (Years)</label>
                     <input
                       type="number"
@@ -487,7 +477,7 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
                   </div>
 
                   {/* Weight */}
-                  <div className="col-6">
+                  {/* <div className="col-6">
                     <label className="form-label-custom">Weight (kg)</label>
                     <input
                       type="number"
@@ -501,7 +491,7 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
                     {formErrors.weight && (
                       <div className="text-danger mt-1">{formErrors.weight}</div>
                     )}
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="row g-3">
@@ -539,9 +529,9 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
                         paddingRight: '40px'
                       }}
                     >
-                      <option value="Active">Active</option>
-                      <option value="Training">Training</option>
-                      <option value="Resting">Resting</option>
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INJURED">INJURED</option>
+                      <option value="RETIRED">RETIRED</option>
                     </select>
                   </div>
                 </div>
