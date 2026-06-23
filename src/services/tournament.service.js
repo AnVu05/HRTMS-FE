@@ -1,21 +1,12 @@
 import { apiRequest } from './api';
 
 export const tournamentService = {
-  /**
-   * Tạo giải đấu mới
-   * @param {Object} data
-   * @param {string} data.adminId
-   * @param {string} data.name
-   * @param {string} data.startDate YYYY-MM-DD
-   * @param {string} data.endDate YYYY-MM-DD
-   * @param {string} data.allowedBreed
-   * @param {string|number} data.allowedHorseAge
-   * @param {string} [data.tournamentDescription]
-   * @param {string} data.status DRAFT | PUBLISHED
-   */
   createTournament(data) {
     const adminIdParsed = parseInt(data.adminId || data.admin_id || 3, 10);
     const horseAgeParsed = parseInt(data.allowedHorseAge || data.allowed_horse_age, 10);
+    
+    // Lấy id từ data
+    const id = data.id; 
 
     const payload = {
       name: data.name,
@@ -27,8 +18,10 @@ export const tournamentService = {
       allowed_horse_age: isNaN(horseAgeParsed) ? 0 : horseAgeParsed,
       tournament_description: data.tournamentDescription || data.tournament_description || data.description || ''
     };
-    return apiRequest('/api/v1/tournaments', {
-      method: 'POST',
+
+    // Truyền id vào URL
+    return apiRequest(`/api/v1/tournaments/${id}`, {
+      method: 'POST', 
       body: JSON.stringify(payload)
     });
   },

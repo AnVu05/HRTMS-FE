@@ -65,4 +65,21 @@ export const refereeService = {
       method: 'GET',
     });
   },
+
+  /**
+   * Lấy danh sách trọng tài khả dụng
+   * @param {string} date 
+   * @param {string} startTime 
+   * @param {string} endTime 
+   * @param {number|string} excludeRaceId 
+   */
+  getAvailableReferees(date, startTime, endTime, excludeRaceId = null) {
+    let url = `/api/v1/referees?date=${encodeURIComponent(date)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`;
+    if (excludeRaceId) {
+      url += `&excludeRaceId=${encodeURIComponent(excludeRaceId)}`;
+    }
+    return apiRequest(url, {
+      method: 'GET',
+    });
+  },
 };

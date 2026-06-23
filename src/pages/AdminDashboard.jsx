@@ -5,6 +5,7 @@ import '../styles/AdminDashboard.css';
 import { tournamentService } from '../services/tournament.service';
 import { raceService } from '../services/race.service';
 import { jockeyService } from '../services/jockey.service';
+import { refereeService } from '../services/referee.service';
 
 const MOCK_HORSES = [
   'Lightning Strike',
@@ -52,6 +53,19 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   const [newRaceEndTime, setNewRaceEndTime] = useState('');
   const [newRaceHorse, setNewRaceHorse] = useState('');
   const [newRaceReferee, setNewRaceReferee] = useState('');
+  const [availableReferees, setAvailableReferees] = useState([]);
+
+  // Edit Race States
+  const [showEditRaceModal, setShowEditRaceModal] = useState(false);
+  const [editingRaceId, setEditingRaceId] = useState('');
+  const [editRaceLaps, setEditRaceLaps] = useState(3);
+  const [editRaceTrack, setEditRaceTrack] = useState('Standard');
+  const [editRaceHorseCount, setEditRaceHorseCount] = useState(8);
+  const [editRaceReferee, setEditRaceReferee] = useState('');
+  const [editRaceDate, setEditRaceDate] = useState('');
+  const [editRaceStartTime, setEditRaceStartTime] = useState('');
+  const [editRaceEndTime, setEditRaceEndTime] = useState('');
+  const [availableRefereesForEdit, setAvailableRefereesForEdit] = useState([]);
 
   // 'Create Tournament' Page Form States
   const [createTourneyName, setCreateTourneyName] = useState('');
@@ -61,6 +75,36 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
   const [updatingTourney, setUpdatingTourney] = useState(null);
+
+  useEffect(() => {
+    if (newRaceDate && newRaceStartTime && newRaceEndTime) {
+      refereeService.getAvailableReferees(newRaceDate, newRaceStartTime, newRaceEndTime)
+        .then(res => {
+          setAvailableReferees(res.data || []);
+        })
+        .catch(err => {
+          console.error("Error fetching available referees", err);
+          setAvailableReferees([]);
+        });
+    } else {
+      setAvailableReferees([]);
+    }
+  }, [newRaceDate, newRaceStartTime, newRaceEndTime]);
+
+  useEffect(() => {
+    if (editRaceDate && editRaceStartTime && editRaceEndTime && editingRaceId) {
+      refereeService.getAvailableReferees(editRaceDate, editRaceStartTime, editRaceEndTime, editingRaceId)
+        .then(res => {
+          setAvailableRefereesForEdit(res.data || []);
+        })
+        .catch(err => {
+          console.error("Error fetching available referees for edit", err);
+          setAvailableRefereesForEdit([]);
+        });
+    } else {
+      setAvailableRefereesForEdit([]);
+    }
+  }, [editRaceDate, editRaceStartTime, editRaceEndTime, editingRaceId]);
 
   const [selectedTourneyDetails, setSelectedTourneyDetails] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -429,26 +473,13 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
         allowedBreed: createBreed,
         allowedHorseAge: createAgeReq || "3+",
         tournamentDescription: createDescription,
-        status: "PUBLISHED"
+        status: "Draft"
       };
 
       const createdTourney = await tournamentService.createTournament(tourneyPayload);
       const tournamentId = createdTourney?.data?.id || createdTourney?.id;
 
-      const racesPayload = {
-        tournamentId,
-        races: createRacesList.map(r => ({
-          name: r.name || 'Race',
-          date: r.date || createStartDate,
-          startTime: r.startTime || '12:00',
-          endTime: r.endTime || '12:30',
-          laps: parseInt(r.laps, 10) || 3,
-          numHorse: parseInt(r.horsesCount, 10) || 8
-        }))
-      };
-
-      await raceService.createRacesBatch(racesPayload);
-      alert(createdTourney?.message || "Tournament and races successfully created.");
+      alert(createdTourney?.message || "Tournament successfully created.");
 
       await fetchDashboardTournaments(false);
       setSelectedId(tournamentId);
@@ -460,14 +491,10 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
       setCreateBreed('Thoroughbred');
       setCreateAgeReq('');
       setCreateDescription('');
-      setCreateRacesList([
-        { name: 'Op', date: '', startTime: '', endTime: '', laps: 1, horsesCount: 6, referee: '8' },
-        { name: 'Gr', date: '', startTime: '', endTime: '', laps: 2, horsesCount: 8, referee: '12' }
-      ]);
 
       setCurrentSubView('list');
     } catch (err) {
-      console.error("Error creating tournament and races:", err);
+      console.error("Error creating tournament:", err);
       alert(err.message || "Failed to create tournament.");
     }
   };
@@ -513,17 +540,15 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
 
     try {
       const racePayload = {
-        tournamentId: selectedId,
-        races: [
-          {
-            name: newRaceName,
-            date: newRaceDate || new Date().toISOString().split('T')[0],
-            startTime: newRaceStartTime,
-            endTime: newRaceEndTime,
-            laps: parseInt(newRaceLaps, 10) || 3,
-            numHorse: parseInt(newRaceHorse, 10) || 8
-          }
-        ]
+        date: newRaceDate || new Date().toISOString().split('T')[0],
+        laps: parseInt(newRaceLaps, 10) || 3,
+        track: "Standard",
+        tournament_id: selectedId,
+        race_name: newRaceName,
+        start_time: newRaceStartTime,
+        end_time: newRaceEndTime,
+        num_horse: parseInt(newRaceHorse, 10) || 8,
+        referee_id: parseInt(newRaceReferee, 10) || 0
       };
 
       await raceService.createRacesBatch(racePayload);
@@ -544,6 +569,48 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     } catch (err) {
       console.error("Error adding race:", err);
       alert(err.message || "Failed to add race.");
+    }
+  };
+
+  const handleOpenEditRaceModal = (race) => {
+    setEditingRaceId(race.id);
+    setEditRaceLaps(race.laps || 3);
+    setEditRaceTrack(race.track || 'Standard');
+    setEditRaceHorseCount(race.numHorse || race.num_horse || 8);
+    setEditRaceReferee(race.refereeId || race.referee_id || '');
+    
+    const date = race.date || new Date().toISOString().split('T')[0];
+    const sTime = race.startTime || race.start_time || '12:00';
+    const eTime = race.endTime || race.end_time || '12:30';
+
+    setEditRaceDate(date);
+    setEditRaceStartTime(sTime);
+    setEditRaceEndTime(eTime);
+    
+    setShowEditRaceModal(true);
+  };
+
+  const handleUpdateRace = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        laps: parseInt(editRaceLaps, 10) || 3,
+        track: editRaceTrack,
+        num_horse: parseInt(editRaceHorseCount, 10) || 8,
+        referee_id: parseInt(editRaceReferee, 10) || 0
+      };
+
+      await raceService.updateRace(editingRaceId, payload);
+      alert("Race successfully updated.");
+
+      await fetchDashboardTournaments(false);
+      const details = await raceService.getTournamentRaceDetails(selectedId);
+      setSelectedTourneyDetails(details);
+
+      setShowEditRaceModal(false);
+    } catch (err) {
+      console.error("Error updating race:", err);
+      alert(err.message || "Failed to update race.");
     }
   };
 
@@ -691,7 +758,6 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 {/* Section 1: Tournament Details */}
                 <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
                   <h3 className="h5 fw-bold text-dark-navy mb-3 create-section-title">Tournament Details</h3>
-
                   <div className="row g-3">
                     {/* Tournament Name */}
                     <div className="col-12 col-md-6">
@@ -785,133 +851,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                   </div>
                 </div>
 
-                {/* Section 2: Races */}
-                <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h3 className="h5 fw-bold text-dark-navy m-0 create-section-title">Races</h3>
-                    <button
-                      type="button"
-                      className="add-race-row-btn d-flex align-items-center gap-1"
-                      onClick={addCreateRaceRow}
-                    >
-                      <i className="bi bi-plus-lg"></i> Add Race Row
-                    </button>
-                  </div>
 
-                  <div className="table-responsive">
-                    <table className="table align-middle races-creation-table mb-0">
-                      <thead>
-                        <tr>
-                          <th scope="col" style={{ minWidth: '100px' }}>Race Name</th>
-                          <th scope="col" style={{ minWidth: '130px' }}>Date</th>
-                          <th scope="col" style={{ minWidth: '110px' }}>Start Time</th>
-                          <th scope="col" style={{ minWidth: '110px' }}>End Time</th>
-                          <th scope="col" style={{ minWidth: '80px' }}>Laps</th>
-                          <th scope="col" style={{ minWidth: '80px' }}>Horses</th>
-                          <th scope="col" style={{ minWidth: '100px' }}>Referee</th>
-                          <th scope="col" style={{ minWidth: '120px' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {createRacesList.length > 0 ? (
-                          createRacesList.map((race, index) => (
-                            <tr key={index}>
-                              <td>
-                                <input
-                                  type="text"
-                                  className="table-input-custom"
-                                  placeholder="e.g. Op"
-                                  value={race.name}
-                                  onChange={(e) => handleUpdateCreateRace(index, 'name', e.target.value)}
-                                  required
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="date"
-                                  className="table-input-custom"
-                                  value={race.date}
-                                  onChange={(e) => handleUpdateCreateRace(index, 'date', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="time"
-                                  className="table-input-custom"
-                                  value={race.startTime}
-                                  onChange={(e) => handleUpdateCreateRace(index, 'startTime', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="time"
-                                  className="table-input-custom"
-                                  value={race.endTime}
-                                  onChange={(e) => handleUpdateCreateRace(index, 'endTime', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  className="table-input-custom text-center"
-                                  value={race.laps}
-                                  min="1"
-                                  onChange={(e) => handleUpdateCreateRace(index, 'laps', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  className="table-input-custom text-center"
-                                  value={race.horsesCount}
-                                  min="1"
-                                  onChange={(e) => handleUpdateCreateRace(index, 'horsesCount', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="text"
-                                  className="table-input-custom text-center"
-                                  placeholder="e.g. 8"
-                                  value={race.referee}
-                                  onChange={(e) => handleUpdateCreateRace(index, 'referee', e.target.value)}
-                                />
-                              </td>
-                              <td>
-                                <div className="d-flex align-items-center gap-2">
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-secondary px-2.5 py-1 text-secondary-custom border-light-gray"
-                                    style={{ fontSize: '12.5px', borderRadius: '6px', backgroundColor: '#ffffff', borderColor: '#cbd5e1' }}
-                                  >
-                                    Referee
-                                  </button>
-                                  {createRacesList.length > 1 && (
-                                    <button
-                                      type="button"
-                                      className="action-delete-btn text-secondary-custom"
-                                      onClick={() => removeCreateRaceRow(index)}
-                                      aria-label="Delete Race Row"
-                                      style={{ padding: '4px 8px', borderRadius: '6px' }}
-                                    >
-                                      <i className="bi bi-trash"></i>
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="8" className="text-center py-4 text-muted border border-dashed rounded-3">
-                              No races added. Use "+ Add Race Row" to create races.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
 
                 {/* Form Buttons */}
                 <div className="d-flex justify-content-end gap-3 mt-4">
@@ -1128,7 +1068,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                                 <div className="text-secondary-custom font-monospace" style={{ fontSize: '11px' }}>{t.id}</div>
                               </td>
                               <td className="fw-semibold text-secondary-custom">{t.dates || (t.startDate && t.endDate ? `${t.startDate} - ${t.endDate}` : '') || (t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'No dates set')}</td>
-                              <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.raceCount !== undefined ? t.raceCount : t.race_count !== undefined ? t.race_count : 0} Races</td>
+                              <td className="fw-semibold text-dark-navy d-none d-md-table-cell">{t.numRaces !== undefined ? t.numRaces : 0} Races</td>
                               <td className="d-none d-md-table-cell">
                                 <span className={`status-badge-custom ${getStatusClass(t.status)}`}>
                                   {t.status}
@@ -1222,6 +1162,15 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                                     <span className={`status-badge-custom ${(race.status || 'PUBLISHED').toLowerCase()}`}>
                                       {race.status || 'PUBLISHED'}
                                     </span>
+                                    {displayTourney.status !== 'CANCELLED' && (
+                                      <button
+                                        className="btn btn-sm btn-outline-primary py-0 px-2"
+                                        onClick={() => handleOpenEditRaceModal(race)}
+                                        style={{ fontSize: '12px' }}
+                                      >
+                                        Edit
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
@@ -1551,8 +1500,8 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                   style={{ borderRadius: '6px', fontSize: '14px' }}
                 >
                   <option value="">Select Referee</option>
-                  {MOCK_REFEREES.map((r, index) => (
-                    <option key={index} value={r}>{r}</option>
+                  {availableReferees.map((r, index) => (
+                    <option key={r.id || index} value={r.id || r.name}>{r.name || r}</option>
                   ))}
                 </select>
               </div>
@@ -1566,6 +1515,95 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 ADD NEW RACE
               </button>
 
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Race Modal ── */}
+      {showEditRaceModal && (
+        <div className="modal-backdrop-custom d-flex align-items-center justify-content-center" style={{ zIndex: 1050 }}>
+          <div className="modal-card-custom bg-white rounded-3 shadow-lg position-relative border overflow-hidden" style={{ maxWidth: '400px' }}>
+            <div className="d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+              <h4 className="fw-bold text-dark-navy mb-0" style={{ fontSize: '18px' }}>Edit Race</h4>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => setShowEditRaceModal(false)}
+                aria-label="Close"
+              ></button>
+            </div>
+
+            <form onSubmit={handleUpdateRace} className="p-4">
+              <div className="row g-3 mb-3">
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    LAPS
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control py-2 px-3 border-light-gray"
+                    value={editRaceLaps}
+                    onChange={(e) => setEditRaceLaps(e.target.value)}
+                    required
+                    min="1"
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    HORSES
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control py-2 px-3 border-light-gray"
+                    value={editRaceHorseCount}
+                    onChange={(e) => setEditRaceHorseCount(e.target.value)}
+                    required
+                    min="1"
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                  TRACK
+                </label>
+                <input
+                  type="text"
+                  className="form-control py-2 px-3 border-light-gray"
+                  placeholder="e.g. Standard"
+                  value={editRaceTrack}
+                  onChange={(e) => setEditRaceTrack(e.target.value)}
+                  style={{ borderRadius: '6px', fontSize: '14px' }}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                  REFEREE
+                </label>
+                <select
+                  className="form-select py-2 px-3 border-light-gray"
+                  value={editRaceReferee}
+                  onChange={(e) => setEditRaceReferee(e.target.value)}
+                  style={{ borderRadius: '6px', fontSize: '14px' }}
+                >
+                  <option value="">Select Referee</option>
+                  {availableRefereesForEdit.map((r, index) => (
+                    <option key={r.id || index} value={r.id || r.name}>{r.name || r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary w-100 py-2.5 fw-bold text-uppercase text-center"
+                style={{ borderRadius: '6px', fontSize: '13px', letterSpacing: '0.5px' }}
+              >
+                UPDATE RACE
+              </button>
             </form>
           </div>
         </div>

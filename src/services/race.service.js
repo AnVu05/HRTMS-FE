@@ -8,7 +8,7 @@ export const raceService = {
    * @param {Array} data.races Danh sách races gồm (name, date, startTime, endTime, laps, numHorse)
    */
   createRacesBatch(data) {
-    return apiRequest('/api/v1/races/batch', {
+    return apiRequest('/api/v1/races', {
       method: 'POST',
       body: JSON.stringify(data)
     });
@@ -21,6 +21,18 @@ export const raceService = {
   getTournamentRaceDetails(tournamentId) {
     return apiRequest(`/api/v1/races/tournament/${tournamentId}`, {
       method: 'GET'
+    });
+  },
+
+  /**
+   * Cập nhật thông tin cuộc đua
+   * @param {string|number} id
+   * @param {Object} data
+   */
+  updateRace(id, data) {
+    return apiRequest(`/api/v1/races/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
     });
   }
 };
