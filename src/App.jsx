@@ -6,9 +6,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import StableManagement from './pages/StableManagement';
 import OwnerRaces from './pages/OwnerRaces';
 import JockeyProfile from './pages/JockeyProfile';
-import DashboardInvitations from './pages/DashboardInvitations';
+import RefereeDashboard from './pages/RefereeDashboard';
 
-const PAGES = ['dashboard-invitations','login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management', 'owner-races', 'jockey-profile'];
+const PAGES = ['login', 'register', 'spectator-home', 'admin-dashboard', 'stable-management', 'owner-races', 'jockey-profile', 'referee-dashboard'];
 
 const INITIAL_HORSES = [
   {
@@ -43,21 +43,21 @@ function App() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'dashboard-invitations': return <DashboardInvitations onNavigate={setCurrentPage} horses={horses} />;
-      case 'login':             return <LoginOtp onNavigate={setCurrentPage} />;
-      case 'register':          return <Register onNavigate={setCurrentPage} />;
-      case 'spectator-home':    return <SpectatorHome onNavigate={setCurrentPage} />;
-      case 'admin-dashboard':   return <AdminDashboard onNavigate={setCurrentPage} />;
+      case 'login': return <LoginOtp onNavigate={setCurrentPage} />;
+      case 'register': return <Register onNavigate={setCurrentPage} />;
+      case 'spectator-home': return <SpectatorHome onNavigate={setCurrentPage} />;
+      case 'admin-dashboard': return <AdminDashboard onNavigate={setCurrentPage} adminId={2} />;
       case 'stable-management': return <StableManagement onNavigate={setCurrentPage} horses={horses} setHorses={setHorses} />;
-      case 'owner-races':       return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
-      case 'jockey-profile':    return <JockeyProfile onNavigate={setCurrentPage} jockeyId={1} />;
-      default:                  return <LoginOtp onNavigate={setCurrentPage} />;
+      case 'owner-races': return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
+      case 'jockey-profile': return <JockeyProfile onNavigate={setCurrentPage} jockeyId={6} />;
+      case 'referee-dashboard': return <RefereeDashboard onNavigate={setCurrentPage} refereeId={5} />;
+      default: return <LoginOtp onNavigate={setCurrentPage} />;
     }
   };
 
   return (
     <>
-       {/* Dev navigation bar – remove in production */}
+      {/* Dev navigation bar – remove in production */}
       <div style={{
         position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
         zIndex: 9999, display: 'flex', gap: 6, background: 'rgba(255,255,255,0.92)',
@@ -85,9 +85,9 @@ function App() {
 
 
       {/* Page content */}
-      <div 
-        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races' || currentPage === 'jockey-profile') ? 'full-width' : ''}`}
-        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races' || currentPage === 'jockey-profile') ? 0 : 40 }}
+      <div
+        className={`app-page-container ${(currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races' || currentPage === 'jockey-profile' || currentPage === 'referee-dashboard') ? 'full-width' : ''}`}
+        style={{ paddingTop: (currentPage === 'spectator-home' || currentPage === 'admin-dashboard' || currentPage === 'stable-management' || currentPage === 'owner-races' || currentPage === 'jockey-profile' || currentPage === 'referee-dashboard') ? 0 : 40 }}
       >
         {renderPage()}
       </div>
