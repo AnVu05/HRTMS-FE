@@ -90,16 +90,12 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
         console.warn('Failed to fetch certificate results:', err);
         return { data: [] }; // fallback
       }),
-      jockeyService.getJockeyCerts(jockeyId).catch((err) => {
-        console.warn('Failed to fetch jockey certs:', err);
-        return { data: [] };
-      }),
-      jockeyService.getJockeyCertImages(jockeyId).catch((err) => {
-        console.warn('Failed to fetch cert images:', err);
+      jockeyService.getJockeyCertificates(jockeyId).catch((err) => {
+        console.warn('Failed to fetch certificates:', err);
         return { data: [] };
       })
     ])
-      .then(([profileRes, notifRes, certsRes, imagesRes]) => {
+      .then(([profileRes, notifRes, certsRes]) => {
         // Handle profile
         const data = profileRes.data ?? profileRes;
         setProfile(mapApiToProfile(data));
@@ -135,22 +131,13 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
         }
 
         // Handle certificates
-        const allCertsData = certsRes?.data || [];
-        // Match the jockey's data
-        const myCertData = allCertsData.find(c => String(c.jockey_id) === String(jockeyId));
-        const pendingNames = myCertData?.pending_certificates || [];
-        const imagesData = imagesRes?.data || [];
-
-        // Map over imagesData as the primary source of certificates to ensure all uploaded certificates are shown
-        const newCerts = imagesData.map((imgObj, index) => {
-          const name = pendingNames[index] || `Certificate ${index + 1}`;
-          return {
-            id: `cert-api-${index}`,
-            name: name,
-            status: 'pending', 
-            image: imgObj.cert_image_base64 ? `data:image/jpeg;base64,${imgObj.cert_image_base64}` : null
-          };
-        });
+        const certData = certsRes?.data || [];
+        const newCerts = certData.map((c) => ({
+          id: c.cert_id,
+          name: c.cert_name || `Certificate ${c.cert_id}`,
+          status: c.status ? c.status.toLowerCase() : 'pending', 
+          image: c.cert_image_base64 ? `data:image/jpeg;base64,${c.cert_image_base64}` : null
+        }));
 
         setCertificates(newCerts);
       })
