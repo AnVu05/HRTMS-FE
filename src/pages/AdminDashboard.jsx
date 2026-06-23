@@ -697,7 +697,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 onClick={() => setCurrentSubView('create')}
                 style={{ borderRadius: '8px', fontSize: '14px', letterSpacing: '0.5px' }}
               >
-                HRTMS
+                HRTMS</button>
               </span>
             </div>
             {currentSubView === "list" && (
