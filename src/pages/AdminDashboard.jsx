@@ -1081,6 +1081,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                                     e.stopPropagation();
                                     handleUpdateClick(t);
                                   }}
+                                  disabled={t.status?.toLowerCase() !== 'draft'}
                                   style={{ borderRadius: '6px' }}
                                 >
                                   Update
@@ -1156,22 +1157,21 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                             displayTourney.races.map(race => (
                               <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
                                 <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
-                                  <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
-                                  <div className="d-flex gap-1.5 flex-wrap">
-                                    <span className="badge-custom-code">{race.code}</span>
+                                  <div className="d-flex align-items-center gap-2">
+                                    <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
                                     <span className={`status-badge-custom ${(race.status || 'PUBLISHED').toLowerCase()}`}>
                                       {race.status || 'PUBLISHED'}
                                     </span>
-                                    {displayTourney.status !== 'CANCELLED' && (
-                                      <button
-                                        className="btn btn-sm btn-outline-primary py-0 px-2"
-                                        onClick={() => handleOpenEditRaceModal(race)}
-                                        style={{ fontSize: '12px' }}
-                                      >
-                                        Edit
-                                      </button>
-                                    )}
                                   </div>
+                                  {displayTourney.status !== 'CANCELLED' && (
+                                    <button
+                                      className="btn btn-sm btn-outline-primary py-0 px-2 ms-auto"
+                                      onClick={() => handleOpenEditRaceModal(race)}
+                                      style={{ fontSize: '12px' }}
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
                                 </div>
                                 <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
                                   <i className="bi bi-clock"></i>
