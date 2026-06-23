@@ -4,9 +4,6 @@ export const tournamentService = {
   createTournament(data) {
     const adminIdParsed = parseInt(data.adminId || data.admin_id || 3, 10);
     const horseAgeParsed = parseInt(data.allowedHorseAge || data.allowed_horse_age, 10);
-    
-    // Lấy id từ data
-    const id = data.id; 
 
     const payload = {
       name: data.name,
@@ -19,9 +16,9 @@ export const tournamentService = {
       tournament_description: data.tournamentDescription || data.tournament_description || data.description || ''
     };
 
-    // Truyền id vào URL
-    return apiRequest(`/api/v1/tournaments/${id}`, {
-      method: 'POST', 
+    // Truyền admin_id vào URL
+    return apiRequest(`/api/v1/tournaments/${payload.admin_id}`, {
+      method: 'POST',
       body: JSON.stringify(payload)
     });
   },

@@ -7,7 +7,8 @@ import StableManagement from "./pages/StableManagement";
 import OwnerRaces from "./pages/OwnerRaces";
 import JockeyProfile from "./pages/JockeyProfile";
 import RefereeDashboard from "./pages/RefereeDashboard";
-
+// THÊM VÀO ĐẦU FILE:
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const PAGES = [
   "login",
   "register",
@@ -45,7 +46,8 @@ const INITIAL_HORSES = [
     status: "RETIRED",
   },
 ];
-
+// THÊM VÀO NGOÀI COMPONENT APP:
+const queryClient = new QueryClient();
 function App() {
   const [currentPage, setCurrentPage] = useState("owner-races");
   const [horses, setHorses] = useState(INITIAL_HORSES);
@@ -59,7 +61,7 @@ function App() {
       case "spectator-home":
         return <SpectatorHome onNavigate={setCurrentPage} />;
       case "admin-dashboard":
-        return <AdminDashboard onNavigate={setCurrentPage} adminId={2} />;
+        return <AdminDashboard onNavigate={setCurrentPage} adminId={1} />;
       case "stable-management":
         return (
           <StableManagement
@@ -71,16 +73,16 @@ function App() {
       case "owner-races":
         return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
       case "jockey-profile":
-        return <JockeyProfile onNavigate={setCurrentPage} jockeyId={6} />;
+        return <JockeyProfile onNavigate={setCurrentPage} jockeyId={4} />;
       case "referee-dashboard":
-        return <RefereeDashboard onNavigate={setCurrentPage} refereeId={4} />;
+        return <RefereeDashboard onNavigate={setCurrentPage} refereeId={2} />;
       default:
         return <LoginOtp onNavigate={setCurrentPage} />;
     }
   };
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       {/* Dev navigation bar – remove in production */}
       <div
         style={{
@@ -137,18 +139,18 @@ function App() {
         style={{
           paddingTop:
             currentPage === "spectator-home" ||
-            currentPage === "admin-dashboard" ||
-            currentPage === "stable-management" ||
-            currentPage === "owner-races" ||
-            currentPage === "jockey-profile" ||
-            currentPage === "referee-dashboard"
+              currentPage === "admin-dashboard" ||
+              currentPage === "stable-management" ||
+              currentPage === "owner-races" ||
+              currentPage === "jockey-profile" ||
+              currentPage === "referee-dashboard"
               ? 0
               : 40,
         }}
       >
         {renderPage()}
       </div>
-    </>
+    </QueryClientProvider>
   );
 }
 

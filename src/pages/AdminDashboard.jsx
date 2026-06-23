@@ -1167,6 +1167,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                                     <button
                                       className="btn btn-sm btn-outline-primary py-0 px-2 ms-auto"
                                       onClick={() => handleOpenEditRaceModal(race)}
+                                      disabled={(race.status || 'PUBLISHED').toUpperCase() === 'PUBLISHED'}
                                       style={{ fontSize: '12px' }}
                                     >
                                       Edit
