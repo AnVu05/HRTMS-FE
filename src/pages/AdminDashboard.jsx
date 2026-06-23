@@ -74,6 +74,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   const [createBreed, setCreateBreed] = useState('Thoroughbred');
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [createStatus, setCreateStatus] = useState('DRAFT');
   const [updatingTourney, setUpdatingTourney] = useState(null);
 
   useEffect(() => {
@@ -349,6 +350,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setCreateBreed(t.allowedBreed || t.allowed_breed || 'Thoroughbred');
     setCreateAgeReq(t.allowedHorseAge !== undefined ? t.allowedHorseAge.toString() : t.allowed_horse_age !== undefined ? t.allowed_horse_age.toString() : '');
     setCreateDescription(t.tournamentDescription || t.tournament_description || '');
+    setCreateStatus(t.status || 'DRAFT');
 
     if (t.races && t.races.length > 0) {
       setCreateRacesList(t.races.map(r => ({
@@ -382,7 +384,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
         allowedBreed: createBreed,
         allowedHorseAge: createAgeReq || "0",
         tournamentDescription: createDescription,
-        status: updatingTourney?.status || "PUBLISHED"
+        status: createStatus
       };
 
       const response = await tournamentService.updateTournament(updatingTourney.id, updatePayload);
@@ -473,7 +475,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
         allowedBreed: createBreed,
         allowedHorseAge: createAgeReq || "3+",
         tournamentDescription: createDescription,
-        status: "Draft"
+        status: "DRAFT"
       };
 
       const createdTourney = await tournamentService.createTournament(tourneyPayload);
@@ -578,7 +580,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setEditRaceTrack(race.track || 'Standard');
     setEditRaceHorseCount(race.numHorse || race.num_horse || 8);
     setEditRaceReferee(race.refereeId || race.referee_id || '');
-    
+
     const date = race.date || new Date().toISOString().split('T')[0];
     const sTime = race.startTime || race.start_time || '12:00';
     const eTime = race.endTime || race.end_time || '12:30';
@@ -586,7 +588,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setEditRaceDate(date);
     setEditRaceStartTime(sTime);
     setEditRaceEndTime(eTime);
-    
+
     setShowEditRaceModal(true);
   };
 
@@ -594,6 +596,9 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     e.preventDefault();
     try {
       const payload = {
+        date: editRaceDate,
+        start_time: editRaceStartTime,
+        end_time: editRaceEndTime,
         laps: parseInt(editRaceLaps, 10) || 3,
         track: editRaceTrack,
         num_horse: parseInt(editRaceHorseCount, 10) || 8,
@@ -686,7 +691,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
 
         {/* Back / Sign Out Button */}
         <div className="sidebar-footer p-3 border-top">
-          {currentSubView === 'create' ? (
+          {currentSubView === 'create' || currentSubView === 'update' ? (
             <button
               className="w-100 sign-out-btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger bg-transparent"
               onClick={() => setCurrentSubView('list')}
@@ -984,6 +989,22 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                       />
                     </div>
 
+                    {/* Tournament Status */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Status
+                      </label>
+                      <select
+                        className="form-select py-2 px-3 form-input-custom"
+                        value={createStatus}
+                        onChange={(e) => setCreateStatus(e.target.value)}
+                      >
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="PUBLISHED">PUBLISHED</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                      </select>
+                    </div>
+
                     {/* Tournament Description */}
                     <div className="col-12">
                       <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
@@ -1156,23 +1177,27 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                           {(displayTourney.races || []).length > 0 ? (
                             displayTourney.races.map(race => (
                               <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
-                                <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
-                                  <div className="d-flex align-items-center gap-2">
-                                    <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '12px', alignItems: 'center', marginBottom: '8px' }}>
+                                  <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px', wordBreak: 'break-word' }}>
+                                    {race.name}
+                                  </h5>
+                                  <div>
                                     <span className={`status-badge-custom ${(race.status || 'PUBLISHED').toLowerCase()}`}>
                                       {race.status || 'PUBLISHED'}
                                     </span>
                                   </div>
-                                  {displayTourney.status !== 'CANCELLED' && (
-                                    <button
-                                      className="btn btn-sm btn-outline-primary py-0 px-2 ms-auto"
-                                      onClick={() => handleOpenEditRaceModal(race)}
-                                      disabled={(race.status || 'PUBLISHED').toUpperCase() === 'PUBLISHED'}
-                                      style={{ fontSize: '12px' }}
-                                    >
-                                      Edit
-                                    </button>
-                                  )}
+                                  <div>
+                                    {displayTourney.status !== 'CANCELLED' && (
+                                      <button
+                                        className="btn btn-sm btn-outline-primary py-0 px-2"
+                                        onClick={() => handleOpenEditRaceModal(race)}
+                                        disabled={(race.status || 'PUBLISHED').toUpperCase() === 'PUBLISHED'}
+                                        style={{ fontSize: '12px' }}
+                                      >
+                                        Edit
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
                                   <i className="bi bi-clock"></i>
@@ -1536,6 +1561,51 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
             </div>
 
             <form onSubmit={handleUpdateRace} className="p-4">
+              {/* Date */}
+              <div className="mb-3">
+                <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                  DATE
+                </label>
+                <input
+                  type="date"
+                  className="form-control py-2 px-3 border-light-gray"
+                  value={editRaceDate}
+                  onChange={(e) => setEditRaceDate(e.target.value)}
+                  required
+                  style={{ borderRadius: '6px', fontSize: '14px' }}
+                />
+              </div>
+
+              {/* Start & End Time */}
+              <div className="row g-3 mb-3">
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    START TIME
+                  </label>
+                  <input
+                    type="time"
+                    className="form-control py-2 px-3 border-light-gray"
+                    value={editRaceStartTime}
+                    onChange={(e) => setEditRaceStartTime(e.target.value)}
+                    required
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    END TIME
+                  </label>
+                  <input
+                    type="time"
+                    className="form-control py-2 px-3 border-light-gray"
+                    value={editRaceEndTime}
+                    onChange={(e) => setEditRaceEndTime(e.target.value)}
+                    required
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+              </div>
+
               <div className="row g-3 mb-3">
                 <div className="col-6">
                   <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
@@ -1589,6 +1659,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                   className="form-select py-2 px-3 border-light-gray"
                   value={editRaceReferee}
                   onChange={(e) => setEditRaceReferee(e.target.value)}
+                  disabled={!editRaceDate || !editRaceStartTime || !editRaceEndTime}
                   style={{ borderRadius: '6px', fontSize: '14px' }}
                 >
                   <option value="">Select Referee</option>
@@ -1596,6 +1667,11 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                     <option key={r.id || index} value={r.id || r.name}>{r.name || r}</option>
                   ))}
                 </select>
+                {(!editRaceDate || !editRaceStartTime || !editRaceEndTime) && (
+                  <div className="form-text text-danger mt-1" style={{ fontSize: '11px' }}>
+                    Vui lòng chọn ngày, thời gian bắt đầu và kết thúc để cập nhật trọng tài.
+                  </div>
+                )}
               </div>
 
               <button
