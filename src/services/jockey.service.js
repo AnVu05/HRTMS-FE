@@ -67,6 +67,16 @@ export const jockeyService = {
   },
 
   /**
+   * Lấy danh sách chứng chỉ (API mới)
+   * @param {number|string} jockeyId 
+   */
+  getJockeyCertificates(jockeyId) {
+    return apiRequest(`/api/jockeys/${jockeyId}/certificates`, {
+      method: 'GET',
+    });
+  },
+
+  /**
    * Lấy hình ảnh chứng chỉ từ database
    * @param {number|string} jockeyId 
    */
