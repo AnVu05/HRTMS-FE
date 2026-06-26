@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { jockeyService } from '../services/jockey.service';
 import '../styles/JockeyProfile.css';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 
 // ─── Fallback Mock Data (used when API is unavailable) ───
 const FALLBACK_PROFILE = {
@@ -76,6 +78,28 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
   const [uploadingCert, setUploadingCert] = useState(false);
   const [verifyingCerts, setVerifyingCerts] = useState(false);
   const [error, setError] = useState(null);
+  // THÊM CODE: Khởi tạo queryClient
+  const queryClient = useQueryClient();
+
+  // THÊM CODE: Hook useQuery quản lý việc lấy danh sách chứng chỉ tự động
+  const { data: reactQueryCerts } = useQuery({
+    queryKey: ['certificates', jockeyId],
+    queryFn: () => jockeyService.getJockeyCertificates(jockeyId),
+    enabled: !!jockeyId,
+  });
+
+  // THÊM CODE: Bắt sự kiện mỗi khi React Query tự động lấy được data mới -> đồng bộ vào state cũ của cậu
+  useEffect(() => {
+    if (reactQueryCerts && reactQueryCerts.data) {
+      const newCerts = reactQueryCerts.data.map((c) => ({
+        id: c.cert_id,
+        name: c.cert_name || `Certificate ${c.cert_id}`,
+        status: c.status ? c.status.toLowerCase() : 'pending',
+        image: c.cert_image_base64 ? `data:image/jpeg;base64,${c.cert_image_base64}` : null
+      }));
+      setCertificates(newCerts); // Cập nhật vào state cũ không cần xóa code
+    }
+  }, [reactQueryCerts]);
 
   // ─── Fetch profile from API on mount ───
   useEffect(() => {
@@ -106,10 +130,10 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
           const apiUpdates = notifs.map((n, i) => {
             const isAccepted = n.type === 'ACCEPT_CERTIFICATE';
             const isRejected = n.type === 'REJECT_CERTIFICATE';
-            
+
             let iconType = 'info';
             let iconClass = 'bi-info-circle-fill';
-            
+
             if (isAccepted) {
               iconType = 'success';
               iconClass = 'bi-check-circle-fill';
@@ -135,7 +159,7 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
         const newCerts = certData.map((c) => ({
           id: c.cert_id,
           name: c.cert_name || `Certificate ${c.cert_id}`,
-          status: c.status ? c.status.toLowerCase() : 'pending', 
+          status: c.status ? c.status.toLowerCase() : 'pending',
           image: c.cert_image_base64 ? `data:image/jpeg;base64,${c.cert_image_base64}` : null
         }));
 
@@ -223,19 +247,21 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
     }
 
     setUploadingCert(true);
-    
+
     try {
       // Convert file to base64
       const reader = new FileReader();
       reader.onload = async () => {
         const base64String = reader.result.split(',')[1];
-        
+
         try {
           await jockeyService.addCertificate(jockeyId, {
             certName: newCertName.trim(),
             certImageBase64: base64String
           });
-
+          // THÊM DÒNG NÀY: Ra lệnh báo cho React Query biết data cũ đã hết hạn
+          // React Query sẽ ngầm tự động gọi lại API và cập nhật lại giao diện ngay lập tức!
+          queryClient.invalidateQueries({ queryKey: ['certificates', jockeyId] });
           const cert = {
             id: Date.now(),
             name: newCertName.trim(),
@@ -247,7 +273,7 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
           setNewCertName('');
           setNewCertFile(null);
           showToast(`Certificate "${cert.name}" uploaded successfully.`);
-          
+
           setUpdates((prev) => [
             {
               id: Date.now(),
@@ -412,241 +438,242 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
 
       {/* Main Content */}
       {!loading && (
-      <div className="jockey-profile-content">
-        <div className="jockey-profile-grid">
-          {/* ─── Left Column ─── */}
-          <div className="d-flex flex-column gap-4">
-            {/* Personal Profile Card */}
-            <div className="jp-card" id="personal-profile-card">
-              <h2 className="jp-section-title">
-                <i className="bi bi-person-vcard"></i>
-                Personal Profile
-              </h2>
+        <div className="jockey-profile-content">
+          <div className="jockey-profile-grid">
+            {/* ─── Left Column ─── */}
+            <div className="d-flex flex-column gap-4">
+              {/* Personal Profile Card */}
+              <div className="jp-card" id="personal-profile-card">
+                <h2 className="jp-section-title">
+                  <i className="bi bi-person-vcard"></i>
+                  Personal Profile
+                </h2>
 
-              <div className="jp-input-row mb-3">
-                <div>
-                  <label className="jp-label">Jockey Name</label>
-                  <input
-                    type="text"
-                    className="jp-input"
-                    id="jockey-name-input"
-                    value={profile.name}
-                    onChange={(e) => handleProfileChange('name', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="jp-label">Years Exp</label>
-                  <input
-                    type="number"
-                    className="jp-input"
-                    id="jockey-exp-input"
-                    value={profile.yearsExp}
-                    onChange={(e) => handleProfileChange('yearsExp', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="jp-label">Age</label>
-                  <input
-                    type="number"
-                    className="jp-input"
-                    id="jockey-age-input"
-                    value={profile.age}
-                    onChange={(e) => handleProfileChange('age', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <label className="jp-label">Professional Bio</label>
-                <textarea
-                  className="jp-input jp-textarea"
-                  id="jockey-bio-input"
-                  value={profile.bio}
-                  onChange={(e) => handleProfileChange('bio', e.target.value)}
-                />
-              </div>
-
-              <div className="d-flex justify-content-end">
-                <button
-                  className="jp-save-btn"
-                  id="save-profile-btn"
-                  onClick={handleSaveProfile}
-                  disabled={saving}
-                  style={{ opacity: saving ? 0.7 : 1 }}
-                >
-                  {saving ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-floppy"></i>
-                      Save Changes
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Professional Certificates Card */}
-            <div className="jp-card" id="certificates-card">
-              <h2 className="jp-section-title">
-                <i className="bi bi-patch-check-fill"></i>
-                Professional Certificates
-              </h2>
-
-              <div className="jp-cert-grid">
-                {certificates.map((cert) => (
-                  <div className="jp-cert-item" key={cert.id} id={`cert-${cert.id}`}>
-                    {/* Certificate image or placeholder */}
-                    <div className="jp-cert-image d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
-                      {cert.image ? (
-                        <img src={cert.image} alt={cert.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: '12px' }}>
-                          <i className="bi bi-file-earmark-richtext" style={{ fontSize: '32px', color: '#94a3b8' }}></i>
-                          <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Certificate</div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="jp-cert-info">
-                      <span className="jp-cert-name">{cert.name}</span>
-                      <span className={`jp-cert-badge ${cert.status}`}>
-                        {cert.status === 'verified' && <><i className="bi bi-check-circle-fill me-1"></i>Verified</>}
-                        {cert.status === 'pending' && <><i className="bi bi-clock-fill me-1"></i>Pending</>}
-                        {cert.status === 'expired' && <><i className="bi bi-x-circle-fill me-1"></i>Expired</>}
-                      </span>
-                    </div>
+                <div className="jp-input-row mb-3">
+                  <div>
+                    <label className="jp-label">Jockey Name</label>
+                    <input
+                      type="text"
+                      className="jp-input"
+                      id="jockey-name-input"
+                      value={profile.name}
+                      onChange={(e) => handleProfileChange('name', e.target.value)}
+                    />
                   </div>
-                ))}
-
-                {/* Add new cert placeholder */}
-                <div
-                  className="jp-cert-add"
-                  id="add-certificate-btn"
-                  onClick={() => setShowCertModal(true)}
-                >
-                  <div className="jp-cert-add-icon">
-                    <i className="bi bi-plus-lg"></i>
+                  <div>
+                    <label className="jp-label">Years Exp</label>
+                    <input
+                      type="number"
+                      className="jp-input"
+                      id="jockey-exp-input"
+                      value={profile.yearsExp}
+                      onChange={(e) => handleProfileChange('yearsExp', e.target.value)}
+                    />
                   </div>
-                  <span className="jp-cert-add-title">Add New Certificate</span>
-                  <span className="jp-cert-add-desc">Upload verified racing credentials</span>
+                  <div>
+                    <label className="jp-label">Age</label>
+                    <input
+                      type="number"
+                      className="jp-input"
+                      id="jockey-age-input"
+                      value={profile.age}
+                      onChange={(e) => handleProfileChange('age', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="jp-label">Professional Bio</label>
+                  <textarea
+                    className="jp-input jp-textarea"
+                    id="jockey-bio-input"
+                    value={profile.bio}
+                    onChange={(e) => handleProfileChange('bio', e.target.value)}
+                  />
+                </div>
+
+                <div className="d-flex justify-content-end">
+                  <button
+                    className="jp-save-btn"
+                    id="save-profile-btn"
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                    style={{ opacity: saving ? 0.7 : 1 }}
+                  >
+                    {saving ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-floppy"></i>
+                        Save Changes
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              <div className="text-center mt-2">
-                <button
-                  className="jp-verify-btn"
-                  id="request-verification-btn"
-                  onClick={handleRequestVerification}
-                  disabled={verifyingCerts}
-                  style={{ opacity: verifyingCerts ? 0.6 : 1 }}
-                >
-                  {verifyingCerts ? (
-                    <><span className="spinner-border spinner-border-sm me-2"></span>Requesting...</>
-                  ) : (
-                    <><i className="bi bi-shield-check"></i> Request Global Verification</>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+              {/* Professional Certificates Card */}
+              <div className="jp-card" id="certificates-card">
+                <h2 className="jp-section-title">
+                  <i className="bi bi-patch-check-fill"></i>
+                  Professional Certificates
+                </h2>
 
-          {/* ─── Right Sidebar ─── */}
-          <div className="jp-sidebar">
-            {/* Season Summary */}
-            <div className="jp-card jp-summary-card" id="season-summary-card" style={{ position: 'relative' }}>
-              <span className="jp-summary-icon">
-                <i className="bi bi-bar-chart-line-fill"></i>
-              </span>
-              <h3 className="jp-summary-title">Season Summary</h3>
-              <div className="jp-summary-stats">
-                <div className="jp-stat-box">
-                  <div className="jp-stat-value">{SEASON_STATS.racesEntered}</div>
-                  <div className="jp-stat-label">Races Entered</div>
-                </div>
-                <div className="jp-stat-box">
-                  <div className="jp-stat-value">{SEASON_STATS.topPlaced}</div>
-                  <div className="jp-stat-label">Top 3 Placed</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Invitations */}
-            {invitations.length > 0 && (
-              <div className="jp-card" id="invitations-card">
-                <div className="jp-invite-header">
-                  <span className="jp-invite-title">
-                    <i className="bi bi-envelope-open-fill" style={{ color: 'var(--primary-blue)' }}></i>
-                    Invitations
-                  </span>
-                  <span className="jp-invite-badge">{invitations.length} NEW</span>
-                </div>
-
-                <div className="jp-invite-list">
-                  {invitations.map((inv) => (
-                    <div className="jp-invite-item" key={inv.id} id={`invite-${inv.id}`}>
-                      <div className={`jp-invite-avatar ${inv.avatarType}`}>
-                        {inv.avatarIcon ? (
-                          <i className={`bi ${inv.avatarIcon}`}></i>
+                <div className="jp-cert-grid">
+                  {certificates.map((cert) => (
+                    <div className="jp-cert-item" key={cert.id} id={`cert-${cert.id}`}>
+                      {/* Certificate image or placeholder */}
+                      <div className="jp-cert-image d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
+                        {cert.image ? (
+                          <img src={cert.image} alt={cert.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          inv.avatarText
+                          <div style={{ textAlign: 'center', padding: '12px' }}>
+                            <i className="bi bi-file-earmark-richtext" style={{ fontSize: '32px', color: '#94a3b8' }}></i>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Certificate</div>
+                          </div>
                         )}
                       </div>
-                      <div className="jp-invite-details">
-                        <div className="jp-invite-name">{inv.orgName}</div>
-                        <div className="jp-invite-desc">{inv.orgDesc}</div>
-                        <div className="jp-invite-actions">
-                          <button
-                            className="jp-invite-accept"
-                            onClick={() => handleInvitation(inv.id, 'accept')}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            className="jp-invite-decline"
-                            onClick={() => handleInvitation(inv.id, 'decline')}
-                          >
-                            Decline
-                          </button>
-                        </div>
+                      <div className="jp-cert-info">
+                        <span className="jp-cert-name">{cert.name}</span>
+                        <span className={`jp-cert-badge ${cert.status}`}>
+                          {cert.status === 'verified' && <><i className="bi bi-check-circle-fill me-1"></i>Verified</>}
+                          {cert.status === 'pending' && <><i className="bi bi-clock-fill me-1"></i>Pending</>}
+                          {cert.status === 'expired' && <><i className="bi bi-x-circle-fill me-1"></i>Expired</>}
+                          {cert.status === 'rejected' && <><i className="bi bi-exclamation-circle-fill me-1"></i>Rejected</>}
+                        </span>
                       </div>
                     </div>
                   ))}
+
+                  {/* Add new cert placeholder */}
+                  <div
+                    className="jp-cert-add"
+                    id="add-certificate-btn"
+                    onClick={() => setShowCertModal(true)}
+                  >
+                    <div className="jp-cert-add-icon">
+                      <i className="bi bi-plus-lg"></i>
+                    </div>
+                    <span className="jp-cert-add-title">Add New Certificate</span>
+                    <span className="jp-cert-add-desc">Upload verified racing credentials</span>
+                  </div>
+                </div>
+
+                <div className="text-center mt-2">
+                  <button
+                    className="jp-verify-btn"
+                    id="request-verification-btn"
+                    onClick={handleRequestVerification}
+                    disabled={verifyingCerts}
+                    style={{ opacity: verifyingCerts ? 0.6 : 1 }}
+                  >
+                    {verifyingCerts ? (
+                      <><span className="spinner-border spinner-border-sm me-2"></span>Requesting...</>
+                    ) : (
+                      <><i className="bi bi-shield-check"></i> Request Global Verification</>
+                    )}
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Recent Updates */}
-            <div className="jp-card" id="recent-updates-card">
-              <h3 className="jp-update-title">
-                <i className="bi bi-clock-history me-2" style={{ color: 'var(--primary-blue)' }}></i>
-                Recent Updates
-              </h3>
-              <div className="jp-update-list">
-                {updates.map((upd) => (
-                  <div className="jp-update-item" key={upd.id}>
-                    <div className={`jp-update-icon ${upd.icon}`}>
-                      <i className={`bi ${upd.iconClass}`}></i>
-                    </div>
-                    <div>
-                      <div className="jp-update-heading">{upd.title}</div>
-                      <div className="jp-update-desc">{upd.desc}</div>
-                      <div className="jp-update-time">{upd.time}</div>
-                    </div>
+            {/* ─── Right Sidebar ─── */}
+            <div className="jp-sidebar">
+              {/* Season Summary */}
+              <div className="jp-card jp-summary-card" id="season-summary-card" style={{ position: 'relative' }}>
+                <span className="jp-summary-icon">
+                  <i className="bi bi-bar-chart-line-fill"></i>
+                </span>
+                <h3 className="jp-summary-title">Season Summary</h3>
+                <div className="jp-summary-stats">
+                  <div className="jp-stat-box">
+                    <div className="jp-stat-value">{SEASON_STATS.racesEntered}</div>
+                    <div className="jp-stat-label">Races Entered</div>
                   </div>
-                ))}
-                {updates.length === 0 && (
-                  <div className="text-center py-3" style={{ fontSize: 13, color: '#94a3b8' }}>
-                    No recent updates.
+                  <div className="jp-stat-box">
+                    <div className="jp-stat-value">{SEASON_STATS.topPlaced}</div>
+                    <div className="jp-stat-label">Top 3 Placed</div>
                   </div>
-                )}
+                </div>
+              </div>
+
+              {/* Invitations */}
+              {invitations.length > 0 && (
+                <div className="jp-card" id="invitations-card">
+                  <div className="jp-invite-header">
+                    <span className="jp-invite-title">
+                      <i className="bi bi-envelope-open-fill" style={{ color: 'var(--primary-blue)' }}></i>
+                      Invitations
+                    </span>
+                    <span className="jp-invite-badge">{invitations.length} NEW</span>
+                  </div>
+
+                  <div className="jp-invite-list">
+                    {invitations.map((inv) => (
+                      <div className="jp-invite-item" key={inv.id} id={`invite-${inv.id}`}>
+                        <div className={`jp-invite-avatar ${inv.avatarType}`}>
+                          {inv.avatarIcon ? (
+                            <i className={`bi ${inv.avatarIcon}`}></i>
+                          ) : (
+                            inv.avatarText
+                          )}
+                        </div>
+                        <div className="jp-invite-details">
+                          <div className="jp-invite-name">{inv.orgName}</div>
+                          <div className="jp-invite-desc">{inv.orgDesc}</div>
+                          <div className="jp-invite-actions">
+                            <button
+                              className="jp-invite-accept"
+                              onClick={() => handleInvitation(inv.id, 'accept')}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              className="jp-invite-decline"
+                              onClick={() => handleInvitation(inv.id, 'decline')}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Updates */}
+              <div className="jp-card" id="recent-updates-card">
+                <h3 className="jp-update-title">
+                  <i className="bi bi-clock-history me-2" style={{ color: 'var(--primary-blue)' }}></i>
+                  Recent Updates
+                </h3>
+                <div className="jp-update-list">
+                  {updates.map((upd) => (
+                    <div className="jp-update-item" key={upd.id}>
+                      <div className={`jp-update-icon ${upd.icon}`}>
+                        <i className={`bi ${upd.iconClass}`}></i>
+                      </div>
+                      <div>
+                        <div className="jp-update-heading">{upd.title}</div>
+                        <div className="jp-update-desc">{upd.desc}</div>
+                        <div className="jp-update-time">{upd.time}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {updates.length === 0 && (
+                    <div className="text-center py-3" style={{ fontSize: 13, color: '#94a3b8' }}>
+                      No recent updates.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Add Certificate Modal */}
@@ -677,9 +704,9 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
                 <div>
                   <label className="jp-label">Upload Document</label>
                   <label className="jp-upload-zone w-100 d-block m-0" style={{ cursor: 'pointer' }}>
-                    <input 
-                      type="file" 
-                      className="d-none" 
+                    <input
+                      type="file"
+                      className="d-none"
                       accept="image/png, image/jpeg, application/pdf"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {

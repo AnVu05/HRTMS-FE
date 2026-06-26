@@ -182,8 +182,8 @@ export default function RefereeDashboard({ onNavigate, refereeId = 8 }) {
                 {/* Top Row: Race Name + Badge */}
                 <div className="card-top">
                   <div>
-                    <h3 className="race-name">{inv.raceName || inv.race_name || inv.name || 'Untitled Race'}</h3>
-                    <div className="tournament-name">{inv.tournamentName || inv.tournament_name || ''}</div>
+                    <h3 className="race-name">{inv.tournamentName || inv.tournament_name || 'Untitled Tournament'}</h3>
+                    <div className="tournament-name" style={{ color: '#f0883e', fontWeight: 600 }}>{inv.raceName || inv.race_name || inv.name || 'Untitled Race'}</div>
                   </div>
                   <span className="action-badge">
                     <i className="bi bi-exclamation-triangle-fill"></i>
@@ -274,6 +274,7 @@ export default function RefereeDashboard({ onNavigate, refereeId = 8 }) {
             const raceId = race.id;
             const statusColor = {
               'SCHEDULED': { bg: 'rgba(88,166,255,0.12)', color: '#58a6ff', border: 'rgba(88,166,255,0.25)' },
+              'PUBLISHED': { bg: 'rgba(88,166,255,0.12)', color: '#58a6ff', border: 'rgba(88,166,255,0.25)' },
               'IN_PROGRESS': { bg: 'rgba(63,185,80,0.12)', color: '#3fb950', border: 'rgba(63,185,80,0.25)' },
               'COMPLETED': { bg: 'rgba(139,148,158,0.12)', color: '#8b949e', border: 'rgba(139,148,158,0.25)' },
               'CANCELLED': { bg: 'rgba(248,81,73,0.12)', color: '#f85149', border: 'rgba(248,81,73,0.25)' },
@@ -287,7 +288,7 @@ export default function RefereeDashboard({ onNavigate, refereeId = 8 }) {
               >
                 <div className="race-info" style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                    <h4 style={{ margin: 0 }}>{race.name || 'Untitled Race'}</h4>
+                    <h4 style={{ margin: 0 }}>{race.tournamentName || race.tournament_name || 'Untitled Tournament'}</h4>
                     <span style={{
                       fontSize: '10px', fontWeight: 700, padding: '2px 8px',
                       borderRadius: '5px', letterSpacing: '0.5px',
@@ -297,11 +298,9 @@ export default function RefereeDashboard({ onNavigate, refereeId = 8 }) {
                       {race.status || 'UNKNOWN'}
                     </span>
                   </div>
-                  {race.tournamentName && (
-                    <div style={{ fontSize: '12px', color: '#f0883e', fontWeight: 600, marginBottom: '8px' }}>
-                      {race.tournamentName}
-                    </div>
-                  )}
+                  <div style={{ fontSize: '12px', color: '#f0883e', fontWeight: 600, marginBottom: '8px' }}>
+                    {race.name || race.raceName || race.race_name || 'Untitled Race'}
+                  </div>
                   <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                     <div className="race-date">
                       <i className="bi bi-calendar3"></i>

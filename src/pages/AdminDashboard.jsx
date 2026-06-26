@@ -48,12 +48,20 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   // New Race Input State
   const [newRaceName, setNewRaceName] = useState('');
   const [newRaceDate, setNewRaceDate] = useState('');
-  const [newRaceLaps, setNewRaceLaps] = useState(3);
+  const [newRaceDistance, setNewRaceDistance] = useState('');
   const [newRaceStartTime, setNewRaceStartTime] = useState('');
   const [newRaceEndTime, setNewRaceEndTime] = useState('');
-  const [newRaceHorse, setNewRaceHorse] = useState('');
+  const [newRaceHorseBreed, setNewRaceHorseBreed] = useState('Thoroughbred');
+  const [newRaceHorseWeight, setNewRaceHorseWeight] = useState('');
+  const [newRaceHorseAge, setNewRaceHorseAge] = useState('');
   const [newRaceReferee, setNewRaceReferee] = useState('');
   const [availableReferees, setAvailableReferees] = useState([]);
+  // Jockey Prizes
+  const [newRacePrize1, setNewRacePrize1] = useState('');
+  const [newRacePrize2, setNewRacePrize2] = useState('');
+  const [newRacePrize3, setNewRacePrize3] = useState('');
+  // Betting Config
+  const [newRaceBettingReward, setNewRaceBettingReward] = useState('');
 
   // Edit Race States
   const [showEditRaceModal, setShowEditRaceModal] = useState(false);
@@ -69,12 +77,30 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
 
   // 'Create Tournament' Page Form States
   const [createTourneyName, setCreateTourneyName] = useState('');
-  const [createStartDate, setCreateStartDate] = useState('');
-  const [createEndDate, setCreateEndDate] = useState('');
+  const [createAnnouncementDate, setCreateAnnouncementDate] = useState('');
+  const [createStartDate, setCreateStartDate] = useState('');      // ngày khai mạc
+  const [createEndDate, setCreateEndDate] = useState('');          // ngày bế mạc
+  const [createRegOpenDate, setCreateRegOpenDate] = useState('');  // ngày mở đăng ký
+  const [createRegCloseDate, setCreateRegCloseDate] = useState(''); // ngày đóng đăng ký
   const [createBreed, setCreateBreed] = useState('Thoroughbred');
   const [createAgeReq, setCreateAgeReq] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [createStatus, setCreateStatus] = useState('DRAFT');
   const [updatingTourney, setUpdatingTourney] = useState(null);
+
+  // Auto-compute end time = start time + 30 minutes
+  useEffect(() => {
+    if (newRaceStartTime) {
+      const [h, m] = newRaceStartTime.split(':').map(Number);
+      const totalMinutes = h * 60 + m + 30;
+      const endH = Math.floor(totalMinutes / 60) % 24;
+      const endM = totalMinutes % 60;
+      const endStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      setNewRaceEndTime(endStr);
+    } else {
+      setNewRaceEndTime('');
+    }
+  }, [newRaceStartTime]);
 
   useEffect(() => {
     if (newRaceDate && newRaceStartTime && newRaceEndTime) {
@@ -349,6 +375,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setCreateBreed(t.allowedBreed || t.allowed_breed || 'Thoroughbred');
     setCreateAgeReq(t.allowedHorseAge !== undefined ? t.allowedHorseAge.toString() : t.allowed_horse_age !== undefined ? t.allowed_horse_age.toString() : '');
     setCreateDescription(t.tournamentDescription || t.tournament_description || '');
+    setCreateStatus(t.status || 'DRAFT');
 
     if (t.races && t.races.length > 0) {
       setCreateRacesList(t.races.map(r => ({
@@ -367,6 +394,22 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setCurrentSubView('update');
   };
 
+  const handleCreateClick = () => {
+    setUpdatingTourney(null);
+    setCreateTourneyName('');
+    setCreateAnnouncementDate('');
+    setCreateStartDate('');
+    setCreateEndDate('');
+    setCreateRegOpenDate('');
+    setCreateRegCloseDate('');
+    setCreateBreed('Thoroughbred');
+    setCreateAgeReq('');
+    setCreateDescription('');
+    setCreateStatus('DRAFT');
+    setCreateRacesList([]);
+    setCurrentSubView('create');
+  };
+
   const handleSaveUpdateTournament = async (e) => {
     e.preventDefault();
     if (!createTourneyName || !createStartDate || !createEndDate) {
@@ -382,7 +425,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
         allowedBreed: createBreed,
         allowedHorseAge: createAgeReq || "0",
         tournamentDescription: createDescription,
-        status: updatingTourney?.status || "PUBLISHED"
+        status: createStatus
       };
 
       const response = await tournamentService.updateTournament(updatingTourney.id, updatePayload);
@@ -396,12 +439,18 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     }
   };
 
-  const createDescriptionRef = useRef(createDescription);
+  const quillRef = useRef(null);
+
   useEffect(() => {
-    createDescriptionRef.current = createDescription;
+    if (quillRef.current) {
+      const currentHtml = quillRef.current.root.innerHTML;
+      if (createDescription !== currentHtml) {
+        if (!createDescription && currentHtml === '<p><br></p>') return;
+        quillRef.current.root.innerHTML = createDescription || '';
+      }
+    }
   }, [createDescription]);
 
-  const quillRef = useRef(null);
   const editorRef = useCallback((node) => {
     if (node !== null) {
       if (node.classList.contains('ql-container')) {
@@ -421,10 +470,6 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
         }
       });
       quillRef.current = quill;
-
-      if (createDescriptionRef.current) {
-        quill.root.innerHTML = createDescriptionRef.current;
-      }
 
       quill.on('text-change', () => {
         const html = quill.root.innerHTML;
@@ -460,7 +505,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   const handleSaveNewTournament = async (e) => {
     e.preventDefault();
     if (!createTourneyName || !createStartDate || !createEndDate) {
-      alert("Please fill in the Tournament Name and Date Range.");
+      alert("Please fill in Tournament Name, Opening Date and Closing Date.");
       return;
     }
 
@@ -468,12 +513,15 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
       const tourneyPayload = {
         adminId: adminId,
         name: createTourneyName,
+        announcementDate: createAnnouncementDate || null,
         startDate: createStartDate,
         endDate: createEndDate,
+        registrationOpenDate: createRegOpenDate || null,
+        registrationCloseDate: createRegCloseDate || null,
         allowedBreed: createBreed,
         allowedHorseAge: createAgeReq || "3+",
         tournamentDescription: createDescription,
-        status: "Draft"
+        status: "DRAFT"
       };
 
       const createdTourney = await tournamentService.createTournament(tourneyPayload);
@@ -486,8 +534,11 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
 
       // Reset states
       setCreateTourneyName('');
+      setCreateAnnouncementDate('');
       setCreateStartDate('');
       setCreateEndDate('');
+      setCreateRegOpenDate('');
+      setCreateRegCloseDate('');
       setCreateBreed('Thoroughbred');
       setCreateAgeReq('');
       setCreateDescription('');
@@ -536,35 +587,52 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
 
   const handleAddRace = async (e) => {
     e.preventDefault();
-    if (!newRaceName || !newRaceStartTime || !newRaceEndTime) return;
+    if (!newRaceName || !newRaceDate || !newRaceStartTime || !newRaceEndTime) {
+      alert("Please fill in all required fields.");
+      return;
+    }
 
     try {
       const racePayload = {
-        date: newRaceDate || new Date().toISOString().split('T')[0],
-        laps: parseInt(newRaceLaps, 10) || 3,
-        track: "Standard",
+        date: newRaceDate,
         tournament_id: selectedId,
         race_name: newRaceName,
         start_time: newRaceStartTime,
         end_time: newRaceEndTime,
-        num_horse: parseInt(newRaceHorse, 10) || 8,
+        distance_m: parseFloat(newRaceDistance) || 0,
+        horse_breed: newRaceHorseBreed,
+        weight_kg: parseFloat(newRaceHorseWeight) || 0,
+        horse_age: parseInt(newRaceHorseAge, 10) || 0,
+        jockey_prizes: [
+          { rank: 1, amount: parseFloat(newRacePrize1) || 0 },
+          { rank: 2, amount: parseFloat(newRacePrize2) || 0 },
+          { rank: 3, amount: parseFloat(newRacePrize3) || 0 }
+        ],
+        betting_reward: parseFloat(newRaceBettingReward) || 0,
         referee_id: parseInt(newRaceReferee, 10) || 0
       };
 
-      await raceService.createRacesBatch(racePayload);
+      await raceService.createRace(racePayload);
       alert("Race successfully added.");
 
       await fetchDashboardTournaments(false);
       const details = await raceService.getTournamentRaceDetails(selectedId);
       setSelectedTourneyDetails(details);
 
+      // Reset form
       setNewRaceName('');
       setNewRaceDate('');
-      setNewRaceLaps(3);
+      setNewRaceDistance('');
       setNewRaceStartTime('');
       setNewRaceEndTime('');
-      setNewRaceHorse('');
+      setNewRaceHorseBreed('Thoroughbred');
+      setNewRaceHorseWeight('');
+      setNewRaceHorseAge('');
       setNewRaceReferee('');
+      setNewRacePrize1('');
+      setNewRacePrize2('');
+      setNewRacePrize3('');
+      setNewRaceBettingReward('');
       setShowRaceModal(false);
     } catch (err) {
       console.error("Error adding race:", err);
@@ -578,7 +646,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setEditRaceTrack(race.track || 'Standard');
     setEditRaceHorseCount(race.numHorse || race.num_horse || 8);
     setEditRaceReferee(race.refereeId || race.referee_id || '');
-    
+
     const date = race.date || new Date().toISOString().split('T')[0];
     const sTime = race.startTime || race.start_time || '12:00';
     const eTime = race.endTime || race.end_time || '12:30';
@@ -586,7 +654,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     setEditRaceDate(date);
     setEditRaceStartTime(sTime);
     setEditRaceEndTime(eTime);
-    
+
     setShowEditRaceModal(true);
   };
 
@@ -594,6 +662,9 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     e.preventDefault();
     try {
       const payload = {
+        date: editRaceDate,
+        start_time: editRaceStartTime,
+        end_time: editRaceEndTime,
         laps: parseInt(editRaceLaps, 10) || 3,
         track: editRaceTrack,
         num_horse: parseInt(editRaceHorseCount, 10) || 8,
@@ -686,7 +757,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
 
         {/* Back / Sign Out Button */}
         <div className="sidebar-footer p-3 border-top">
-          {currentSubView === 'create' ? (
+          {currentSubView === 'create' || currentSubView === 'update' ? (
             <button
               className="w-100 sign-out-btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger bg-transparent"
               onClick={() => setCurrentSubView('list')}
@@ -728,7 +799,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
             {currentSubView === 'list' && (
               <button
                 className="btn btn-primary d-flex align-items-center gap-2 px-4 py-2.5 fw-bold"
-                onClick={() => setCurrentSubView('create')}
+                onClick={handleCreateClick}
                 style={{ borderRadius: '8px', fontSize: '14px', letterSpacing: '0.5px' }}
               >
                 <i className="bi bi-plus-lg fs-5"></i>
@@ -755,14 +826,14 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
               <h1 className="h3 fw-bold text-dark-navy mb-4">Create New Tournament</h1>
 
               <form onSubmit={handleSaveNewTournament}>
-                {/* Section 1: Tournament Details */}
                 <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 create-section-card">
                   <h3 className="h5 fw-bold text-dark-navy mb-3 create-section-title">Tournament Details</h3>
                   <div className="row g-3">
+
                     {/* Tournament Name */}
-                    <div className="col-12 col-md-6">
-                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
-                        Tournament Name
+                    <div className="col-12">
+                      <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Name <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
@@ -774,84 +845,110 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                       />
                     </div>
 
-                    {/* Date Range */}
+                    {/* Announcement Date */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
-                        Date Range
+                      <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Announcement Date
                       </label>
-                      <div className="d-flex align-items-center gap-2">
-                        <div className="input-group input-group-custom">
-                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
-                            <i className="bi bi-calendar"></i>
-                          </span>
-                          <input
-                            type="date"
-                            className="form-control py-2 border-start-0 form-input-custom ps-0"
-                            value={createStartDate}
-                            onChange={(e) => setCreateStartDate(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <span className="text-secondary-custom" style={{ fontSize: '13px' }}>to</span>
-                        <div className="input-group input-group-custom">
-                          <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderColor: '#cbd5e1' }}>
-                            <i className="bi bi-calendar"></i>
-                          </span>
-                          <input
-                            type="date"
-                            className="form-control py-2 border-start-0 form-input-custom ps-0"
-                            value={createEndDate}
-                            onChange={(e) => setCreateEndDate(e.target.value)}
-                            required
-                          />
-                        </div>
+                      <div className="input-group">
+                        <span className="input-group-text bg-white text-muted" style={{ borderColor: '#cbd5e1' }}>
+                          <i className="bi bi-megaphone"></i>
+                        </span>
+                        <input
+                          type="date"
+                          className="form-control py-2 form-input-custom"
+                          value={createAnnouncementDate}
+                          onChange={(e) => setCreateAnnouncementDate(e.target.value)}
+                        />
                       </div>
                     </div>
 
-                    {/* Allowed Horse Breeds */}
+                    {/* Start Date */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
-                        Allowed Horse Breeds
+                      <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Start Date <span className="text-danger">*</span>
                       </label>
-                      <select
-                        className="form-select py-2 px-3 form-input-custom"
-                        value={createBreed}
-                        onChange={(e) => setCreateBreed(e.target.value)}
-                      >
-                        <option value="Thoroughbred">Thoroughbred</option>
-                        <option value="Quarter Horse">Quarter Horse</option>
-                        <option value="Arabian">Arabian</option>
-                        <option value="Standardbred">Standardbred</option>
-                      </select>
+                      <div className="input-group">
+                        <span className="input-group-text bg-white text-muted" style={{ borderColor: '#cbd5e1' }}>
+                          <i className="bi bi-flag"></i>
+                        </span>
+                        <input
+                          type="date"
+                          className="form-control py-2 form-input-custom"
+                          value={createStartDate}
+                          onChange={(e) => setCreateStartDate(e.target.value)}
+                          required
+                        />
+                      </div>
                     </div>
 
-                    {/* Horse Age Requirement */}
+                    {/* End Date */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
-                        Horse Age Requirement (Years)
+                      <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        End Date <span className="text-danger">*</span>
                       </label>
-                      <input
-                        type="text"
-                        className="form-control py-2 px-3 form-input-custom"
-                        placeholder="e.g., 3+"
-                        value={createAgeReq}
-                        onChange={(e) => setCreateAgeReq(e.target.value)}
-                      />
+                      <div className="input-group">
+                        <span className="input-group-text bg-white text-muted" style={{ borderColor: '#cbd5e1' }}>
+                          <i className="bi bi-flag-fill"></i>
+                        </span>
+                        <input
+                          type="date"
+                          className="form-control py-2 form-input-custom"
+                          value={createEndDate}
+                          onChange={(e) => setCreateEndDate(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Registration Open Date */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Registration Open Date
+                      </label>
+                      <div className="input-group">
+                        <span className="input-group-text bg-white text-muted" style={{ borderColor: '#cbd5e1' }}>
+                          <i className="bi bi-calendar-check"></i>
+                        </span>
+                        <input
+                          type="date"
+                          className="form-control py-2 form-input-custom"
+                          value={createRegOpenDate}
+                          onChange={(e) => setCreateRegOpenDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Registration Close Date */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Registration Close Date
+                      </label>
+                      <div className="input-group">
+                        <span className="input-group-text bg-white text-muted" style={{ borderColor: '#cbd5e1' }}>
+                          <i className="bi bi-calendar-x"></i>
+                        </span>
+                        <input
+                          type="date"
+                          className="form-control py-2 form-input-custom"
+                          value={createRegCloseDate}
+                          onChange={(e) => setCreateRegCloseDate(e.target.value)}
+                        />
+                      </div>
                     </div>
 
                     {/* Tournament Description */}
                     <div className="col-12">
-                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                      <label className="form-label text-secondary-custom fw-semibold" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
                         Tournament Description
                       </label>
                       <div className="quill-editor-container">
                         <div id="editor" ref={editorRef}></div>
                       </div>
                     </div>
+
                   </div>
                 </div>
-
-
 
                 {/* Form Buttons */}
                 <div className="d-flex justify-content-end gap-3 mt-4">
@@ -982,6 +1079,22 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                         value={createAgeReq}
                         onChange={(e) => setCreateAgeReq(e.target.value)}
                       />
+                    </div>
+
+                    {/* Tournament Status */}
+                    <div className="col-12 col-md-6">
+                      <label className="form-label text-secondary-custom fw-semibold mb-1.5" style={{ fontSize: '12px', letterSpacing: '0.3px' }}>
+                        Tournament Status
+                      </label>
+                      <select
+                        className="form-select py-2 px-3 form-input-custom"
+                        value={createStatus}
+                        onChange={(e) => setCreateStatus(e.target.value)}
+                      >
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="PUBLISHED">PUBLISHED</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                      </select>
                     </div>
 
                     {/* Tournament Description */}
@@ -1156,22 +1269,27 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                           {(displayTourney.races || []).length > 0 ? (
                             displayTourney.races.map(race => (
                               <div key={race.id} className="race-schedule-box p-3 rounded-3 border">
-                                <div className="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
-                                  <div className="d-flex align-items-center gap-2">
-                                    <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px' }}>{race.name}</h5>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '12px', alignItems: 'center', marginBottom: '8px' }}>
+                                  <h5 className="fw-bold text-dark-navy m-0" style={{ fontSize: '15px', wordBreak: 'break-word' }}>
+                                    {race.name}
+                                  </h5>
+                                  <div>
                                     <span className={`status-badge-custom ${(race.status || 'PUBLISHED').toLowerCase()}`}>
                                       {race.status || 'PUBLISHED'}
                                     </span>
                                   </div>
-                                  {displayTourney.status !== 'CANCELLED' && (
-                                    <button
-                                      className="btn btn-sm btn-outline-primary py-0 px-2 ms-auto"
-                                      onClick={() => handleOpenEditRaceModal(race)}
-                                      style={{ fontSize: '12px' }}
-                                    >
-                                      Edit
-                                    </button>
-                                  )}
+                                  <div>
+                                    {displayTourney.status !== 'CANCELLED' && (
+                                      <button
+                                        className="btn btn-sm btn-outline-primary py-0 px-2"
+                                        onClick={() => handleOpenEditRaceModal(race)}
+                                        disabled={(race.status || 'PUBLISHED').toUpperCase() === 'PUBLISHED'}
+                                        style={{ fontSize: '12px' }}
+                                      >
+                                        Edit
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="text-secondary-custom d-flex align-items-center gap-1.5" style={{ fontSize: '12px' }}>
                                   <i className="bi bi-clock"></i>
@@ -1377,7 +1495,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
       {/* ── Add Race Modal ── */}
       {showRaceModal && (
         <div className="modal-backdrop-custom d-flex align-items-center justify-content-center">
-          <div className="modal-card-custom bg-white rounded-3 shadow-lg position-relative border overflow-hidden" style={{ maxWidth: '400px' }}>
+          <div className="modal-card-custom bg-white rounded-3 shadow-lg position-relative border overflow-hidden" style={{ maxWidth: '480px', width: '95%' }}>
 
             {/* Modal Header */}
             <div className="d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
@@ -1391,12 +1509,12 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleAddRace} className="p-4">
+            <form onSubmit={handleAddRace} className="p-4" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
 
               {/* Race Name */}
               <div className="mb-3">
                 <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
-                  RACE NAME
+                  RACE NAME <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -1409,11 +1527,11 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 />
               </div>
 
-              {/* Date & Laps */}
+              {/* Date & Distance */}
               <div className="row g-3 mb-3">
                 <div className="col-6">
                   <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
-                    DATE
+                    RACE DATE <span className="text-danger">*</span>
                   </label>
                   <input
                     type="date"
@@ -1426,13 +1544,14 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 </div>
                 <div className="col-6">
                   <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
-                    LAPS
+                    DISTANCE (m) <span className="text-danger">*</span>
                   </label>
                   <input
                     type="number"
                     className="form-control py-2 px-3 border-light-gray"
-                    value={newRaceLaps}
-                    onChange={(e) => setNewRaceLaps(e.target.value)}
+                    placeholder="e.g. 1200"
+                    value={newRaceDistance}
+                    onChange={(e) => setNewRaceDistance(e.target.value)}
                     required
                     min="1"
                     style={{ borderRadius: '6px', fontSize: '14px' }}
@@ -1440,11 +1559,11 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 </div>
               </div>
 
-              {/* Start Time & End Time */}
+              {/* Start Time & End Time (auto) */}
               <div className="row g-3 mb-3">
                 <div className="col-6">
                   <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
-                    START TIME
+                    START TIME <span className="text-danger">*</span>
                   </label>
                   <input
                     type="time"
@@ -1456,36 +1575,125 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                   />
                 </div>
                 <div className="col-6">
-                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
-                    END TIME
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase align-items-center gap-1" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    END TIME '
+                    <span className="badge text-bg-secondary" style={{ fontSize: '9px', fontWeight: 500, borderRadius: '4px' }}> +30 min</span>
                   </label>
                   <input
                     type="time"
                     className="form-control py-2 px-2 border-light-gray"
                     value={newRaceEndTime}
-                    onChange={(e) => setNewRaceEndTime(e.target.value)}
-                    required
-                    style={{ borderRadius: '6px', fontSize: '13px' }}
+                    readOnly
+                    style={{ borderRadius: '6px', fontSize: '13px', backgroundColor: '#f8fafc', cursor: 'not-allowed' }}
                   />
                 </div>
               </div>
 
-              {/* Horse */}
+              {/* Horse Breed */}
               <div className="mb-3">
                 <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
-                  HORSE
+                  HORSE BREED <span className="text-danger">*</span>
                 </label>
                 <select
                   className="form-select py-2 px-3 border-light-gray"
-                  value={newRaceHorse}
-                  onChange={(e) => setNewRaceHorse(e.target.value)}
+                  value={newRaceHorseBreed}
+                  onChange={(e) => setNewRaceHorseBreed(e.target.value)}
+                  required
                   style={{ borderRadius: '6px', fontSize: '14px' }}
                 >
-                  <option value="">Select Horse</option>
-                  {MOCK_HORSES.map((h, index) => (
-                    <option key={index} value={h}>{h}</option>
-                  ))}
+                  <option value="Thoroughbred">Thoroughbred</option>
+                  <option value="Quarter Horse">Quarter Horse</option>
+                  <option value="Arabian">Arabian</option>
+                  <option value="Standardbred">Standardbred</option>
+                  <option value="Appaloosa">Appaloosa</option>
+                  <option value="Paint Horse">Paint Horse</option>
                 </select>
+              </div>
+
+              {/* Horse Weight & Age */}
+              <div className="row g-3 mb-3">
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    WEIGHT (kg) <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control py-2 px-3 border-light-gray"
+                    placeholder="e.g. 500"
+                    value={newRaceHorseWeight}
+                    onChange={(e) => setNewRaceHorseWeight(e.target.value)}
+                    required
+                    min="1"
+                    step="0.1"
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    AGE (years) <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control py-2 px-3 border-light-gray"
+                    placeholder="e.g. 4"
+                    value={newRaceHorseAge}
+                    onChange={(e) => setNewRaceHorseAge(e.target.value)}
+                    required
+                    min="1"
+                    max="30"
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Jockey Prizes */}
+              <div className="mb-3">
+                <label className="form-label text-secondary-custom fw-bold text-uppercase d-flex align-items-center gap-2" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                  <i className="bi bi-trophy-fill" style={{ color: '#f59e0b' }}></i>
+                  JOCKEY PRIZES
+                </label>
+                <div className="d-flex flex-column gap-2">
+                  {[{ rank: 1, label: '🥇 Rank 1', color: '#f59e0b', state: newRacePrize1, setter: setNewRacePrize1 },
+                    { rank: 2, label: '🥈 Rank 2', color: '#94a3b8', state: newRacePrize2, setter: setNewRacePrize2 },
+                    { rank: 3, label: '🥉 Rank 3', color: '#b45309', state: newRacePrize3, setter: setNewRacePrize3 }
+                  ].map(({ rank, label, color, state, setter }) => (
+                    <div key={rank} className="d-flex align-items-center gap-2">
+                      <span style={{ minWidth: '70px', fontSize: '13px', fontWeight: 600, color }}>{label}</span>
+                      <div className="input-group input-group-sm flex-grow-1">
+                        <input
+                          type="number"
+                          className="form-control border-light-gray"
+                          placeholder="e.g. 10000000"
+                          value={state}
+                          onChange={(e) => setter(e.target.value)}
+                          min="0"
+                          style={{ borderRadius: '6px 0 0 6px', fontSize: '13px' }}
+                        />
+                        <span className="input-group-text" style={{ fontSize: '11px', borderRadius: '0 6px 6px 0', backgroundColor: '#f8fafc', color: '#64748b' }}>VNĐ</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Betting Config */}
+              <div className="mb-3">
+                <label className="form-label text-secondary-custom fw-bold text-uppercase d-flex align-items-center gap-2" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                  <i className="bi bi-coin" style={{ color: '#10b981' }}></i>
+                  BETTING REWARD
+                </label>
+                <div className="input-group input-group-sm">
+                  <input
+                    type="number"
+                    className="form-control border-light-gray"
+                    placeholder="e.g. 100000"
+                    value={newRaceBettingReward}
+                    onChange={(e) => setNewRaceBettingReward(e.target.value)}
+                    min="0"
+                    style={{ borderRadius: '6px 0 0 6px', fontSize: '13px' }}
+                  />
+                  <span className="input-group-text" style={{ fontSize: '11px', borderRadius: '0 6px 6px 0', backgroundColor: '#f8fafc', color: '#64748b' }}>VNĐ</span>
+                </div>
               </div>
 
               {/* Referee */}
@@ -1497,6 +1705,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                   className="form-select py-2 px-3 border-light-gray"
                   value={newRaceReferee}
                   onChange={(e) => setNewRaceReferee(e.target.value)}
+                  disabled={!newRaceDate || !newRaceStartTime || !newRaceEndTime}
                   style={{ borderRadius: '6px', fontSize: '14px' }}
                 >
                   <option value="">Select Referee</option>
@@ -1504,12 +1713,17 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                     <option key={r.id || index} value={r.id || r.name}>{r.name || r}</option>
                   ))}
                 </select>
+                {(!newRaceDate || !newRaceStartTime) && (
+                  <div className="form-text text-muted mt-1" style={{ fontSize: '11px' }}>
+                    Fill in date &amp; start time to load available referees.
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="btn btn-primary w-100 py-2.5 fw-bold text-uppercase text-center"
+                className="btn btn-primary w-100 py-2 fw-bold text-uppercase text-center"
                 style={{ borderRadius: '6px', fontSize: '13px', letterSpacing: '0.5px' }}
               >
                 ADD NEW RACE
@@ -1535,6 +1749,51 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
             </div>
 
             <form onSubmit={handleUpdateRace} className="p-4">
+              {/* Date */}
+              <div className="mb-3">
+                <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                  DATE
+                </label>
+                <input
+                  type="date"
+                  className="form-control py-2 px-3 border-light-gray"
+                  value={editRaceDate}
+                  onChange={(e) => setEditRaceDate(e.target.value)}
+                  required
+                  style={{ borderRadius: '6px', fontSize: '14px' }}
+                />
+              </div>
+
+              {/* Start & End Time */}
+              <div className="row g-3 mb-3">
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    START TIME
+                  </label>
+                  <input
+                    type="time"
+                    className="form-control py-2 px-3 border-light-gray"
+                    value={editRaceStartTime}
+                    onChange={(e) => setEditRaceStartTime(e.target.value)}
+                    required
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                    END TIME
+                  </label>
+                  <input
+                    type="time"
+                    className="form-control py-2 px-3 border-light-gray"
+                    value={editRaceEndTime}
+                    onChange={(e) => setEditRaceEndTime(e.target.value)}
+                    required
+                    style={{ borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+              </div>
+
               <div className="row g-3 mb-3">
                 <div className="col-6">
                   <label className="form-label text-secondary-custom fw-bold text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
@@ -1588,6 +1847,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                   className="form-select py-2 px-3 border-light-gray"
                   value={editRaceReferee}
                   onChange={(e) => setEditRaceReferee(e.target.value)}
+                  disabled={!editRaceDate || !editRaceStartTime || !editRaceEndTime}
                   style={{ borderRadius: '6px', fontSize: '14px' }}
                 >
                   <option value="">Select Referee</option>
@@ -1595,6 +1855,11 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                     <option key={r.id || index} value={r.id || r.name}>{r.name || r}</option>
                   ))}
                 </select>
+                {(!editRaceDate || !editRaceStartTime || !editRaceEndTime) && (
+                  <div className="form-text text-danger mt-1" style={{ fontSize: '11px' }}>
+                    Please select the start and end dates and times to update the referees.
+                  </div>
+                )}
               </div>
 
               <button
