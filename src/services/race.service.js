@@ -2,12 +2,10 @@ import { apiRequest } from './api';
 
 export const raceService = {
   /**
-   * Tạo danh sách (hàng loạt) cuộc đua (Races) cho một giải đấu
-   * @param {Object} data
-   * @param {string} data.tournamentId
-   * @param {Array} data.races Danh sách races gồm (name, date, startTime, endTime, laps, numHorse)
+   * Tạo cuộc đua mới (Race)
+   * @param {Object} data payload JSON chứa thông tin cuộc đua (date, tournament_id, race_name, distance_m, v.v.)
    */
-  createRacesBatch(data) {
+  createRace(data) {
     return apiRequest('/api/v1/races', {
       method: 'POST',
       body: JSON.stringify(data)
