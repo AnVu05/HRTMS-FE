@@ -37,15 +37,7 @@ export const jockeyService = {
     });
   },
 
-  /**
-   * Yêu cầu xác minh chứng chỉ
-   * @param {number|string} jockeyId 
-   */
-  requestVerification(jockeyId) {
-    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/request-verification`, {
-      method: 'POST',
-    });
-  },
+
   /**
    * Lấy kết quả xác minh chứng chỉ (thông báo)
    * @param {number|string} jockeyId 
@@ -89,10 +81,11 @@ export const jockeyService = {
   /**
    * Chấp nhận chứng chỉ của jockey
    * @param {number|string} jockeyId 
+   * @param {number|string} certId 
    * @param {number|string} adminId 
    */
-  acceptJockeyCert(jockeyId, adminId) {
-    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/accept?adminId=${adminId}`, {
+  acceptJockeyCert(jockeyId, certId, adminId) {
+    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/${certId}/accept?adminId=${adminId}`, {
       method: 'PUT',
     });
   },
@@ -100,11 +93,12 @@ export const jockeyService = {
   /**
    * Từ chối chứng chỉ của jockey
    * @param {number|string} jockeyId 
-   * @param {number|string} adminId 
+   * @param {number|string} certId 
    * @param {string} reason 
+   * @param {number|string} adminId 
    */
-  rejectJockeyCert(jockeyId, adminId, reason) {
-    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/reject?adminId=${adminId}`, {
+  rejectJockeyCert(jockeyId, certId, reason, adminId) {
+    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/${certId}/reject?adminId=${adminId}`, {
       method: 'PUT',
       body: JSON.stringify({ reason }),
     });

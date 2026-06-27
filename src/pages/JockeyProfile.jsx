@@ -76,7 +76,6 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingCert, setUploadingCert] = useState(false);
-  const [verifyingCerts, setVerifyingCerts] = useState(false);
   const [error, setError] = useState(null);
   // THÊM CODE: Khởi tạo queryClient
   const queryClient = useQueryClient();
@@ -279,8 +278,8 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
               id: Date.now(),
               icon: 'warning',
               iconClass: 'bi-hourglass-split',
-              title: 'Certificate Pending',
-              desc: `${cert.name} is awaiting verification.`,
+              title: 'Verification Requested',
+              desc: `${cert.name} is uploaded and awaiting verification from Admin.`,
               time: 'Just now',
             },
             ...prev,
@@ -300,35 +299,7 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
     }
   };
 
-  // Request global verification
-  const handleRequestVerification = async () => {
-    if (!jockeyId) {
-      showToast('No jockey context to request verification', 'error');
-      return;
-    }
 
-    setVerifyingCerts(true);
-    try {
-      await jockeyService.requestVerification(jockeyId);
-      showToast('Global verification request submitted!');
-      setUpdates((prev) => [
-        {
-          id: Date.now(),
-          icon: 'info',
-          iconClass: 'bi-shield-check',
-          title: 'Verification Requested',
-          desc: 'Your global verification request is being reviewed.',
-          time: 'Just now',
-        },
-        ...prev,
-      ]);
-    } catch (err) {
-      console.error('Verification request failed', err);
-      showToast(err.message || 'Failed to request verification', 'error');
-    } finally {
-      setVerifyingCerts(false);
-    }
-  };
 
   return (
     <div className="jockey-profile-wrapper pb-5">
@@ -560,22 +531,6 @@ export default function JockeyProfile({ onNavigate, jockeyId = 4 }) {
                     <span className="jp-cert-add-title">Add New Certificate</span>
                     <span className="jp-cert-add-desc">Upload verified racing credentials</span>
                   </div>
-                </div>
-
-                <div className="text-center mt-2">
-                  <button
-                    className="jp-verify-btn"
-                    id="request-verification-btn"
-                    onClick={handleRequestVerification}
-                    disabled={verifyingCerts}
-                    style={{ opacity: verifyingCerts ? 0.6 : 1 }}
-                  >
-                    {verifyingCerts ? (
-                      <><span className="spinner-border spinner-border-sm me-2"></span>Requesting...</>
-                    ) : (
-                      <><i className="bi bi-shield-check"></i> Request Global Verification</>
-                    )}
-                  </button>
                 </div>
               </div>
             </div>

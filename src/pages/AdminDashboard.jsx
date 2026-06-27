@@ -27,7 +27,7 @@ const MOCK_REFEREES = [
   'Bob Brown (Ref)',
   'Charlie Davis (Ref)'
 ];
-  
+
 export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   const [tournaments, setTournaments] = useState([]);
   const [selectedId, setSelectedId] = useState('');
@@ -141,20 +141,27 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
   const [verifyRequests, setVerifyRequests] = useState([]);
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [reviewImages, setReviewImages] = useState([]);
-  const [loadingImages, setLoadingImages] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedCertId, setSelectedCertId] = useState(null);
   const [submittingAction, setSubmittingAction] = useState(false);
 
   const fetchVerifyRequests = useCallback(async () => {
     setLoadingVerify(true);
     try {
-      const res = await jockeyService.getJockeyCerts(adminId);
+      const parsedAdminId = parseInt(adminId, 10);
+      const res = await jockeyService.getJockeyCerts(isNaN(parsedAdminId) ? 2 : parsedAdminId);
       console.log("Verify API raw response:", res);
-      console.log("Verify API data:", res.data);
-      setVerifyRequests(res.data || []);
+      const rawData = res.data || [];
+      const flattenedData = rawData.flatMap(req =>
+        (req.pending_certificates || []).map(cert => ({
+          ...cert,
+          jockey_id: req.jockey_id,
+          jockey_name: req.jockey_name
+        }))
+      );
+      setVerifyRequests(flattenedData);
     } catch (err) {
       console.error("Failed to fetch verification requests:", err);
     } finally {
@@ -168,58 +175,49 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
     }
   }, [activeMenu, fetchVerifyRequests]);
 
-  const handleReviewCerts = async (req) => {
-    setSelectedRequest(req);
-    setLoadingImages(true);
+  const handleReviewCerts = (cert) => {
+    setSelectedRequest(cert);
     setShowReviewModal(true);
-    try {
-      const res = await jockeyService.getJockeyCertImages(req.jockey_id);
-      setReviewImages(res.data || []);
-    } catch (err) {
-      console.error("Failed to fetch cert images:", err);
-      alert("Failed to load certificate images.");
-    } finally {
-      setLoadingImages(false);
-    }
   };
 
-  const handleAcceptCerts = async (jockeyId) => {
-    if (!window.confirm("Are you sure you want to verify and accept all certificates for this jockey?")) return;
+  const handleAcceptCert = async (jockeyId, certId) => {
+    if (!window.confirm("Are you sure you want to verify and accept this certificate?")) return;
     setSubmittingAction(true);
     try {
-      await jockeyService.acceptJockeyCert(jockeyId, adminId);
-      alert("Successfully verified and accepted jockey certificates!");
+      await jockeyService.acceptJockeyCert(parseInt(jockeyId, 10), parseInt(certId, 10), parseInt(adminId, 10));
+      alert("Successfully verified and accepted certificate!");
       fetchVerifyRequests();
       setShowReviewModal(false);
     } catch (err) {
-      console.error("Failed to accept certs:", err);
-      alert(err.message || "Failed to accept certificates.");
+      console.error("Failed to accept cert:", err);
+      alert(err.message || "Failed to accept certificate.");
     } finally {
       setSubmittingAction(false);
     }
   };
 
-  const handleOpenRejectModal = (req) => {
+  const handleOpenRejectModal = (req, certId) => {
     setSelectedRequest(req);
+    setSelectedCertId(certId);
     setRejectReason('');
     setShowRejectModal(true);
   };
 
-  const handleRejectCerts = async () => {
+  const handleRejectCert = async () => {
     if (!rejectReason.trim()) {
       alert("Please provide a reason for rejection.");
       return;
     }
     setSubmittingAction(true);
     try {
-      await jockeyService.rejectJockeyCert(selectedRequest.jockey_id, adminId, rejectReason);
-      alert("Successfully rejected jockey certificates.");
+      await jockeyService.rejectJockeyCert(parseInt(selectedRequest.jockey_id, 10), parseInt(selectedCertId, 10), rejectReason, parseInt(adminId, 10));
+      alert("Successfully rejected certificate.");
       fetchVerifyRequests();
       setShowRejectModal(false);
       setShowReviewModal(false);
     } catch (err) {
-      console.error("Failed to reject certs:", err);
-      alert(err.message || "Failed to reject certificates.");
+      console.error("Failed to reject cert:", err);
+      alert(err.message || "Failed to reject certificate.");
     } finally {
       setSubmittingAction(false);
     }
@@ -1358,25 +1356,19 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {verifyRequests.map((req) => (
-                        <tr key={req.jockey_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      {verifyRequests.map((cert, index) => (
+                        <tr key={`${cert.jockey_id}_${cert.cert_id}_${index}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td className="py-3 px-4">
-                            <div className="fw-bold text-dark-navy" style={{ fontSize: '14px' }}>{req.jockey_name}</div>
-                            <div className="text-primary" style={{ fontSize: '12px', fontFamily: 'monospace' }}>ID: J-{req.jockey_id}</div>
+                            <div className="fw-bold text-dark-navy" style={{ fontSize: '14px' }}>{cert.jockey_name}</div>
+                            <div className="text-primary" style={{ fontSize: '12px', fontFamily: 'monospace' }}>ID: J-{cert.jockey_id}</div>
                           </td>
                           <td className="py-3 px-3">
-                            {(req.pending_certificates || []).length > 0 ? (
-                              <div className="d-flex flex-column gap-1">
-                                {(req.pending_certificates || []).map((cert, i) => (
-                                  <div key={i} className="d-flex align-items-center gap-1">
-                                    <i className="bi bi-file-earmark-check text-primary" style={{ fontSize: '12px' }}></i>
-                                    <span style={{ fontSize: '13px' }}>{cert}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-secondary-custom" style={{ fontSize: '13px' }}>—</span>
-                            )}
+                            <div className="d-flex align-items-center gap-1">
+                              <i className="bi bi-file-earmark-check text-primary" style={{ fontSize: '12px' }}></i>
+                              <span style={{ fontSize: '13px' }}>
+                                {cert.cert_name || 'Certificate'}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-3 px-3">
                             <span className="badge" style={{ backgroundColor: '#fef3c7', color: '#b45309', borderRadius: '6px', fontWeight: 600, fontSize: '12px', padding: '4px 10px' }}>
@@ -1387,28 +1379,10 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                             <div className="d-flex align-items-center justify-content-end gap-2">
                               <button
                                 className="btn btn-outline-secondary btn-sm fw-semibold"
-                                onClick={() => handleReviewCerts(req)}
+                                onClick={() => handleReviewCerts(cert)}
                                 style={{ borderRadius: '6px', fontSize: '12px', padding: '4px 12px' }}
                               >
                                 Review
-                              </button>
-                              <button
-                                className="btn btn-sm d-flex align-items-center justify-content-center"
-                                title="Accept"
-                                onClick={() => handleAcceptCerts(req.jockey_id)}
-                                disabled={submittingAction}
-                                style={{ borderRadius: '50%', width: '30px', height: '30px', padding: 0, border: '1.5px solid #22c55e', color: '#22c55e', backgroundColor: 'transparent' }}
-                              >
-                                <i className="bi bi-check-lg" style={{ fontSize: '14px' }}></i>
-                              </button>
-                              <button
-                                className="btn btn-sm d-flex align-items-center justify-content-center"
-                                title="Reject"
-                                onClick={() => handleOpenRejectModal(req)}
-                                disabled={submittingAction}
-                                style={{ borderRadius: '50%', width: '30px', height: '30px', padding: 0, border: '1.5px solid #ef4444', color: '#ef4444', backgroundColor: 'transparent' }}
-                              >
-                                <i className="bi bi-x-lg" style={{ fontSize: '14px' }}></i>
                               </button>
                             </div>
                           </td>
@@ -1654,8 +1628,8 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 </label>
                 <div className="d-flex flex-column gap-2">
                   {[{ rank: 1, label: '🥇 Rank 1', color: '#f59e0b', state: newRacePrize1, setter: setNewRacePrize1 },
-                    { rank: 2, label: '🥈 Rank 2', color: '#94a3b8', state: newRacePrize2, setter: setNewRacePrize2 },
-                    { rank: 3, label: '🥉 Rank 3', color: '#b45309', state: newRacePrize3, setter: setNewRacePrize3 }
+                  { rank: 2, label: '🥈 Rank 2', color: '#94a3b8', state: newRacePrize2, setter: setNewRacePrize2 },
+                  { rank: 3, label: '🥉 Rank 3', color: '#b45309', state: newRacePrize3, setter: setNewRacePrize3 }
                   ].map(({ rank, label, color, state, setter }) => (
                     <div key={rank} className="d-flex align-items-center gap-2">
                       <span style={{ minWidth: '70px', fontSize: '13px', fontWeight: 600, color }}>{label}</span>
@@ -1894,55 +1868,37 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
 
             {/* Modal Body */}
             <div className="p-4">
-              {/* Pending certs list */}
-              {(selectedRequest.pending_certificates || []).length > 0 && (
-                <div className="mb-4">
-                  <h6 className="fw-bold text-dark-navy mb-2">Pending Certificates</h6>
-                  <div className="d-flex flex-wrap gap-2">
-                    {(selectedRequest.pending_certificates || []).map((cert, i) => (
-                      <span key={i} className="badge" style={{ backgroundColor: '#eff6ff', color: '#2563eb', borderRadius: '8px', fontWeight: 600, fontSize: '12px', padding: '5px 12px' }}>
-                        <i className="bi bi-file-earmark-check me-1"></i>{cert}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Certificate Images */}
-              <h6 className="fw-bold text-dark-navy mb-3">Certificate Images</h6>
-              {loadingImages ? (
-                <div className="d-flex justify-content-center py-4">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
-                </div>
-              ) : reviewImages.length === 0 ? (
-                <div className="text-center py-4 text-secondary-custom" style={{ fontSize: '14px' }}>
-                  <i className="bi bi-image fs-2 d-block mb-2"></i>
-                  No certificate images found.
-                </div>
-              ) : (
-                <div className="row g-3">
-                  {reviewImages.map((img, i) => (
-                    <div key={i} className="col-6 col-md-4">
-                      <div className="rounded-3 overflow-hidden border" style={{ aspectRatio: '4/3' }}>
-                        {img.cert_image_base64 ? (
-                          <img
-                            src={`data:image/jpeg;base64,${img.cert_image_base64}`}
-                            alt={`Certificate ${i + 1}`}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <div className="d-flex align-items-center justify-content-center h-100 bg-light">
-                            <i className="bi bi-file-earmark-richtext fs-2 text-secondary"></i>
-                          </div>
-                        )}
+              <div className="d-flex justify-content-center">
+                <div className="col-12 text-center">
+                  <div
+                    className="rounded-3 overflow-hidden border mb-3 mx-auto"
+                    style={{ cursor: 'pointer', maxWidth: '80%', height: '400px' }}
+                    onClick={() => {
+                      const newTab = window.open();
+                      newTab.document.write(`<img src="data:image/jpeg;base64,${selectedRequest.cert_image_base64}" style="width: 100vw; height: 100vh; object-fit: contain; margin: 0; padding: 0; display: block; background: #000;" />`);
+                      newTab.document.title = selectedRequest.cert_name || 'Certificate';
+                      newTab.document.close();
+                    }}
+                    title="Click to open image in new tab"
+                  >
+                    {selectedRequest.cert_image_base64 ? (
+                      <img
+                        src={`data:image/jpeg;base64,${selectedRequest.cert_image_base64}`}
+                        alt={selectedRequest.cert_name || 'Certificate'}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#f8fafc' }}
+                      />
+                    ) : (
+                      <div className="d-flex align-items-center justify-content-center h-100 bg-light">
+                        <i className="bi bi-file-earmark-richtext fs-1 text-secondary"></i>
                       </div>
-                      <div className="text-secondary-custom mt-1 text-center" style={{ fontSize: '11px' }}>Certificate {i + 1}</div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+
+                  <div className="text-dark-navy fw-bold fs-5 mb-4">
+                    {selectedRequest.cert_name || 'Certificate'}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -1955,24 +1911,20 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
                 Close
               </button>
               <button
-                className="btn px-4 fw-bold"
-                onClick={() => { setShowReviewModal(false); handleOpenRejectModal(selectedRequest); }}
-                style={{ borderRadius: '8px', backgroundColor: '#fee2e2', color: '#ef4444', border: 'none' }}
+                className="btn btn-danger px-4 fw-bold d-flex align-items-center"
+                onClick={() => { setShowReviewModal(false); handleOpenRejectModal(selectedRequest, selectedRequest.cert_id); }}
                 disabled={submittingAction}
+                style={{ borderRadius: '8px' }}
               >
-                <i className="bi bi-x-circle me-1"></i> Reject
+                <i className="bi bi-x-circle me-2"></i> Reject
               </button>
               <button
-                className="btn btn-success px-4 fw-bold"
-                onClick={() => handleAcceptCerts(selectedRequest.jockey_id)}
-                style={{ borderRadius: '8px' }}
+                className="btn btn-success px-4 fw-bold d-flex align-items-center"
+                onClick={() => handleAcceptCert(selectedRequest.jockey_id, selectedRequest.cert_id)}
                 disabled={submittingAction}
+                style={{ borderRadius: '8px' }}
               >
-                {submittingAction ? (
-                  <><span className="spinner-border spinner-border-sm me-2"></span>Processing...</>
-                ) : (
-                  <><i className="bi bi-check-circle me-1"></i> Accept All</>
-                )}
+                <i className="bi bi-check-circle me-2"></i> Accept
               </button>
             </div>
           </div>
@@ -1992,7 +1944,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
             </div>
             <div className="p-4">
               <p className="text-secondary-custom mb-3" style={{ fontSize: '14px' }}>
-                You are rejecting all certificates for <strong>{selectedRequest.jockey_name}</strong>.
+                You are rejecting a certificate for <strong>{selectedRequest.jockey_name}</strong>.
               </p>
               <label className="fw-bold text-dark-navy mb-1" style={{ fontSize: '13px' }}>Reason for Rejection <span className="text-danger">*</span></label>
               <textarea
@@ -2014,7 +1966,7 @@ export default function AdminDashboard({ onNavigate, adminId = 2 }) {
               </button>
               <button
                 className="btn btn-danger px-4 fw-bold"
-                onClick={handleRejectCerts}
+                onClick={handleRejectCert}
                 disabled={submittingAction || !rejectReason.trim()}
                 style={{ borderRadius: '8px' }}
               >
