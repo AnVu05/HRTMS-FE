@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import '../styles/StableManagement.css';
+import { horseService } from '../services/horse.service';
 
-export default function StableManagement({ onNavigate, horses = [], setHorses }) {
+export default function StableManagement({ onNavigate, horses = [], setHorses, ownerId = 1 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Filtering & searching states
@@ -77,6 +78,15 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
     const errors = {};
     if (!formData.name.trim()) {
       errors.name = 'Horse name is required.';
+    } else {
+      const isDuplicate = horses.some(
+        (h) =>
+          h.name.toLowerCase() === formData.name.trim().toLowerCase() &&
+          h.id !== selectedHorse?.id
+      );
+      if (isDuplicate) {
+        errors.name = 'A horse with this name already exists.';
+      }
     }
     if (!formData.breed.trim()) {
       errors.breed = 'Breed is required.';
@@ -102,28 +112,42 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
   };
 
   // Handle Form submit
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const formattedHorse = {
-      id: modalMode === 'add' ? Date.now() : selectedHorse.id,
-      name: formData.name.trim(),
-      breed: formData.breed.trim().toUpperCase(),
-      age: parseInt(formData.age, 10),
-      // weight: formData.weight ? parseInt(formData.weight, 10) : undefined,
-      wins: parseInt(formData.wins, 10),
-      status: formData.status,
-    };
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        breed: formData.breed.trim().toUpperCase(),
+        age: parseInt(formData.age, 10),
+        status: formData.status,
+        owner_id: ownerId,
+      };
 
-    if (modalMode === 'add') {
-      setHorses((prev) => [...prev, formattedHorse]);
-    } else {
-      setHorses((prev) =>
-        prev.map((h) => (h.id === selectedHorse.id ? formattedHorse : h))
-      );
+      if (modalMode === 'add') {
+        const newHorseResponse = await horseService.createHorse(payload);
+        const newHorse = newHorseResponse.data || newHorseResponse;
+        // Giữ lại wins cục bộ (nếu backend không trả về, tạm thời hiển thị là 0)
+        if (newHorse && !('wins' in newHorse)) {
+          newHorse.wins = parseInt(formData.wins, 10) || 0;
+        }
+        setHorses((prev) => [...prev, newHorse]);
+      } else {
+        const updatedHorseResponse = await horseService.updateHorse(selectedHorse.id, payload);
+        const updatedHorse = updatedHorseResponse.data || updatedHorseResponse;
+        if (updatedHorse && !('wins' in updatedHorse)) {
+          updatedHorse.wins = parseInt(formData.wins, 10) || selectedHorse.wins;
+        }
+        setHorses((prev) =>
+          prev.map((h) => (h.id === selectedHorse.id ? updatedHorse : h))
+        );
+      }
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to save horse:", error);
+      alert("Failed to save horse: " + error.message);
     }
-    setShowModal(false);
   };
 
   // Open Delete confirmation
@@ -133,10 +157,16 @@ export default function StableManagement({ onNavigate, horses = [], setHorses })
   };
 
   // Confirm deletion
-  const handleDeleteConfirm = () => {
-    setHorses((prev) => prev.filter((h) => h.id !== selectedHorse.id));
-    setShowDeleteConfirm(false);
-    setSelectedHorse(null);
+  const handleDeleteConfirm = async () => {
+    try {
+      await horseService.deleteHorse(selectedHorse.id);
+      setHorses((prev) => prev.filter((h) => h.id !== selectedHorse.id));
+      setShowDeleteConfirm(false);
+      setSelectedHorse(null);
+    } catch (error) {
+      console.error("Failed to delete horse:", error);
+      alert("Failed to delete horse: " + error.message);
+    }
   };
 
   // Filter & Search logic
