@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminApp from "./pages/admin/AdminApp";
+import DoctorApp from "./pages/doctor/DoctorApp";
 
 const DummyComponent = ({ title }) => (
   <div className="flex h-screen w-full items-center justify-center bg-gray-100">
@@ -17,6 +18,7 @@ const PAGES = [
   "register",
   "spectator-home",
   "admin-dashboard",
+  "doctor-dashboard",
   "stable-management",
   "owner-races",
   "jockey-profile",
@@ -58,6 +60,8 @@ function App() {
   useEffect(() => {
     if (currentPage === "admin-dashboard") {
       window.history.pushState(null, '', '/admin');
+    } else if (currentPage === "doctor-dashboard") {
+      window.history.pushState(null, '', '/doctor');
     }
   }, [currentPage]);
 
@@ -71,6 +75,8 @@ function App() {
         return <DummyComponent title="Spectator Home" />;
       case "admin-dashboard":
         return <AdminApp />;
+      case "doctor-dashboard":
+        return <DoctorApp />;
       case "stable-management":
         return <DummyComponent title="Stable Management" />;
       case "owner-races":
@@ -138,11 +144,12 @@ function App() {
 
       {/* Page content */}
       <div
-        className={`app-page-container ${currentPage === "spectator-home" || currentPage === "admin-dashboard" || currentPage === "stable-management" || currentPage === "owner-races" || currentPage === "jockey-profile" || currentPage === "referee-dashboard" ? "full-width" : ""}`}
+        className={`app-page-container ${currentPage === "spectator-home" || currentPage === "admin-dashboard" || currentPage === "doctor-dashboard" || currentPage === "stable-management" || currentPage === "owner-races" || currentPage === "jockey-profile" || currentPage === "referee-dashboard" ? "full-width" : ""}`}
         style={{
           paddingTop:
             currentPage === "spectator-home" ||
               currentPage === "admin-dashboard" ||
+              currentPage === "doctor-dashboard" ||
               currentPage === "stable-management" ||
               currentPage === "owner-races" ||
               currentPage === "jockey-profile" ||
