@@ -1,22 +1,19 @@
 import { apiRequest } from './api';
 
 export const jockeyService = {
-  /**
-   * Lấy thông tin profile của Jockey
-   * @param {number|string} jockeyId 
-   * @returns {Promise<{status: string, message: string, data: {id: number, username: string, email: string, role: string, createdAt: string, jockeyName: string, yearOfExperience: number, age: number, professionalBio: string, status: boolean}}>}
-   */
+  // Profiles
+  getAllJockeys() {
+    return apiRequest('/api/jockeys', {
+      method: 'GET',
+    });
+  },
+
   getProfile(jockeyId) {
     return apiRequest(`/api/jockeys/${jockeyId}/profile`, {
       method: 'GET',
     });
   },
 
-  /**
-   * Cập nhật thông tin profile của Jockey
-   * @param {number|string} jockeyId
-   * @param {{ jockeyName: string, yearOfExperience: number, age: number, professionalBio: string }} payload
-   */
   updateProfile(jockeyId, payload) {
     return apiRequest(`/api/jockeys/${jockeyId}/profile`, {
       method: 'PUT',
@@ -24,89 +21,116 @@ export const jockeyService = {
     });
   },
 
-  
-  /**
-   * Thêm chứng chỉ cho Jockey
-   * @param {number|string} jockeyId 
-   * @param {{ certName: string, certImageBase64: string }} payload 
-   */
-  addCertificate(jockeyId, payload) {
-    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  /**
-   * Yêu cầu xác minh chứng chỉ
-   * @param {number|string} jockeyId 
-   */
-  requestVerification(jockeyId) {
-    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/request-verification`, {
-      method: 'POST',
-    });
-  },
-  /**
-   * Lấy kết quả xác minh chứng chỉ (thông báo)
-   * @param {number|string} jockeyId 
-   */
-  getCertificateResults(jockeyId) {
-    return apiRequest(`/api/v1/notifications/jockeys/${jockeyId}/certificate-results`, {
-      method: 'GET',
-    });
-  },
-
-  /**
-   * Lấy thông tin về chứng chỉ của jockey
-   * @param {number|string} recipientId 
-   */
-  getJockeyCerts(recipientId) {
-    return apiRequest(`/api/v1/verifications/jockey-certs?recipientId=${recipientId}`, {
-      method: 'GET',
-    });
-  },
-
-  /**
-   * Lấy danh sách chứng chỉ (API mới)
-   * @param {number|string} jockeyId 
-   */
+  // Certificates from Jockey Profile Controller
   getJockeyCertificates(jockeyId) {
     return apiRequest(`/api/jockeys/${jockeyId}/certificates`, {
       method: 'GET',
     });
   },
 
-  /**
-   * Lấy hình ảnh chứng chỉ từ database
-   * @param {number|string} jockeyId 
-   */
-  getJockeyCertImages(jockeyId) {
+  updateJockeyCertificate(jockeyId, certId, payload) {
+    return apiRequest(`/api/jockeys/${jockeyId}/certificates/${certId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteJockeyCertificate(jockeyId, certId) {
+    return apiRequest(`/api/jockeys/${jockeyId}/certificates/${certId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Jockey Certificates (Category controller `/api/jockeycerts`)
+  createCertCategory(payload) {
+    return apiRequest('/api/jockeycerts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getAllCertCategories() {
+    return apiRequest('/api/jockeycerts', {
+      method: 'GET',
+    });
+  },
+
+  getCertCategoryById(id) {
+    return apiRequest(`/api/jockeycerts/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  updateCertCategory(id, payload) {
+    return apiRequest(`/api/jockeycerts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteCertCategory(id) {
+    return apiRequest(`/api/jockeycerts/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Verification APIs (`/api/v1/verifications`)
+  getJockeyVerificationRequests(recipientId) {
+    return apiRequest(`/api/v1/verifications/jockey-certs?recipientId=${recipientId}`, {
+      method: 'GET',
+    });
+  },
+
+  getPendingCertImages(jockeyId) {
     return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/images`, {
       method: 'GET',
     });
   },
 
-  /**
-   * Chấp nhận chứng chỉ của jockey
-   * @param {number|string} jockeyId 
-   * @param {number|string} adminId 
-   */
-  acceptJockeyCert(jockeyId, adminId) {
+  createJockeyCertificateVerification(payload) {
+    return apiRequest('/api/v1/verifications/jockey-certs', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  requestVerificationForAll(jockeyId) {
+    return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/request-verification`, {
+      method: 'POST',
+    });
+  },
+
+  acceptJockeyCertificates(jockeyId, adminId) {
     return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/accept?adminId=${adminId}`, {
       method: 'PUT',
     });
   },
 
-  /**
-   * Từ chối chứng chỉ của jockey
-   * @param {number|string} jockeyId 
-   * @param {number|string} adminId 
-   * @param {string} reason 
-   */
-  rejectJockeyCert(jockeyId, adminId, reason) {
+  rejectJockeyCertificates(jockeyId, adminId, reason) {
     return apiRequest(`/api/v1/verifications/jockey-certs/${jockeyId}/reject?adminId=${adminId}`, {
       method: 'PUT',
       body: JSON.stringify({ reason }),
+    });
+  },
+
+  // Respond to invitation form
+  jockeyRespondToRegistrationForm(formId, payload) {
+    return apiRequest(`/api/registrationforms/${formId}/jockey-respond`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // Notifications
+  getRecentCertificateNotifications(jockeyId) {
+    return apiRequest(`/api/v1/notifications/jockeys/${jockeyId}/certificate-results`, {
+      method: 'GET',
+    });
+  },
+
+  getNotifications(jockeyId, page = 0, size = 5) {
+    return apiRequest(`/api/v1/notifications/jockeys/${jockeyId}?page=${page}&size=${size}`, {
+      method: 'GET',
     });
   },
 };

@@ -9,6 +9,8 @@ import JockeyProfile from "./pages/JockeyProfile";
 import RefereeDashboard from "./pages/RefereeDashboard";
 // THÊM VÀO ĐẦU FILE:
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { horseService } from "./services/horse.service";
 const PAGES = [
   "login",
   "register",
@@ -52,6 +54,22 @@ function App() {
   const [currentPage, setCurrentPage] = useState("owner-races");
   const [horses, setHorses] = useState(INITIAL_HORSES);
 
+  useEffect(() => {
+    const fetchHorses = async () => {
+      try {
+        const ownerId = 1; // Giả sử ownerId = 1
+        const response = await horseService.getHorsesByOwner(ownerId);
+        const data = response.data || response;
+        if (Array.isArray(data)) {
+          setHorses(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch horses:", error);
+      }
+    };
+    fetchHorses();
+  }, []);
+
   const renderPage = () => {
     switch (currentPage) {
       case "login":
@@ -68,6 +86,7 @@ function App() {
             onNavigate={setCurrentPage}
             horses={horses}
             setHorses={setHorses}
+            ownerId={1}
           />
         );
       case "owner-races":
