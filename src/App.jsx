@@ -1,14 +1,17 @@
-import { useState } from "react";
-import LoginOtp from "./pages/LoginOtp";
-import Register from "./pages/Register";
-import SpectatorHome from "./pages/SpectatorHome";
-import AdminDashboard from "./pages/AdminDashboard";
-import StableManagement from "./pages/StableManagement";
-import OwnerRaces from "./pages/OwnerRaces";
-import JockeyProfile from "./pages/JockeyProfile";
-import RefereeDashboard from "./pages/RefereeDashboard";
+import { useState, useEffect } from "react";
+import AdminApp from "./pages/admin/AdminApp";
+
+const DummyComponent = ({ title }) => (
+  <div className="flex h-screen w-full items-center justify-center bg-gray-100">
+    <h1 className="text-2xl font-bold text-gray-500">
+      {title} Page (Coming Soon)
+    </h1>
+  </div>
+);
+
 // THÊM VÀO ĐẦU FILE:
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
 const PAGES = [
   "login",
   "register",
@@ -52,32 +55,32 @@ function App() {
   const [currentPage, setCurrentPage] = useState("owner-races");
   const [horses, setHorses] = useState(INITIAL_HORSES);
 
+  useEffect(() => {
+    if (currentPage === "admin-dashboard") {
+      window.history.pushState(null, '', '/admin');
+    }
+  }, [currentPage]);
+
   const renderPage = () => {
     switch (currentPage) {
       case "login":
-        return <LoginOtp onNavigate={setCurrentPage} />;
+        return <DummyComponent title="Login / OTP" />;
       case "register":
-        return <Register onNavigate={setCurrentPage} />;
+        return <DummyComponent title="Register" />;
       case "spectator-home":
-        return <SpectatorHome onNavigate={setCurrentPage} />;
+        return <DummyComponent title="Spectator Home" />;
       case "admin-dashboard":
-        return <AdminDashboard onNavigate={setCurrentPage} adminId={1} />;
+        return <AdminApp />;
       case "stable-management":
-        return (
-          <StableManagement
-            onNavigate={setCurrentPage}
-            horses={horses}
-            setHorses={setHorses}
-          />
-        );
+        return <DummyComponent title="Stable Management" />;
       case "owner-races":
-        return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
+        return <DummyComponent title="Owner Races" />;
       case "jockey-profile":
-        return <JockeyProfile onNavigate={setCurrentPage} jockeyId={4} />;
+        return <DummyComponent title="Jockey Profile" />;
       case "referee-dashboard":
-        return <RefereeDashboard onNavigate={setCurrentPage} refereeId={2} />;
+        return <DummyComponent title="Referee Dashboard" />;
       default:
-        return <LoginOtp onNavigate={setCurrentPage} />;
+        return <DummyComponent title="Login / OTP" />;
     }
   };
 
@@ -150,6 +153,15 @@ function App() {
       >
         {renderPage()}
       </div>
+      <Toaster 
+        toastOptions={{
+          style: {
+            backgroundColor: '#fee2e2',
+            color: '#b91c1c',
+            border: '1px solid #f87171'
+          }
+        }}
+      />
     </QueryClientProvider>
   );
 }
