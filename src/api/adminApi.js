@@ -27,6 +27,8 @@ const adminApi = {
 
   // Medical (Registration Forms & Doctors)
   getRegistrationForms: () => axiosClient.get('/registrationforms'),
+  getPendingAdminForms: (adminId) => axiosClient.get(`/registrationforms/pending-admin/${adminId}`),
+  adminRespondRegistration: (id, data) => axiosClient.put(`/registrationforms/${id}/admin-respond`, data),
   getDoctors: () => axiosClient.get('/doctors'),
   assignDoctor: (data) => axiosClient.post('/healthchecks', data),
 
@@ -38,7 +40,14 @@ const adminApi = {
 
   // Notifications
   getNotifications: (adminId) => axiosClient.get(`/v1/notifications/admin/${adminId}`),
-  markAllNotificationsRead: (adminId) => axiosClient.put(`/v1/notifications/admin/${adminId}/read`)
+  markAllNotificationsRead: (adminId) => axiosClient.put(`/v1/notifications/admin/${adminId}/read`),
+
+  // Users
+  getUsers: () => axiosClient.get('/users'),
+  getUsersExcludeCurrent: (id) => axiosClient.get(`/users/exclude/${id}`),
+  getUserById: (id) => axiosClient.get(`/users/${id}`),
+  updateUser: (id, data) => axiosClient.put(`/users/${id}`, data),
+  createUser: (data) => axiosClient.post('/users', data)
 };
 
 export default adminApi;

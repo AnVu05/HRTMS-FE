@@ -91,13 +91,18 @@ export function AdminLayout({ children }) {
               {adminMenuItems.find(item => item.url === location)?.title || "Dashboard"}
             </h1>
             <div className="flex items-center gap-4">
-              <Popover>
+              <Popover onOpenChange={(open) => {
+                if (open) {
+                  // Mark as read when viewing
+                  handleMarkAllRead();
+                }
+              }}>
                 <PopoverTrigger asChild>
                   <button className="relative p-2 hover:bg-accent rounded-full transition-colors">
                     <Bell className="h-5 w-5 text-muted-foreground" />
-                    {notifications.filter(n => !n.isRead).length > 0 && (
+                    {notifications.filter(n => !n.isRead && n.status === 'UNREAD').length > 0 && (
                       <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
-                        {notifications.filter(n => !n.isRead).length}
+                        {notifications.filter(n => !n.isRead && n.status === 'UNREAD').length}
                       </span>
                     )}
                   </button>
@@ -105,20 +110,13 @@ export function AdminLayout({ children }) {
                 <PopoverContent className="w-80 p-0" align="end">
                   <div className="flex items-center justify-between px-4 py-3 border-b">
                     <h4 className="font-semibold">Notifications</h4>
-                    <span 
-                      className="text-xs text-muted-foreground cursor-pointer hover:underline"
-                      onClick={handleMarkAllRead}
-                    >
-                      Mark all as read
-                    </span>
                   </div>
                   <ScrollArea className="h-80">
                     <div className="flex flex-col">
                       {notifications.map(notification => (
-                        <div key={notification.id} className={`flex flex-col gap-1 p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer ${!notification.isRead ? 'bg-muted/20' : ''}`}>
+                        <div key={notification.id} className={`flex flex-col gap-1 p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer ${notification.status === 'UNREAD' || !notification.isRead ? 'bg-muted/20' : ''}`}>
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-sm">{notification.title}</span>
-                            {!notification.isRead && <span className="h-2 w-2 rounded-full bg-primary" />}
                           </div>
                           <span className="text-sm text-muted-foreground">{notification.content}</span>
                           <span className="text-xs text-muted-foreground/80 mt-1">{notification.createdAt}</span>

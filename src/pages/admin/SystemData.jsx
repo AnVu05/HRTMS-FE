@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { mockUsers } from '@/mock/adminMockData';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import adminApi from '@/api/adminApi';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 
 const userFormSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -35,7 +36,18 @@ const userFormSchema = z.object({
 
 function UserFormDialog({ mode, initialData, trigger }) {
   const isEdit = mode === 'edit';
+  const [open, setOpen] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
+  
+  const { data: userDetails, isLoading } = useQuery({
+    queryKey: ['user', initialData?.id],
+    queryFn: () => {
+      console.log("Calling getUserById API for ID:", initialData.id);
+      return adminApi.getUserById(initialData.id);
+    },
+    enabled: isEdit && !!initialData?.id && open,
+  });
+
   const form = useForm({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -47,12 +59,55 @@ function UserFormDialog({ mode, initialData, trigger }) {
     },
   });
 
+  React.useEffect(() => {
+    if (userDetails && open) {
+      console.log("Received userDetails from API:", userDetails);
+      form.reset({
+        username: userDetails.username || "",
+        email: userDetails.email || "",
+        password: userDetails.password || "",
+        role: userDetails.role || "",
+        status: userDetails.status || "ACTIVE",
+      });
+    } else if (!open && !isEdit) {
+      form.reset({
+        username: "",
+        email: "",
+        password: "",
+        role: "",
+        status: "ACTIVE",
+      });
+    }
+  }, [userDetails, open, form, isEdit]);
+
+  const queryClient = useQueryClient();
+  
+  const updateMutation = useMutation({
+    mutationFn: (data) => adminApi.updateUser(initialData.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setOpen(false);
+    }
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => adminApi.createUser(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setOpen(false);
+    }
+  });
+
   const onSubmit = (data) => {
-    console.log(isEdit ? "Update user data:" : "Create user data:", data);
+    if (isEdit) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
@@ -63,6 +118,7 @@ function UserFormDialog({ mode, initialData, trigger }) {
             {isEdit ? "Update the details and role for this user account." : "Enter the details to create a new user account."}
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="username" className="text-right">Username</Label>
@@ -169,6 +225,32 @@ const raceFormatSchema = z.object({
   baseWeight: z.string().optional(),
   applyFemaleAllowance: z.string().optional(),
   status: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const parseNum = (val) => val ? parseFloat(val) : 0;
+  
+  const first = parseNum(data.firstPrizePercent);
+  const second = parseNum(data.secondPrizePercent);
+  const third = parseNum(data.thirdPrizePercent);
+  const totalPercent = first + second + third;
+
+  if (totalPercent > 100) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Total prize percentage cannot exceed 100%",
+      path: ["firstPrizePercent"],
+    });
+  }
+  
+  const minW = parseNum(data.minWeight);
+  const maxW = parseNum(data.maxWeight);
+  
+  if (data.minWeight && data.maxWeight && minW >= maxW) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Min weight must be less than Max weight",
+      path: ["maxWeight"],
+    });
+  }
 });
 
 function RaceFormatFormDialog({ mode, initialData, trigger }) {
@@ -183,7 +265,7 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
       secondPrizePercent: initialData?.secondPrizePercent?.toString() || "",
       thirdPrizePercent: initialData?.thirdPrizePercent?.toString() || "",
       allowedBreed: initialData?.allowedBreed || "",
-      allowedHorseAge: initialData?.allowedHorseAge || "",
+      allowedHorseAge: initialData?.allowedHorseAge?.toString() || "",
       minJockeyExperience: initialData?.minJockeyExperience?.toString() || "",
       minWeight: initialData?.minWeight?.toString() || "",
       maxWeight: initialData?.maxWeight?.toString() || "",
@@ -193,12 +275,52 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
     },
   });
 
+  const [open, setOpen] = React.useState(false);
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: (data) => adminApi.updateRaceFormat(initialData.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['raceFormats'] });
+      toast.success("Race format updated successfully!");
+      setOpen(false);
+    }
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => adminApi.createRaceFormat(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['raceFormats'] });
+      toast.success("Race format created successfully!");
+      setOpen(false);
+    }
+  });
+
   const onSubmit = (data) => {
-    console.log(isEdit ? "Update race format data:" : "Create race format data:", data);
+    // Convert string inputs to proper types for API payload
+    const payload = {
+      ...data,
+      entryFee: data.entryFee ? parseFloat(data.entryFee) : null,
+      firstPrizePercent: data.firstPrizePercent ? parseFloat(data.firstPrizePercent) : null,
+      secondPrizePercent: data.secondPrizePercent ? parseFloat(data.secondPrizePercent) : null,
+      thirdPrizePercent: data.thirdPrizePercent ? parseFloat(data.thirdPrizePercent) : null,
+      allowedHorseAge: data.allowedHorseAge ? parseInt(data.allowedHorseAge) : null,
+      minJockeyExperience: data.minJockeyExperience ? parseInt(data.minJockeyExperience) : null,
+      minWeight: data.minWeight ? parseInt(data.minWeight) : null,
+      maxWeight: data.maxWeight ? parseInt(data.maxWeight) : null,
+      baseWeight: data.baseWeight ? parseInt(data.baseWeight) : null,
+      applyFemaleAllowance: data.applyFemaleAllowance ? parseInt(data.applyFemaleAllowance) : null,
+    };
+    
+    if (isEdit) {
+      updateMutation.mutate(payload);
+    } else {
+      createMutation.mutate(payload);
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
@@ -213,10 +335,12 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" {...form.register("name")} />
+            {form.formState.errors.name && <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="entryFee">Entry Fee</Label>
-            <Input id="entryFee" type="number" {...form.register("entryFee")} />
+            <Input id="entryFee" type="number" step="any" {...form.register("entryFee")} />
+            {form.formState.errors.entryFee && <p className="text-sm text-red-500 mt-1">{form.formState.errors.entryFee.message}</p>}
           </div>
           <div className="flex flex-col gap-2 col-span-2">
             <Label htmlFor="description">Description</Label>
@@ -224,15 +348,16 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="firstPrizePercent">First Prize (%)</Label>
-            <Input id="firstPrizePercent" type="number" {...form.register("firstPrizePercent")} />
+            <Input id="firstPrizePercent" type="number" step="any" placeholder="e.g. 50" {...form.register("firstPrizePercent")} />
+            {form.formState.errors.firstPrizePercent && <p className="text-sm text-red-500 mt-1">{form.formState.errors.firstPrizePercent.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="secondPrizePercent">Second Prize (%)</Label>
-            <Input id="secondPrizePercent" type="number" {...form.register("secondPrizePercent")} />
+            <Input id="secondPrizePercent" type="number" step="any" placeholder="e.g. 30" {...form.register("secondPrizePercent")} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="thirdPrizePercent">Third Prize (%)</Label>
-            <Input id="thirdPrizePercent" type="number" {...form.register("thirdPrizePercent")} />
+            <Input id="thirdPrizePercent" type="number" step="any" placeholder="e.g. 20" {...form.register("thirdPrizePercent")} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="allowedBreed">Allowed Breed</Label>
@@ -259,27 +384,33 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="allowedHorseAge">Allowed Horse Age</Label>
-            <Input id="allowedHorseAge" {...form.register("allowedHorseAge")} />
+            <Input id="allowedHorseAge" type="number" step="any" {...form.register("allowedHorseAge")} />
+            {form.formState.errors.allowedHorseAge && <p className="text-sm text-red-500 mt-1">{form.formState.errors.allowedHorseAge.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="minJockeyExperience">Min Jockey Exp (years)</Label>
-            <Input id="minJockeyExperience" type="number" {...form.register("minJockeyExperience")} />
+            <Input id="minJockeyExperience" type="number" step="any" {...form.register("minJockeyExperience")} />
+            {form.formState.errors.minJockeyExperience && <p className="text-sm text-red-500 mt-1">{form.formState.errors.minJockeyExperience.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="minWeight">Min Weight (kg)</Label>
-            <Input id="minWeight" type="number" {...form.register("minWeight")} />
+            <Input id="minWeight" type="number" step="any" {...form.register("minWeight")} />
+            {form.formState.errors.minWeight && <p className="text-sm text-red-500 mt-1">{form.formState.errors.minWeight.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="maxWeight">Max Weight (kg)</Label>
-            <Input id="maxWeight" type="number" {...form.register("maxWeight")} />
+            <Input id="maxWeight" type="number" step="any" {...form.register("maxWeight")} />
+            {form.formState.errors.maxWeight && <p className="text-sm text-red-500 mt-1">{form.formState.errors.maxWeight.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="baseWeight">Base Weight (kg)</Label>
-            <Input id="baseWeight" type="number" {...form.register("baseWeight")} />
+            <Input id="baseWeight" type="number" step="any" {...form.register("baseWeight")} />
+            {form.formState.errors.baseWeight && <p className="text-sm text-red-500 mt-1">{form.formState.errors.baseWeight.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="applyFemaleAllowance">Female Allowance (kg)</Label>
-            <Input id="applyFemaleAllowance" type="number" step="0.1" {...form.register("applyFemaleAllowance")} />
+            <Input id="applyFemaleAllowance" type="number" step="any" {...form.register("applyFemaleAllowance")} />
+            {form.formState.errors.applyFemaleAllowance && <p className="text-sm text-red-500 mt-1">{form.formState.errors.applyFemaleAllowance.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="status">Status</Label>
@@ -304,8 +435,8 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
             )}
           </div>
           <DialogFooter className="col-span-2 mt-4">
-            <Button type="submit" className="bg-[#f59e0b] hover:bg-[#d97706] text-white w-full sm:w-auto">
-              {isEdit ? "Update Format" : "Create Format"}
+            <Button type="submit" className="bg-[#f59e0b] hover:bg-[#d97706] text-white w-full sm:w-auto" disabled={createMutation.isPending || updateMutation.isPending}>
+              {isEdit ? (updateMutation.isPending ? "Updating..." : "Update Format") : (createMutation.isPending ? "Creating..." : "Create Format")}
             </Button>
           </DialogFooter>
         </form>
@@ -318,6 +449,14 @@ export function SystemData() {
   const { data: raceFormats = [], isLoading: loadingFormats } = useQuery({
     queryKey: ['raceFormats'],
     queryFn: adminApi.getRaceFormats
+  });
+
+  // Giả lập lấy ID của user hiện tại (ví dụ: Admin đang đăng nhập có ID = 1)
+  const currentUserId = 1;
+
+  const { data: users = [], isLoading: loadingUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => adminApi.getUsersExcludeCurrent(currentUserId)
   });
 
   return (
@@ -348,17 +487,21 @@ export function SystemData() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>User ID</TableHead>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Username</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockUsers.map((u) => (
+                  {loadingUsers ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">Loading users...</TableCell>
+                    </TableRow>
+                  ) : users.map((u) => (
                     <TableRow key={u.id}>
                       <TableCell>{u.id}</TableCell>
-                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell className="font-medium">{u.username}</TableCell>
                       <TableCell>{u.role}</TableCell>
                       <TableCell>{u.status}</TableCell>
                       <TableCell>
@@ -369,7 +512,7 @@ export function SystemData() {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              disabled={!['ADMIN', 'DOCTOR', 'REFEREE'].includes(u.role)}
+                              disabled={!['ADMIN', 'DOCTOR', 'REFEREE'].includes(u.role) || u.status !== 'ACTIVE'}
                             >
                               Edit Role
                             </Button>
@@ -430,7 +573,6 @@ export function SystemData() {
                             initialData={f}
                             trigger={<Button variant="outline" size="sm" disabled={f.status !== 'ACTIVE'}>Edit</Button>}
                           />
-                          <Button variant="destructive" size="sm" disabled={f.status === 'DELETE'}>Delete</Button>
                         </div>
                       </TableCell>
                     </TableRow>

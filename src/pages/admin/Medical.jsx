@@ -19,6 +19,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { UserPlus } from 'lucide-react';
 
 function AssignDoctorDialog({ registrationId }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+
   const { data: doctors = [] } = useQuery({
     queryKey: ['doctors'],
     queryFn: adminApi.getDoctors
@@ -30,12 +33,24 @@ function AssignDoctorDialog({ registrationId }) {
     }
   });
 
+  const assignMutation = useMutation({
+    mutationFn: adminApi.assignDoctor,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrationForms'] });
+      setOpen(false);
+    }
+  });
+
   const onSubmit = (data) => {
-    console.log(`Assigning doctor ${data.doctorId} to registration ${registrationId}`);
+    assignMutation.mutate({
+      registrationFormId: registrationId,
+      doctorId: parseInt(data.doctorId, 10),
+      status: 'PENDING_DOCTOR'
+    });
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50">
           <UserPlus className="mr-2 h-4 w-4" /> Add Doctor
@@ -59,7 +74,7 @@ function AssignDoctorDialog({ registrationId }) {
                   </SelectTrigger>
                   <SelectContent>
                     {doctors.map(doc => (
-                      <SelectItem key={doc.id} value={doc.id.toString()}>{doc.username}</SelectItem>
+                      <SelectItem key={doc.userId} value={doc.userId.toString()}>{doc.username}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -67,7 +82,9 @@ function AssignDoctorDialog({ registrationId }) {
             />
           </div>
           <DialogFooter>
-            <Button type="submit" className="bg-[#f59e0b] hover:bg-[#d97706] text-white">Save Changes</Button>
+            <Button type="submit" className="bg-[#f59e0b] hover:bg-[#d97706] text-white" disabled={assignMutation.isPending}>
+              {assignMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -99,7 +116,6 @@ export function Medical() {
                 <TableHead>Tournament</TableHead>
                 <TableHead>Race</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead>Doctor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -107,23 +123,16 @@ export function Medical() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : prepareRegistrations.length > 0 ? prepareRegistrations.map((reg) => (
                 <TableRow key={reg.id}>
                   <TableCell className="font-medium">{reg.id}</TableCell>
-                  <TableCell>{reg.tournamentName}</TableCell>
-                  <TableCell>{reg.raceName}</TableCell>
-                  <TableCell>{reg.ownerName}</TableCell>
-                  <TableCell>
-                    {reg.doctorName || reg.doctorUsername ? (
-                      <span className="text-slate-600">{reg.doctorName || reg.doctorUsername}</span>
-                    ) : (
-                      <span className="text-muted-foreground italic">Unassigned</span>
-                    )}
-                  </TableCell>
+                  <TableCell>{reg.tournament_name}</TableCell>
+                  <TableCell>{reg.race_name}</TableCell>
+                  <TableCell>{reg.owner_name}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                       {reg.status}
@@ -135,7 +144,7 @@ export function Medical() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                     No prepare registration forms found.
                   </TableCell>
                 </TableRow>
