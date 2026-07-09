@@ -1,122 +1,157 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from "react";
+import LoginOtp from "./pages/LoginOtp";
+import Register from "./pages/Register";
+import SpectatorHome from "./pages/SpectatorHome";
+import AdminDashboard from "./pages/AdminDashboard";
+import StableManagement from "./pages/StableManagement";
+import OwnerRaces from "./pages/OwnerRaces";
+import JockeyProfile from "./pages/JockeyProfile";
+import RefereeDashboard from "./pages/RefereeDashboard";
+// THÊM VÀO ĐẦU FILE:
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+const PAGES = [
+  "login",
+  "register",
+  "spectator-home",
+  "admin-dashboard",
+  "stable-management",
+  "owner-races",
+  "jockey-profile",
+  "referee-dashboard",
+];
 
+const INITIAL_HORSES = [
+  {
+    id: 1,
+    name: "Thunder Dash",
+    breed: "THOROUGHBRED",
+    age: 4,
+    wins: 12,
+    status: "ACTIVE",
+  },
+  {
+    id: 2,
+    name: "Silver Mist",
+    breed: "ARABIAN",
+    age: 6,
+    wins: 8,
+    status: "INJURED",
+  },
+  {
+    id: 3,
+    name: "Midnight Ace",
+    breed: "QUARTER HORSE",
+    age: 5,
+    wins: 15,
+    status: "RETIRED",
+  },
+];
+// THÊM VÀO NGOÀI COMPONENT APP:
+const queryClient = new QueryClient();
 function App() {
-  const [count, setCount] = useState(0)
+  const [currentPage, setCurrentPage] = useState("owner-races");
+  const [horses, setHorses] = useState(INITIAL_HORSES);
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case "login":
+        return <LoginOtp onNavigate={setCurrentPage} />;
+      case "register":
+        return <Register onNavigate={setCurrentPage} />;
+      case "spectator-home":
+        return <SpectatorHome onNavigate={setCurrentPage} />;
+      case "admin-dashboard":
+        return <AdminDashboard onNavigate={setCurrentPage} adminId={1} />;
+      case "stable-management":
+        return (
+          <StableManagement
+            onNavigate={setCurrentPage}
+            horses={horses}
+            setHorses={setHorses}
+          />
+        );
+      case "owner-races":
+        return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
+      case "jockey-profile":
+        return <JockeyProfile onNavigate={setCurrentPage} jockeyId={4} />;
+      case "referee-dashboard":
+        return <RefereeDashboard onNavigate={setCurrentPage} refereeId={2} />;
+      default:
+        return <LoginOtp onNavigate={setCurrentPage} />;
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <QueryClientProvider client={queryClient}>
+      {/* Dev navigation bar – remove in production */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 9999,
+          display: "flex",
+          gap: 6,
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid #e2e8f0",
+          borderRadius: "12px 12px 0 0",
+          padding: "6px 14px",
+          boxShadow: "0 -4px 16px rgba(0,0,0,0.06)",
+          alignItems: "center",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#64748b",
+            marginRight: 4,
+          }}
         >
-          Count is {count}
-        </button>
-      </section>
+          DEV:
+        </span>
+        {PAGES.map((p) => (
+          <button
+            key={p}
+            onClick={() => setCurrentPage(p)}
+            style={{
+              fontSize: 11,
+              padding: "3px 10px",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+              background: currentPage === p ? "#1b60ec" : "#f1f5f9",
+              color: currentPage === p ? "#fff" : "#475569",
+              transition: "all 0.15s",
+            }}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {/* Page content */}
+      <div
+        className={`app-page-container ${currentPage === "spectator-home" || currentPage === "admin-dashboard" || currentPage === "stable-management" || currentPage === "owner-races" || currentPage === "jockey-profile" || currentPage === "referee-dashboard" ? "full-width" : ""}`}
+        style={{
+          paddingTop:
+            currentPage === "spectator-home" ||
+              currentPage === "admin-dashboard" ||
+              currentPage === "stable-management" ||
+              currentPage === "owner-races" ||
+              currentPage === "jockey-profile" ||
+              currentPage === "referee-dashboard"
+              ? 0
+              : 40,
+        }}
+      >
+        {renderPage()}
+      </div>
+    </QueryClientProvider>
+  );
 }
 
-export default App
+export default App;
