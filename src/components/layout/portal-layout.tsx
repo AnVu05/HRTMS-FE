@@ -54,7 +54,7 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             </Link>
-            
+
             <nav className="hidden md:flex items-center gap-1">
               <NavLinks />
             </nav>
@@ -65,6 +65,10 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
               <Link href="/">
                 <Button variant="ghost" size="sm" data-testid="portal-nav-admin">Admin Panel</Button>
               </Link>
+              <Link href="/portal/profile">
+                <Button variant="ghost" size="sm" data-testid="portal-nav-profile">My Profile</Button>
+              </Link>
+
               <Link href="/portal/login">
                 <Button variant="outline" size="sm" data-testid="portal-nav-login">Login</Button>
               </Link>
@@ -72,7 +76,7 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
                 <Button size="sm" data-testid="portal-nav-register">Register</Button>
               </Link>
             </div>
-            
+
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden" data-testid="portal-mobile-menu">
@@ -93,10 +97,13 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
                   <nav className="flex flex-col gap-2">
                     <NavLinks />
                   </nav>
-                  
+
                   <div className="flex flex-col gap-2 mt-4 pt-4 border-t">
                     <Link href="/">
                       <Button variant="ghost" className="w-full justify-start" data-testid="portal-mobile-admin">Admin Panel</Button>
+                    </Link>
+                    <Link href="/portal/profile">
+                      <Button variant="ghost" className="w-full justify-start" data-testid="portal-mobile-profile">My Profile</Button>
                     </Link>
                     <Link href="/portal/login">
                       <Button variant="outline" className="w-full justify-start" data-testid="portal-mobile-login">Login</Button>

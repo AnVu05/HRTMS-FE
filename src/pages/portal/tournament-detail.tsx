@@ -17,7 +17,7 @@ const MOCK_RACES = [
 
 export default function PortalTournamentDetail() {
   const { id } = useParams();
-  
+
   // Find tournament or use default
   const tournament = MOCK_TOURNAMENTS.find(t => t.id === id) || MOCK_TOURNAMENTS[0];
 
@@ -26,35 +26,35 @@ export default function PortalTournamentDetail() {
       {/* Hero Header */}
       <div className="bg-slate-900 text-white pt-12 pb-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 opacity-80"></div>
-        
+
         <div className="container mx-auto px-4 md:px-6 relative z-10">
           <Link href="/portal/tournaments">
             <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800 mb-8 -ml-4" data-testid="btn-back">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Tournaments
             </Button>
           </Link>
-          
+
           <div className="flex flex-col lg:flex-row gap-8 justify-between items-start">
             <div className="max-w-2xl">
               <div className="flex items-center gap-3 mb-4">
                 <Badge className={
                   tournament.status === 'Active' ? 'bg-green-500 hover:bg-green-600 border-none' :
-                  tournament.status === 'Upcoming' ? 'bg-blue-500 hover:bg-blue-600 border-none' : 
-                  'bg-slate-600 hover:bg-slate-700 border-none'
+                    tournament.status === 'Upcoming' ? 'bg-blue-500 hover:bg-blue-600 border-none' :
+                      'bg-slate-600 hover:bg-slate-700 border-none'
                 }>
                   {tournament.status}
                 </Badge>
                 <span className="text-primary font-bold tracking-wide">${tournament.prize.toLocaleString()} Prize Pool</span>
               </div>
-              
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight leading-tight">
+
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight leading-tight text-slate-400">
                 {tournament.name}
               </h1>
-              
+
               <p className="text-lg text-slate-300 leading-relaxed mb-8">
                 {tournament.description}
               </p>
-              
+
               <div className="flex flex-wrap gap-6 text-slate-300">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
@@ -66,20 +66,20 @@ export default function PortalTournamentDetail() {
                 </div>
               </div>
             </div>
-            
+
             <div className="w-full lg:w-80 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 shrink-0">
               <h3 className="text-lg font-bold mb-4 border-b border-slate-700 pb-3">Tournament Stats</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 flex items-center gap-2"><Trophy className="h-4 w-4"/> Total Races</span>
+                  <span className="text-slate-400 flex items-center gap-2"><Trophy className="h-4 w-4" /> Total Races</span>
                   <span className="font-bold text-lg">{tournament.raceCount}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 flex items-center gap-2"><Users className="h-4 w-4"/> Max Riders</span>
+                  <span className="text-slate-400 flex items-center gap-2"><Users className="h-4 w-4" /> Max Riders</span>
                   <span className="font-bold text-lg">{tournament.maxParticipants}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 flex items-center gap-2"><Flag className="h-4 w-4"/> Status</span>
+                  <span className="text-slate-400 flex items-center gap-2"><Flag className="h-4 w-4" /> Status</span>
                   <span className="font-bold text-lg text-green-400">{tournament.status}</span>
                 </div>
               </div>
@@ -134,8 +134,8 @@ export default function PortalTournamentDetail() {
                       <td className="px-6 py-5 text-center">
                         <Badge className={
                           race.status === 'Completed' ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' :
-                          race.status === 'In Progress' ? 'bg-green-500 text-white hover:bg-green-600' :
-                          'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            race.status === 'In Progress' ? 'bg-green-500 text-white hover:bg-green-600' :
+                              'bg-blue-100 text-blue-700 hover:bg-blue-200'
                         }>
                           {race.status}
                         </Badge>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { Search, Trophy, TrendingUp } from 'lucide-react';
@@ -8,28 +8,80 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { jockeyService } from '@/services/jockey.service';
 
-const MOCK_JOCKEYS = [
-  { id: '1', name: 'Nguyễn Văn Minh', nationality: 'Vietnam 🇻🇳', license: 'VN001', status: 'Active', winRate: 68, earnings: 340000 },
-  { id: '2', name: "James O'Brien", nationality: 'Ireland 🇮🇪', license: 'IE042', status: 'Active', winRate: 71, earnings: 520000 },
-  { id: '3', name: 'Takeshi Yamamoto', nationality: 'Japan 🇯🇵', license: 'JP019', status: 'Active', winRate: 55, earnings: 280000 },
-  { id: '4', name: 'Carlos Mendez', nationality: 'Mexico 🇲🇽', license: 'MX007', status: 'Suspended', winRate: 48, earnings: 190000 },
-  { id: '5', name: 'Emma Richardson', nationality: 'UK 🇬🇧', license: 'GB103', status: 'Active', winRate: 63, earnings: 415000 },
-  { id: '6', name: 'Ahmed Al-Rashid', nationality: 'UAE 🇦🇪', license: 'AE028', status: 'Active', winRate: 59, earnings: 360000 },
-  { id: '7', name: 'Park Ji-won', nationality: 'Korea 🇰🇷', license: 'KR055', status: 'Retired', winRate: 74, earnings: 890000 },
-  { id: '8', name: 'Luca Bianchi', nationality: 'Italy 🇮🇹', license: 'IT034', status: 'Active', winRate: 66, earnings: 445000 }
-];
+const getAvatarSrc = (avatar: string | null) => {
+  if (!avatar) return null;
+  if (avatar.startsWith('data:image/') || avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('/')) {
+    return avatar;
+  }
+  if (/^[A-Za-z0-9+/=]+$/.test(avatar)) {
+    return `data:image/png;base64,${avatar}`;
+  }
+  return avatar;
+};
 
 export default function PortalJockeys() {
+  const [jockeys, setJockeys] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const filteredJockeys = MOCK_JOCKEYS.filter(jockey => {
+  useEffect(() => {
+    jockeyService.getAllJockeys()
+      .then(response => {
+        // response.data could be the array of jockeys
+        const list = response.data || response || [];
+        setJockeys(list);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message || 'Failed to fetch jockeys');
+        setLoading(false);
+      });
+  }, []);
+
+  const normalizedJockeys = jockeys.map(jockey => ({
+    id: String(jockey.id),
+    name: jockey.jockeyName || jockey.username || 'Unknown',
+    nationality: jockey.nationality || 'Vietnam 🇻🇳',
+    license: jockey.license || 'N/A',
+    status: jockey.status === 'ACTIVE' ? 'Active' : 
+            jockey.status === 'SUSPENDED' ? 'Suspended' : 
+            jockey.status === 'RETIRED' ? 'Retired' : 
+            (jockey.status || 'Active'),
+    winRate: jockey.winRate || 0,
+    earnings: jockey.earnings || 0,
+    avatar: jockey.avatar || null
+  }));
+
+  const filteredJockeys = normalizedJockeys.filter(jockey => {
     const matchesSearch = jockey.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           jockey.nationality.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || jockey.status === statusFilter;
+    const matchesStatus = statusFilter === 'All' || 
+                          jockey.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-lg text-slate-500">Loading jockeys directory...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <Trophy className="mx-auto h-12 w-12 text-red-400 mb-4" />
+        <h3 className="text-lg font-medium text-slate-900">Failed to load jockeys</h3>
+        <p className="text-red-500 mt-2">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 md:px-6">
@@ -89,9 +141,17 @@ export default function PortalJockeys() {
                 <CardContent className="p-0">
                   <div className="p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="w-16 h-16 rounded-full bg-white border-2 border-primary/20 flex items-center justify-center text-2xl shadow-sm">
-                        {jockey.nationality.split(' ')[1]}
-                      </div>
+                      {getAvatarSrc(jockey.avatar) ? (
+                        <img 
+                          src={getAvatarSrc(jockey.avatar)!} 
+                          alt={jockey.name} 
+                          className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-white border-2 border-primary/20 flex items-center justify-center text-2xl shadow-sm">
+                          {jockey.nationality.split(' ')[1]}
+                        </div>
+                      )}
                       <Badge className={
                         jockey.status === 'Active' ? 'bg-green-500 hover:bg-green-600' :
                         jockey.status === 'Suspended' ? 'bg-red-500 hover:bg-red-600' : 

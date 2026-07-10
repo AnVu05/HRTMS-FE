@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, Edit, User, Trophy, Activity, Calendar } from 'lucide-react';
-import { JOCKEYS } from './jockey-list';
+import { jockeyService } from '@/services/jockey.service';
 
 // Horses aligned with HorseResponse — status uses HorseStatus enum: WORK | INJURED | RETIRED
 const FAKE_HORSES = [
@@ -28,11 +28,46 @@ const posLabel = (p: number) => p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3
 
 export default function JockeyProfile() {
   const { id } = useParams();
-  const jockey = JOCKEYS.find(j => j.id === id) || JOCKEYS[0];
+  const [jockey, setJockey] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    if (!id) return;
+    jockeyService.getProfile(id)
+      .then(response => {
+        const data = response.data || response;
+        setJockey(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message || 'Failed to fetch jockey profile');
+        setLoading(false);
+      });
+  }, [id]);
 
   const wins = FAKE_PLACEMENTS.filter(p => p.finishPosition === 1).length;
   const winRate = Math.round((wins / FAKE_PLACEMENTS.length) * 100);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-lg text-slate-500">Loading jockey profile...</p>
+      </div>
+    );
+  }
+
+  if (error || !jockey) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <Trophy className="mx-auto h-12 w-12 text-red-400 mb-4" />
+        <h3 className="text-lg font-medium text-slate-900">Failed to load profile</h3>
+        <p className="text-red-500 mt-2">{error || 'Jockey not found'}</p>
+      </div>
+    );
+  }
 
   const statusClass =
     jockey.status === 'ACTIVE' ? 'bg-green-50 text-green-700 border-green-200' :

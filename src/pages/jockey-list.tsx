@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { jockeyService } from '@/services/jockey.service';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -39,29 +40,45 @@ const jockeySchema = z.object({
 });
 type JockeyForm = z.infer<typeof jockeySchema>;
 
-// Mock data matching JockeyProfileResponse shape
-const INITIAL_JOCKEYS: JockeyRecord[] = [
-  { id: '1', username: 'nguyen.minh', email: 'minh@hrtms.org', jockeyName: 'Nguyễn Văn Minh', experienceYears: 10, age: 32, professionalBio: 'Top-ranked jockey in Vietnam, specializing in sprint races.', status: 'ACTIVE', avatar: '' },
-  { id: '2', username: 'james.obrien', email: 'james@hrtms.org', jockeyName: "James O'Brien", experienceYears: 15, age: 38, professionalBio: 'Internationally recognized jockey with multiple championship wins.', status: 'ACTIVE', avatar: '' },
-  { id: '3', username: 'takeshi.y', email: 'takeshi@hrtms.org', jockeyName: 'Takeshi Yamamoto', experienceYears: 8, age: 30, professionalBio: 'Consistent performer on Asian circuits.', status: 'ACTIVE', avatar: '' },
-  { id: '4', username: 'carlos.m', email: 'carlos@hrtms.org', jockeyName: 'Carlos Mendez', experienceYears: 6, age: 28, professionalBio: 'Rising talent currently under review.', status: 'INACTIVE', avatar: '' },
-  { id: '5', username: 'emma.r', email: 'emma@hrtms.org', jockeyName: 'Emma Richardson', experienceYears: 12, age: 35, professionalBio: 'Specialist in long-distance races with exceptional stamina.', status: 'ACTIVE', avatar: '' },
-  { id: '6', username: 'ahmed.ar', email: 'ahmed@hrtms.org', jockeyName: 'Ahmed Al-Rashid', experienceYears: 9, age: 31, professionalBio: 'Gulf circuit champion with strong tactical awareness.', status: 'ACTIVE', avatar: '' },
-  { id: '7', username: 'park.jw', email: 'park@hrtms.org', jockeyName: 'Park Ji-won', experienceYears: 20, age: 45, professionalBio: 'Retired legend of Korean horse racing.', status: 'INACTIVE', avatar: '' },
-  { id: '8', username: 'luca.b', email: 'luca@hrtms.org', jockeyName: 'Luca Bianchi', experienceYears: 11, age: 33, professionalBio: 'Italian stallion, renowned for precision riding.', status: 'ACTIVE', avatar: '' },
-];
-export const JOCKEYS = INITIAL_JOCKEYS;
+// Mock data removed in favor of real API
+
 
 const statusBadge = (s: string) =>
   s === 'ACTIVE' ? 'bg-green-50 text-green-700 border-green-200' :
-  s === 'INACTIVE' ? 'bg-red-50 text-red-700 border-red-200' :
-  'bg-gray-100 text-gray-700 border-gray-200';
+    s === 'INACTIVE' ? 'bg-red-50 text-red-700 border-red-200' :
+      'bg-gray-100 text-gray-700 border-gray-200';
 
 export default function JockeyList() {
-  const [jockeys, setJockeys] = useState(INITIAL_JOCKEYS);
+  const [jockeys, setJockeys] = useState<JockeyRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    jockeyService.getAllJockeys()
+      .then(response => {
+        const list = response.data || response || [];
+        const normalized = list.map((j: any) => ({
+          id: String(j.id),
+          username: j.username || '',
+          email: j.email || '',
+          jockeyName: j.jockeyName || j.username || 'Unknown',
+          experienceYears: j.experienceYears !== null && j.experienceYears !== undefined ? Number(j.experienceYears) : (j.experienceYears || 0),
+          age: j.age !== null && j.age !== undefined ? Number(j.age) : (j.age || 0),
+          professionalBio: j.professionalBio || '',
+          status: j.status || 'ACTIVE',
+          avatar: j.avatar || '',
+        }));
+        setJockeys(normalized);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message || 'Failed to fetch jockeys');
+        setLoading(false);
+      });
+  }, []);
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<JockeyForm>({
     resolver: zodResolver(jockeySchema),
@@ -85,7 +102,10 @@ export default function JockeyList() {
 
   const filtered = jockeys.filter(j => {
     const q = search.toLowerCase();
-    const matchSearch = j.jockeyName.toLowerCase().includes(q) || j.username.toLowerCase().includes(q) || j.email.toLowerCase().includes(q);
+    const name = j.jockeyName || '';
+    const username = j.username || '';
+    const email = j.email || '';
+    const matchSearch = name.toLowerCase().includes(q) || username.toLowerCase().includes(q) || email.toLowerCase().includes(q);
     const matchStatus = statusFilter === 'All' || j.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -135,7 +155,11 @@ export default function JockeyList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {loading ? (
+                  <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Loading jockeys...</TableCell></TableRow>
+                ) : error ? (
+                  <TableRow><TableCell colSpan={7} className="h-32 text-center text-red-500">Error: {error}</TableCell></TableRow>
+                ) : filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">No jockeys found.</TableCell></TableRow>
                 ) : filtered.map(j => (
                   <TableRow key={j.id} className="group hover:bg-muted/50">

@@ -49,7 +49,7 @@ export default function PortalHome() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-b border-gray-200 py-6">
+      {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-b border-gray-200 py-6">
         {[
           { icon: Users, label: 'Jockeys', value: '48' },
           { icon: Trophy, label: 'Active Tournaments', value: '3' },
@@ -61,7 +61,7 @@ export default function PortalHome() {
             <p className="text-xs text-gray-500 mt-0.5">{label}</p>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* Tournaments */}
       <section>
