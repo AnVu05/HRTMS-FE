@@ -1,155 +1,135 @@
-import { useState } from "react";
-import LoginOtp from "./pages/LoginOtp";
-import Register from "./pages/Register";
-import SpectatorHome from "./pages/SpectatorHome";
-import AdminDashboard from "./pages/AdminDashboard";
-import StableManagement from "./pages/StableManagement";
-import OwnerRaces from "./pages/OwnerRaces";
-import JockeyProfile from "./pages/JockeyProfile";
-import RefereeDashboard from "./pages/RefereeDashboard";
+import { useState, useEffect } from "react";
+import AdminApp from "./pages/admin/AdminApp";
+import DoctorApp from "./pages/doctor/DoctorApp";
+import OwnerApp from "./pages/horse_owner/OwnerApp";
+import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import Forbidden from "./pages/Forbidden";
+
+const DummyComponent = ({ title }) => (
+  <div className="flex h-screen w-full items-center justify-center bg-gray-100">
+    <h1 className="text-2xl font-bold text-gray-500">
+      {title} Page (Coming Soon)
+    </h1>
+  </div>
+);
+
 // THÊM VÀO ĐẦU FILE:
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-const PAGES = [
-  "login",
-  "register",
-  "spectator-home",
-  "admin-dashboard",
-  "stable-management",
-  "owner-races",
-  "jockey-profile",
-  "referee-dashboard",
-];
+import { Toaster } from "sonner";
 
-const INITIAL_HORSES = [
-  {
-    id: 1,
-    name: "Thunder Dash",
-    breed: "THOROUGHBRED",
-    age: 4,
-    wins: 12,
-    status: "ACTIVE",
-  },
-  {
-    id: 2,
-    name: "Silver Mist",
-    breed: "ARABIAN",
-    age: 6,
-    wins: 8,
-    status: "INJURED",
-  },
-  {
-    id: 3,
-    name: "Midnight Ace",
-    breed: "QUARTER HORSE",
-    age: 5,
-    wins: 15,
-    status: "RETIRED",
-  },
-];
 // THÊM VÀO NGOÀI COMPONENT APP:
 const queryClient = new QueryClient();
+
+const getInitialPage = () => {
+  const path = window.location.pathname;
+  if (path === '/forgot-password') return "forgot-password";
+  if (path === '/register') return "register";
+  
+  const token = localStorage.getItem("access_token");
+  const role = localStorage.getItem("user_role");
+  if (!token || !role) return "login";
+  if (role === "ADMIN") return "admin-dashboard";
+  if (role === "DOCTOR") return "doctor-dashboard";
+  if (role === "HORSE_OWNER") return "owner-home";
+  if (role === "SPECTATOR") return "spectator-home";
+  if (role === "JOCKEY") return "jockey-profile";
+  if (role === "REFEREE") return "referee-dashboard";
+  return "login";
+};
+
+const isPageAllowed = (page) => {
+  if (page === "login" || page === "register" || page === "forgot-password" || page === "forbidden") return true;
+
+  const token = localStorage.getItem("access_token");
+  if (!token) return false;
+
+  const role = localStorage.getItem("user_role");
+  if (page === "admin-dashboard" && role !== "ADMIN") return false;
+  if (page === "doctor-dashboard" && role !== "DOCTOR") return false;
+  if (page === "owner-home" && role !== "HORSE_OWNER") return false;
+  if (page === "spectator-home" && role !== "SPECTATOR") return false;
+  if (page === "jockey-profile" && role !== "JOCKEY") return false;
+  if (page === "referee-dashboard" && role !== "REFEREE") return false;
+
+  return true;
+};
+
 function App() {
-  const [currentPage, setCurrentPage] = useState("owner-races");
-  const [horses, setHorses] = useState(INITIAL_HORSES);
+  const [currentPage, setCurrentPage] = useState(getInitialPage());
+
+  useEffect(() => {
+    if (currentPage === "admin-dashboard") {
+      window.history.pushState(null, '', '/admin');
+    } else if (currentPage === "doctor-dashboard") {
+      window.history.pushState(null, '', '/doctor/health-check');
+    } else if (currentPage === "owner-home") {
+      window.history.pushState(null, '', '/owner-home');
+    }
+  }, [currentPage]);
 
   const renderPage = () => {
+    if (!isPageAllowed(currentPage)) {
+      return <Forbidden />;
+    }
+
     switch (currentPage) {
       case "login":
-        return <LoginOtp onNavigate={setCurrentPage} />;
+        return <Login />;
+      case "forgot-password":
+        return <ForgotPassword />;
       case "register":
-        return <Register onNavigate={setCurrentPage} />;
+        return <DummyComponent title="Register" />;
       case "spectator-home":
-        return <SpectatorHome onNavigate={setCurrentPage} />;
+        return <DummyComponent title="Spectator Home" />;
       case "admin-dashboard":
-        return <AdminDashboard onNavigate={setCurrentPage} adminId={1} />;
-      case "stable-management":
-        return (
-          <StableManagement
-            onNavigate={setCurrentPage}
-            horses={horses}
-            setHorses={setHorses}
-          />
-        );
-      case "owner-races":
-        return <OwnerRaces onNavigate={setCurrentPage} horses={horses} />;
+        return <AdminApp />;
+      case "doctor-dashboard":
+        return <DoctorApp />;
+      case "owner-home":
+        return <OwnerApp />;
       case "jockey-profile":
-        return <JockeyProfile onNavigate={setCurrentPage} jockeyId={4} />;
+        return <DummyComponent title="Jockey Profile" />;
       case "referee-dashboard":
-        return <RefereeDashboard onNavigate={setCurrentPage} refereeId={2} />;
+        return <DummyComponent title="Referee Dashboard" />;
+      case "forbidden":
+        return <Forbidden />;
       default:
-        return <LoginOtp onNavigate={setCurrentPage} />;
+        return <DummyComponent title="Login / OTP" />;
     }
   };
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Dev navigation bar – remove in production */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 9999,
-          display: "flex",
-          gap: 6,
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(10px)",
-          border: "1px solid #e2e8f0",
-          borderRadius: "12px 12px 0 0",
-          padding: "6px 14px",
-          boxShadow: "0 -4px 16px rgba(0,0,0,0.06)",
-          alignItems: "center",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: "#64748b",
-            marginRight: 4,
-          }}
-        >
-          DEV:
-        </span>
-        {PAGES.map((p) => (
-          <button
-            key={p}
-            onClick={() => setCurrentPage(p)}
-            style={{
-              fontSize: 11,
-              padding: "3px 10px",
-              borderRadius: 6,
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 600,
-              background: currentPage === p ? "#1b60ec" : "#f1f5f9",
-              color: currentPage === p ? "#fff" : "#475569",
-              transition: "all 0.15s",
-            }}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-
       {/* Page content */}
       <div
-        className={`app-page-container ${currentPage === "spectator-home" || currentPage === "admin-dashboard" || currentPage === "stable-management" || currentPage === "owner-races" || currentPage === "jockey-profile" || currentPage === "referee-dashboard" ? "full-width" : ""}`}
+        className={`app-page-container ${currentPage === "spectator-home" || currentPage === "admin-dashboard" || currentPage === "doctor-dashboard" || currentPage === "owner-home" || currentPage === "jockey-profile" || currentPage === "referee-dashboard" || currentPage === "login" || currentPage === "forgot-password" || currentPage === "register" ? "full-width" : ""}`}
         style={{
           paddingTop:
             currentPage === "spectator-home" ||
               currentPage === "admin-dashboard" ||
-              currentPage === "stable-management" ||
-              currentPage === "owner-races" ||
+              currentPage === "doctor-dashboard" ||
+              currentPage === "owner-home" ||
               currentPage === "jockey-profile" ||
-              currentPage === "referee-dashboard"
+              currentPage === "referee-dashboard" ||
+              currentPage === "login" ||
+              currentPage === "forgot-password" ||
+              currentPage === "register"
               ? 0
               : 40,
         }}
       >
         {renderPage()}
       </div>
+      <Toaster
+        toastOptions={{
+          style: {
+            backgroundColor: '#fee2e2',
+            color: '#b91c1c',
+            border: '1px solid #f87171'
+          }
+        }}
+      />
     </QueryClientProvider>
   );
 }
