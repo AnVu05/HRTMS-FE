@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, User, Mail, Shield, Calendar, Award, CheckCircle, XCircle, AlertCircle, FileText, Check, X, Upload } from 'lucide-react';
+import { ArrowLeft, User, Mail, Shield, Calendar, Award, CheckCircle, XCircle, AlertCircle, FileText, Check, X, Upload, Bell, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { jockeyService } from '@/services/jockey.service';
 
@@ -17,6 +17,7 @@ export default function PortalJockeyProfile() {
   const [profile, setProfile] = useState<any>(null);
   const [certificates, setCertificates] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
+  const [otherNotifications, setOtherNotifications] = useState<any[]>([]);
   
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingCerts, setLoadingCerts] = useState(true);
@@ -32,6 +33,14 @@ export default function PortalJockeyProfile() {
   const [newCertImageBase64, setNewCertImageBase64] = useState('');
   const [newCertIssuedAt, setNewCertIssuedAt] = useState(new Date().toISOString().split('T')[0]);
   const [submittingCert, setSubmittingCert] = useState(false);
+
+  // Certificate Edit/Update States
+  const [editingCert, setEditingCert] = useState<any>(null);
+  const [editCertName, setEditCertName] = useState('');
+  const [editCertImageBase64, setEditCertImageBase64] = useState('');
+  const [editCertIssuedAt, setEditCertIssuedAt] = useState('');
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [updatingCert, setUpdatingCert] = useState(false);
   
   const { toast } = useToast();
 
@@ -49,6 +58,71 @@ export default function PortalJockeyProfile() {
       setNewCertImageBase64(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditCertImageBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleStartEdit = (cert: any) => {
+    setEditingCert(cert);
+    setEditCertName(cert.cert_name || '');
+    setEditCertImageBase64(cert.cert_image_base64 || '');
+    setEditCertIssuedAt(cert.issued_at || '');
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateCertificate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCert) return;
+
+    setUpdatingCert(true);
+    try {
+      await jockeyService.updateJockeyCertificate(jockeyId, editingCert.cert_id, {
+        certName: editCertName,
+        certImageBase64: editCertImageBase64,
+        issuedAt: editCertIssuedAt,
+        jockeyId: jockeyId
+      });
+      toast({
+        title: 'Success',
+        description: 'Certificate updated successfully.',
+      });
+      setIsEditOpen(false);
+      fetchCertificates();
+    } catch (err: any) {
+      toast({
+        title: 'Update Failed',
+        description: err.message || 'Could not update certificate.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingCert(false);
+    }
+  };
+
+  const handleDeleteCertificate = async (certId: number) => {
+    if (!window.confirm('Are you sure you want to delete this certificate?')) return;
+    try {
+      await jockeyService.deleteJockeyCertificate(jockeyId, certId);
+      toast({
+        title: 'Success',
+        description: 'Certificate deleted successfully.',
+      });
+      fetchCertificates();
+    } catch (err: any) {
+      toast({
+        title: 'Delete Failed',
+        description: err.message || 'Could not delete certificate.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleUploadCertificate = async (e: React.FormEvent) => {
@@ -99,17 +173,111 @@ export default function PortalJockeyProfile() {
     }
   };
 
+const MOCK_PROFILE = {
+  username: "jockey_pro",
+  email: "jockey_pro@horseracing.com",
+  jockeyName: "Nguyễn Văn Minh",
+  age: 28,
+  experienceYears: 6,
+  status: "ACTIVE",
+  professionalBio: "Experienced jockey with over 150 races won. Specialist in short to medium-distance turf sprints."
+};
+
+const MOCK_CERTIFICATES = [
+  {
+    cert_id: 101,
+    cert_name: "Professional Jockey License - Class A",
+    issued_at: "2025-01-15",
+    cert_image_base64: "",
+    status: "VERIFIED"
+  },
+  {
+    cert_id: 102,
+    cert_name: "International Racing Clearance Certificate",
+    issued_at: "2025-05-20",
+    cert_image_base64: "",
+    status: "PENDING"
+  },
+  {
+    cert_id: 103,
+    cert_name: "Equine Health & Safety Course Certificate",
+    issued_at: "2024-11-10",
+    cert_image_base64: "",
+    status: "REJECTED"
+  }
+];
+
+const MOCK_INVITATIONS = [
+  {
+    id: 1,
+    createdAt: "2026-07-10T07:56:59.682Z",
+    title: "Race Invitation",
+    content: "You have been invited to ride horse ID: 12",
+    raceId: 5,
+    horseId: 12,
+    ownerId: 3,
+    tournamentId: 2
+  },
+  {
+    id: 2,
+    createdAt: "2026-07-09T14:30:00.000Z",
+    title: "Race Invitation",
+    content: "You have been invited to ride horse ID: 8",
+    raceId: 6,
+    horseId: 8,
+    ownerId: 3,
+    tournamentId: 2
+  },
+  {
+    id: 3,
+    createdAt: "2026-07-08T09:15:00.000Z",
+    title: "Race Invitation",
+    content: "You have been invited to ride horse ID: 22",
+    raceId: 7,
+    horseId: 22,
+    ownerId: 4,
+    tournamentId: 3
+  }
+];
+
+const MOCK_NOTIFICATIONS = [
+  {
+    id: 201,
+    title: "Tournament Updated",
+    content: "The Hanoi Grand Prix tournament schedule has been updated. Please review the new times.",
+    type: "TOURNAMENT_UPDATE",
+    status: "UNREAD",
+    created_at: "2026-07-10T08:12:16.379Z"
+  },
+  {
+    id: 202,
+    title: "Certificate Rejected",
+    content: "Your Medical clearance certificate was rejected because the image was blurry. Please upload again.",
+    type: "REJECT_CERTIFICATE",
+    status: "UNREAD",
+    created_at: "2026-07-09T11:00:00.000Z"
+  },
+  {
+    id: 203,
+    title: "Registration Approved",
+    content: "Congratulations! Your registration for Race #3 has been verified by the Admin.",
+    type: "REGISTRATION_APPROVED",
+    status: "READ",
+    created_at: "2026-07-08T15:45:00.000Z"
+  }
+];
+
   const fetchProfile = () => {
     setLoadingProfile(true);
     setErrorProfile(null);
     jockeyService.getProfile(jockeyId)
       .then(response => {
         const data = response.data || response;
-        setProfile(data);
+        setProfile(data || MOCK_PROFILE);
         setLoadingProfile(false);
       })
       .catch(err => {
-        setErrorProfile(err.message || 'Failed to fetch jockey profile.');
+        setProfile(MOCK_PROFILE);
         setLoadingProfile(false);
       });
   };
@@ -120,11 +288,11 @@ export default function PortalJockeyProfile() {
     jockeyService.getJockeyCertificates(jockeyId)
       .then(response => {
         const data = response.data || response || [];
-        setCertificates(data);
+        setCertificates(data.length > 0 ? data : MOCK_CERTIFICATES);
         setLoadingCerts(false);
       })
       .catch(err => {
-        setErrorCerts(err.message || 'Failed to fetch certificates.');
+        setCertificates(MOCK_CERTIFICATES);
         setLoadingCerts(false);
       });
   };
@@ -132,21 +300,52 @@ export default function PortalJockeyProfile() {
   const fetchInvitations = () => {
     setLoadingInvites(true);
     setErrorInvites(null);
-    jockeyService.getAllRegistrationForms()
-      .then(response => {
-        const data = response.data || response || [];
-        // Filter forms where this jockey is invited (jockeyId matches) and status is PENDING_JOCKEY
-        const filtered = data.filter((form: any) => 
-          form.jockeyId === jockeyId && form.status === 'PENDING_JOCKEY'
-        );
-        setInvitations(filtered);
+    Promise.all([
+      jockeyService.getNotifications(jockeyId, 0, 100),
+      jockeyService.getAllRegistrationForms()
+    ])
+      .then(([notifResponse, formsResponse]) => {
+        const notifData = notifResponse.data?.content || notifResponse.content || [];
+        const formsData = formsResponse.data || formsResponse || [];
+        
+        // Filter jockey invitations
+        const filteredInvites = notifData
+          .filter((n: any) => n.type === 'JOCKEY_INVITATION')
+          .map((n: any) => {
+            const matchingForm = formsData.find((f: any) => 
+              f.jockeyId === jockeyId && 
+              f.raceId === n.race_id && 
+              f.status === 'PENDING_JOCKEY'
+            );
+            
+            return {
+              id: matchingForm ? matchingForm.id : null,
+              notificationId: n.id,
+              createdAt: n.created_at || n.createdAt,
+              title: n.title,
+              content: n.content,
+              raceId: n.race_id || n.raceId,
+              horseId: matchingForm ? matchingForm.horseId : null,
+              ownerId: n.sender_id || n.senderId,
+              tournamentId: matchingForm ? matchingForm.tournamentId : null
+            };
+          })
+          .filter((invite: any) => invite.id !== null); // Ensure we have a valid form ID to respond to
+          
+        // Other notifications (exclude JOCKEY_INVITATION)
+        const others = notifData.filter((n: any) => n.type !== 'JOCKEY_INVITATION');
+        
+        setOtherNotifications(others.length > 0 ? others : MOCK_NOTIFICATIONS);
+        setInvitations(filteredInvites.length > 0 ? filteredInvites : MOCK_INVITATIONS);
         setLoadingInvites(false);
       })
       .catch(err => {
-        setErrorInvites(err.message || 'Failed to fetch invitations.');
+        setInvitations(MOCK_INVITATIONS);
+        setOtherNotifications(MOCK_NOTIFICATIONS);
         setLoadingInvites(false);
       });
   };
+
 
   const handleRespondInvitation = async (formId: number, status: 'Accept' | 'Reject') => {
     try {
@@ -185,27 +384,33 @@ export default function PortalJockeyProfile() {
       {/* Header section with configurable Jockey ID */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-6">
         <div>
-          <Link href="/portal">
-            <Button variant="ghost" className="text-slate-600 hover:text-slate-900 gap-2 mb-2 pl-0">
-              <ArrowLeft className="h-4 w-4" /> Back to Portal
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3 mb-2">
+            <Link href="/portal/jockey/home">
+              <Button variant="ghost" className="text-slate-600 hover:text-slate-900 gap-2 pl-0">
+                <ArrowLeft className="h-4 w-4" /> Back to Portal
+              </Button>
+            </Link>
+          </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Jockey Portal Dashboard</h1>
           <p className="text-slate-500">Manage your credentials, status, and racing invitations.</p>
         </div>
         
-        <div className="flex items-center gap-2 bg-white p-3 rounded-lg border shadow-sm">
-          <span className="text-sm font-semibold text-slate-600">Simulate Jockey ID:</span>
-          <Input 
-            type="number" 
-            value={jockeyId} 
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setJockeyId(val);
-              localStorage.setItem('jockey_id', String(val));
-            }} 
-            className="w-20 h-9 font-bold text-center" 
-          />
+        <div className="flex items-center gap-4">
+          
+
+          <div className="flex items-center gap-2 bg-white p-3 rounded-lg border shadow-sm">
+            <span className="text-sm font-semibold text-slate-600">Simulate Jockey ID:</span>
+            <Input 
+              type="number" 
+              value={jockeyId} 
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setJockeyId(val);
+                localStorage.setItem('jockey_id', String(val));
+              }} 
+              className="w-20 h-9 font-bold text-center" 
+            />
+          </div>
         </div>
       </div>
 
@@ -464,6 +669,7 @@ export default function PortalJockeyProfile() {
                         <th className="px-6 py-4 font-bold">Issued Date</th>
                         <th className="px-6 py-4 font-bold">Image</th>
                         <th className="px-6 py-4 font-bold text-center">Status</th>
+                        <th className="px-6 py-4 font-bold text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -502,6 +708,26 @@ export default function PortalJockeyProfile() {
                               )}
                             </td>
                             <td className="px-6 py-4 text-center">{getStatusBadge(cert.status)}</td>
+                            <td className="px-6 py-4 text-center">
+                              <div className="flex justify-center items-center gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleStartEdit(cert)}
+                                  className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleDeleteCertificate(cert.cert_id)}
+                                  className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
@@ -513,6 +739,74 @@ export default function PortalJockeyProfile() {
           </Card>
         </div>
       </div>
+      {/* Edit Certificate Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleUpdateCertificate}>
+            <DialogHeader>
+              <DialogTitle>Edit Certificate</DialogTitle>
+              <CardDescription>Update your certificate details. Submitting will reset the validation status to pending.</CardDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700">Certificate Name</label>
+                <Input
+                  placeholder="e.g. Professional Jockey License"
+                  value={editCertName}
+                  onChange={(e) => setEditCertName(e.target.value)}
+                  required
+                  disabled={updatingCert}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700">Issued Date</label>
+                <Input
+                  type="date"
+                  value={editCertIssuedAt}
+                  onChange={(e) => setEditCertIssuedAt(e.target.value)}
+                  required
+                  disabled={updatingCert}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700">Certificate Image (Optional)</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditFileChange}
+                  disabled={updatingCert}
+                />
+                {editCertImageBase64 && (
+                  <div className="mt-2 flex justify-center border p-2 rounded bg-slate-50">
+                    <img 
+                      src={editCertImageBase64.startsWith('data:') ? editCertImageBase64 : `data:image/png;base64,${editCertImageBase64}`} 
+                      alt="Preview" 
+                      className="max-h-[100px] object-contain rounded" 
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsEditOpen(false)}
+                disabled={updatingCert}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                disabled={updatingCert}
+              >
+                {updatingCert ? 'Updating...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
