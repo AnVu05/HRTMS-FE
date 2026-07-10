@@ -68,6 +68,9 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
               <Link href="/portal/profile">
                 <Button variant="ghost" size="sm" data-testid="portal-nav-profile">My Profile</Button>
               </Link>
+              <Link href="/portal/jockey-profile">
+                <Button variant="ghost" size="sm" data-testid="portal-nav-jockey-profile">Jockey Profile</Button>
+              </Link>
 
               <Link href="/portal/login">
                 <Button variant="outline" size="sm" data-testid="portal-nav-login">Login</Button>
@@ -104,6 +107,9 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
                     </Link>
                     <Link href="/portal/profile">
                       <Button variant="ghost" className="w-full justify-start" data-testid="portal-mobile-profile">My Profile</Button>
+                    </Link>
+                    <Link href="/portal/jockey-profile">
+                      <Button variant="ghost" className="w-full justify-start" data-testid="portal-mobile-jockey-profile">Jockey Profile</Button>
                     </Link>
                     <Link href="/portal/login">
                       <Button variant="outline" className="w-full justify-start" data-testid="portal-mobile-login">Login</Button>

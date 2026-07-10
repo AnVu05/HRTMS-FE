@@ -31,6 +31,7 @@ import PortalRaceDetail from '@/pages/portal/race-detail';
 import PortalLogin from '@/pages/portal/login';
 import PortalRegister from '@/pages/portal/register';
 import PortalSpectatorProfile from '@/pages/portal/spectator-profile';
+import PortalJockeyPortalProfile from '@/pages/portal/jockey-portal-profile';
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ function Router() {
           <Route path="/portal/login" component={PortalLogin} />
           <Route path="/portal/register" component={PortalRegister} />
           <Route path="/portal/profile" component={PortalSpectatorProfile} />
+          <Route path="/portal/jockey-profile" component={PortalJockeyPortalProfile} />
           <Route component={NotFound} />
         </Switch>
       </PortalLayout>

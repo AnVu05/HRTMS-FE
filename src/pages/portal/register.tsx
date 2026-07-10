@@ -1,23 +1,62 @@
 import React, { useState } from 'react';
-import { Link } from 'wouter';
-import { Trophy, Mail, Lock, User, Globe, ArrowRight, Badge } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+import { Trophy, Mail, Lock, User, ArrowRight, Badge, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { authService } from '@/services/auth.service';
 
 export default function PortalRegister() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    nationality: '',
+    role: 'SPECTATOR',
     password: '',
     confirmPassword: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Dummy handler
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'Passwords do not match',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await authService.register({
+        username: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
+
+      toast({
+        title: 'Registration Successful',
+        description: 'Your account has been created. Redirecting to login...',
+      });
+
+      setTimeout(() => {
+        setLocation('/portal/login');
+      }, 1500);
+    } catch (err: any) {
+      toast({
+        title: 'Registration Failed',
+        description: err.message || 'An error occurred during registration.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,6 +93,7 @@ export default function PortalRegister() {
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -70,25 +110,29 @@ export default function PortalRegister() {
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nationality" className="text-slate-700">Nationality</Label>
+              <Label htmlFor="role" className="text-slate-700">Role</Label>
               <div className="relative">
-                <Globe className="absolute left-3 top-3 h-5 w-5 text-slate-400 z-10" />
-                <Select value={formData.nationality} onValueChange={(val) => setFormData({...formData, nationality: val})}>
+                <Shield className="absolute left-3 top-3 h-5 w-5 text-slate-400 z-10" />
+                <Select 
+                  value={formData.role} 
+                  onValueChange={(val) => setFormData({...formData, role: val})}
+                  disabled={loading}
+                >
                   <SelectTrigger className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white">
-                    <SelectValue placeholder="Select a country" />
+                    <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="vietnam">Vietnam</SelectItem>
-                    <SelectItem value="uk">United Kingdom</SelectItem>
-                    <SelectItem value="ireland">Ireland</SelectItem>
-                    <SelectItem value="japan">Japan</SelectItem>
-                    <SelectItem value="australia">Australia</SelectItem>
-                    <SelectItem value="usa">United States</SelectItem>
+                    <SelectItem value="SPECTATOR">Spectator</SelectItem>
+                    <SelectItem value="HORSE_OWNER">Horse Owner</SelectItem>
+                    <SelectItem value="JOCKEY">Jockey</SelectItem>
+                    <SelectItem value="DOCTOR">Doctor</SelectItem>
+                    <SelectItem value="REFEREE">Referee</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -107,6 +151,7 @@ export default function PortalRegister() {
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -123,13 +168,14 @@ export default function PortalRegister() {
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-12 text-base font-bold mt-2" data-testid="register-submit">
-              Create Account <ArrowRight className="ml-2 h-4 w-4" />
+            <Button type="submit" className="w-full h-12 text-base font-bold mt-2" data-testid="register-submit" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
 

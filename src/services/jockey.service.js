@@ -87,11 +87,36 @@ export const jockeyService = {
     });
   },
 
-  createJockeyCertificateVerification(payload) {
-    return apiRequest('/api/v1/verifications/jockey-certs', {
+  async createJockeyCertificateVerification(payload) {
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const response = await fetch(`${BASE_URL}/api/v1/verifications/jockey-certs`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(payload),
     });
+
+    if (response.status === 200 || response.status === 201) {
+      try {
+        const text = await response.text();
+        return JSON.parse(text);
+      } catch (e) {
+        // Ignore json parse error caused by Jackson recursive serialization on backend
+        return { status: 'success', message: 'Created successfully' };
+      }
+    }
+
+    let errorMessage = 'API request failed';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData?.message || response.statusText;
+    } catch (e) {
+      try {
+        errorMessage = await response.text() || errorMessage;
+      } catch (inner) {}
+    }
+    throw new Error(errorMessage);
   },
 
   requestVerificationForAll(jockeyId) {
@@ -118,6 +143,12 @@ export const jockeyService = {
     return apiRequest(`/api/registrationforms/${formId}/jockey-respond`, {
       method: 'PUT',
       body: JSON.stringify(payload),
+    });
+  },
+
+  getAllRegistrationForms() {
+    return apiRequest('/api/registrationforms', {
+      method: 'GET',
     });
   },
 
