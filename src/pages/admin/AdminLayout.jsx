@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/popover';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import adminApi from '@/api/adminApi';
+import { authApi } from '@/api/authApi';
 import { ScrollArea } from '@/components/ui/scroll-area';
 const adminMenuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
@@ -33,7 +34,7 @@ const adminMenuItems = [
 export function AdminLayout({ children }) {
   const [location] = useLocation();
   const queryClient = useQueryClient();
-  const adminId = 1;
+  const adminId = localStorage.getItem("user_id");
 
   const { data: notificationsPage } = useQuery({
     queryKey: ['notifications', adminId],
@@ -46,6 +47,20 @@ export function AdminLayout({ children }) {
     adminApi.markAllNotificationsRead(adminId).then(() => {
       queryClient.invalidateQueries(['notifications', adminId]);
     });
+  };
+
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    try {
+      await authApi.logout();
+    } catch (err) {
+      console.error('Logout error', err);
+    } finally {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('user_id');
+      window.location.href = '/login';
+    }
   };
 
   return (
@@ -74,11 +89,11 @@ export function AdminLayout({ children }) {
           <SidebarFooter>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                  <Link href="/" className="flex items-center gap-2">
+                <SidebarMenuButton asChild className="text-red-500 hover:text-red-600 hover:bg-red-50 w-full justify-start cursor-pointer">
+                  <button onClick={handleLogout} className="flex items-center gap-2">
                     <LogOut className="h-4 w-4" />
                     <span>Logout</span>
-                  </Link>
+                  </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

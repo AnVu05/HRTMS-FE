@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   SidebarProvider,
@@ -12,37 +12,53 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Stethoscope, Bell, LogOut } from 'lucide-react';
+import { LogOut, Bell, Navigation, List, Home } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import doctorApi from '@/api/doctorApi';
-import { authApi } from '@/api/authApi';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ownerApi } from '@/api/ownerApi';
+import { authApi } from '@/api/authApi';
 
-const doctorMenuItems = [
-  { title: "Health Checking", url: "/doctor/health-check", icon: Stethoscope },
+const managementMenuItems = [
+  { title: "Horse Management", url: "/owner-management/horses", icon: List },
+  { title: "Registrations", url: "/owner-management/registrations", icon: Navigation },
 ];
 
-export function DoctorLayout({ children }) {
+export function OwnerManagementLayout({ children }) {
   const [location] = useLocation();
-  const queryClient = useQueryClient();
-  const doctorId = localStorage.getItem("user_id");
 
-  const { data: notificationsPage } = useQuery({
-    queryKey: ['doctorNotifications', doctorId],
-    queryFn: () => doctorApi.getNotifications(doctorId)
-  });
+  const [notifications, setNotifications] = useState([]);
+  const ownerId = localStorage.getItem("user_id");
 
-  const notifications = notificationsPage?.content || [];
+  const fetchNotifications = async () => {
+    try {
+      if (!ownerId || ownerId === "null") return;
+      const data = await ownerApi.getNotifications(ownerId);
+      setNotifications(data || []);
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+    }
+  };
 
-  const handleMarkAllRead = () => {
-    doctorApi.markAllNotificationsRead(doctorId).then(() => {
-      queryClient.invalidateQueries({ queryKey: ['doctorNotifications', doctorId] });
-    });
+  useEffect(() => {
+    if (!ownerId || ownerId === "null") {
+      localStorage.clear();
+      window.location.href = "/login";
+      return;
+    }
+    fetchNotifications();
+  }, [ownerId]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await ownerApi.markNotificationsAsRead(ownerId);
+      setNotifications(notifications.map(n => ({ ...n, status: 'READ' })));
+    } catch (err) {
+      console.error("Failed to mark notifications as read", err);
+    }
   };
 
   const handleLogout = async (e) => {
@@ -65,12 +81,12 @@ export function DoctorLayout({ children }) {
         <Sidebar>
           <SidebarContent>
             <SidebarGroup className="pt-2">
-              <SidebarGroupLabel>Menu</SidebarGroupLabel>
+              <SidebarGroupLabel>Owner Management</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {doctorMenuItems.map((item) => (
+                  {managementMenuItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={location === item.url || location === '/doctor'}>
+                      <SidebarMenuButton asChild isActive={location === item.url}>
                         <Link href={item.url} className="flex items-center gap-2">
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
@@ -85,6 +101,14 @@ export function DoctorLayout({ children }) {
           <SidebarFooter>
             <SidebarMenu>
               <SidebarMenuItem>
+                <SidebarMenuButton asChild className="hover:bg-accent">
+                  <Link href="/owner-home" className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    <span>Back to Portal</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild className="text-red-500 hover:text-red-600 hover:bg-red-50 w-full justify-start cursor-pointer">
                   <button onClick={handleLogout} className="flex items-center gap-2">
                     <LogOut className="h-4 w-4" />
@@ -95,24 +119,22 @@ export function DoctorLayout({ children }) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-
+        
         <main className="flex-1 overflow-y-auto bg-muted/20">
           <header className="flex h-14 items-center justify-between border-b bg-background px-6">
             <h1 className="text-lg font-semibold capitalize">
-              {doctorMenuItems.find(item => item.url === location)?.title || "Dashboard"}
+              {managementMenuItems.find(item => item.url === location)?.title || "Management"}
             </h1>
             <div className="flex items-center gap-4">
               <Popover onOpenChange={(open) => {
-                if (open) {
-                  handleMarkAllRead();
-                }
+                if (open) handleMarkAllRead();
               }}>
                 <PopoverTrigger asChild>
                   <button className="relative p-2 hover:bg-accent rounded-full transition-colors">
                     <Bell className="h-5 w-5 text-muted-foreground" />
-                    {notifications.filter(n => !n.isRead && n.status === 'UNREAD').length > 0 && (
+                    {notifications.filter(n => n.status === 'UNREAD').length > 0 && (
                       <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
-                        {notifications.filter(n => !n.isRead && n.status === 'UNREAD').length}
+                        {notifications.filter(n => n.status === 'UNREAD').length}
                       </span>
                     )}
                   </button>
@@ -123,21 +145,25 @@ export function DoctorLayout({ children }) {
                   </div>
                   <ScrollArea className="h-80">
                     <div className="flex flex-col">
-                      {notifications.map(notification => (
-                        <div key={notification.id} className={`flex flex-col gap-1 p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer ${notification.status === 'UNREAD' || !notification.isRead ? 'bg-muted/20' : ''}`}>
+                      {notifications.length > 0 ? notifications.map(notification => (
+                        <div key={notification.notification_id || notification.id} className={`flex flex-col gap-1 p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer ${notification.status === 'UNREAD' ? 'bg-muted/20' : ''}`}>
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-sm">{notification.title}</span>
                           </div>
                           <span className="text-sm text-muted-foreground">{notification.content}</span>
-                          <span className="text-xs text-muted-foreground/80 mt-1">{notification.createdAt}</span>
+                          <span className="text-xs text-muted-foreground/80 mt-1">
+                            {notification.created_at ? new Date(notification.created_at).toLocaleString() : notification.createdAt}
+                          </span>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
+                      )}
                     </div>
                   </ScrollArea>
                 </PopoverContent>
               </Popover>
-              <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
-                <span className="text-sm font-medium">DR</span>
+              <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-sm font-medium">OW</span>
               </div>
             </div>
           </header>

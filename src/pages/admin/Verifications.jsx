@@ -54,7 +54,7 @@ function ImageViewerDialog({ jockeyId, open, onOpenChange }) {
 
 export function Verifications() {
   const queryClient = useQueryClient();
-  const adminId = 1; // Assuming adminId is 1 for mocked data
+  const adminId = localStorage.getItem("user_id");
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedJockeyId, setSelectedJockeyId] = useState(null);
 

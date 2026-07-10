@@ -1,15 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { dashboardStats } from '@/mock/adminMockData';
 import { Trophy, Activity, FileCheck, Users, ShieldAlert } from 'lucide-react';
 
 export function Dashboard() {
   const statCards = [
-    { title: "Total Tournaments", value: dashboardStats.totalTournaments, icon: Trophy, color: "text-blue-500" },
-    { title: "Active Races", value: dashboardStats.activeRaces, icon: Activity, color: "text-green-500" },
-    { title: "Pending Verifications", value: dashboardStats.pendingVerifications, icon: ShieldAlert, color: "text-yellow-500" },
-    { title: "Pending Registrations", value: dashboardStats.pendingRegistrations, icon: FileCheck, color: "text-orange-500" },
-    { title: "New Users", value: dashboardStats.newUsers, icon: Users, color: "text-purple-500" },
+    { title: "Total Tournaments", value: 0, icon: Trophy, color: "text-blue-500" },
+    { title: "Active Races", value: 0, icon: Activity, color: "text-green-500" },
+    { title: "Pending Verifications", value: 0, icon: ShieldAlert, color: "text-yellow-500" },
+    { title: "Pending Registrations", value: 0, icon: FileCheck, color: "text-orange-500" },
+    { title: "New Users", value: 0, icon: Users, color: "text-purple-500" },
   ];
 
   return (

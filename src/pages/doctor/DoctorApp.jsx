@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch, Redirect } from 'wouter';
+import { Route, Switch } from 'wouter';
 import { DoctorLayout } from './DoctorLayout';
 import { HealthChecking } from './HealthChecking';
 
@@ -16,12 +16,7 @@ export default function DoctorApp() {
     <DoctorLayout>
       <Switch>
         <Route path="/doctor/health-check" component={HealthChecking} />
-        <Route path="/doctor">
-          <Redirect to="/doctor/health-check" />
-        </Route>
-        <Route>
-          <Redirect to="/doctor/health-check" />
-        </Route>
+        <Route component={HealthChecking} />
       </Switch>
     </DoctorLayout>
   );

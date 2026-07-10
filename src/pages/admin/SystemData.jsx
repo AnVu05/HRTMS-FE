@@ -1,6 +1,5 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockUsers } from '@/mock/adminMockData';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import adminApi from '@/api/adminApi';
 import { Button } from '@/components/ui/button';
@@ -451,8 +450,7 @@ export function SystemData() {
     queryFn: adminApi.getRaceFormats
   });
 
-  // Giả lập lấy ID của user hiện tại (ví dụ: Admin đang đăng nhập có ID = 1)
-  const currentUserId = 1;
+  const currentUserId = parseInt(localStorage.getItem("user_id"), 10);
 
   const { data: users = [], isLoading: loadingUsers } = useQuery({
     queryKey: ['users'],

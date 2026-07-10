@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 export function HealthChecking() {
   const queryClient = useQueryClient();
-  const doctorId = 3; // Assuming current logged in doctor is 1
+  const doctorId = localStorage.getItem("user_id");
 
   const { data: healthChecksData, isLoading } = useQuery({
     queryKey: ['doctorHealthChecks', doctorId],

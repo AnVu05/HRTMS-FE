@@ -10,6 +10,10 @@ const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -26,8 +30,18 @@ axiosClient.interceptors.response.use(
     console.error('API Error:', error);
     
     // Check if the backend responded with an error (e.g. 400 Bad Request)
-    if (error.response && error.response.status >= 400) {
+    if (error.response) {
+      const status = error.response.status;
       const responseData = error.response.data;
+
+      if (status === 401 || status === 403) {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user_role");
+        localStorage.removeItem("user_id");
+        toast.error("Session expired or forbidden. Please login again.");
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
       
       // If the backend sent a message in its JSON response {status, message, data}
       if (responseData && responseData.message) {
