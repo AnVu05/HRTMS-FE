@@ -18,8 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { ownerApi } from '@/api/ownerApi';
 
-const ownerId = localStorage.getItem("user_id");
-
 function RegistrationFormDialog({ race, tournamentName, trigger, horses, jockeys }) {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -37,8 +35,9 @@ function RegistrationFormDialog({ race, tournamentName, trigger, horses, jockeys
     
     setSubmitting(true);
     try {
+      const currentOwnerId = localStorage.getItem("user_id");
       await ownerApi.createRegistration({
-        ownerId: parseInt(ownerId),
+        ownerId: parseInt(currentOwnerId),
         horseId: parseInt(formData.horseId),
         jockeyId: parseInt(formData.jockeyId),
         tournamentId: race.tournament_id || race.tournamentId,
@@ -137,9 +136,10 @@ export default function OwnerRaceDetail() {
           const tId = raceData.tournament_id || raceData.tournamentId;
           if (tId) {
             try {
+              const currentOwnerId = localStorage.getItem("user_id");
               const [tournData, horsesData, jockeysData] = await Promise.all([
                 ownerApi.getTournamentById(tId),
-                ownerApi.getHorsesByOwner(ownerId),
+                ownerApi.getWorkingHorsesByOwner(currentOwnerId),
                 ownerApi.getJockeys()
               ]);
               setTournament(tournData);

@@ -37,6 +37,9 @@ export const ownerApi = {
   getHorsesByOwner: (ownerId) => {
     return axiosClient.get(`/horses/owner/${ownerId}`);
   },
+  getWorkingHorsesByOwner: (ownerId) => {
+    return axiosClient.get(`/horses/owner/${ownerId}/working`);
+  },
   createHorse: (data) => {
     return axiosClient.post('/horses', data);
   },
