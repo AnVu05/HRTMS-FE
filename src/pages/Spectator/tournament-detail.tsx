@@ -1,25 +1,77 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { ArrowLeft, MapPin, Calendar, Trophy, Users, Flag, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Trophy, Users, Flag, Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-const MOCK_TOURNAMENTS = [
-  { id: '1', name: 'Hanoi Grand Prix', location: 'Ho Chi Minh City', status: 'Active', prize: 500000, date: 'Oct 15-20 2023', raceCount: 8, maxParticipants: 24, description: 'The premier event of the season featuring the best horses in Southeast Asia. This tournament tests both speed and endurance across multiple varying conditions.' },
-];
-
-const MOCK_RACES = [
-  { id: '1', name: 'Opening Sprint', date: 'Oct 15 2023', distance: '1200m', condition: 'Fast', prize: 50000, status: 'Completed' },
-  { id: '2', name: 'Middle Distance Challenge', date: 'Oct 17 2023', distance: '1600m', condition: 'Good', prize: 75000, status: 'In Progress' },
-  { id: '3', name: 'Grand Prix Final', date: 'Oct 20 2023', distance: '2400m', condition: 'Fast', prize: 200000, status: 'Scheduled' },
-];
+import { ownerApi } from '@/services/owner.service';
 
 export default function PortalTournamentDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const [tournament, setTournament] = useState<any>(null);
+  const [races, setRaces] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Find tournament or use default
-  const tournament = MOCK_TOURNAMENTS.find(t => t.id === id) || MOCK_TOURNAMENTS[0];
+  const fetchDetails = async () => {
+    setLoading(true);
+    try {
+      // Fetch tournament detail
+      const tRes = await ownerApi.getTournamentById(id);
+      const tData = tRes.data || tRes;
+      if (tData && tData.name) {
+        setTournament({
+          id: String(tData.id),
+          name: tData.name,
+          location: tData.location || 'Vietnam',
+          status: tData.status === 'ACTIVE' ? 'Active' : tData.status === 'UPCOMING' ? 'Upcoming' : tData.status === 'COMPLETED' ? 'Completed' : tData.status || 'Upcoming',
+          prize: tData.prizePool || tData.prize || 500000,
+          date: tData.start_date && tData.end_date ? `${tData.start_date} - ${tData.end_date}` : 'TBD',
+          raceCount: tData.raceCount || 8,
+          maxParticipants: tData.maxParticipants || 24,
+          description: tData.description || 'Professional horse racing tournament.'
+        });
+      } else {
+        setTournament(null);
+      }
+
+      // Fetch races for this tournament
+      const rRes = await ownerApi.getRacesByTournament(id);
+      const rData = rRes.data || rRes;
+      const rList = rData?.races || (Array.isArray(rData) ? rData : []);
+      if (Array.isArray(rList)) {
+        setRaces(rList.map((r: any) => ({
+          id: String(r.id),
+          name: r.name,
+          date: r.date || 'TBD',
+          distance: r.distanceM ? `${r.distanceM}m` : r.distance_m ? `${r.distance_m}m` : '1200m',
+          condition: r.condition || 'Good',
+          prize: r.prize || 50000,
+          status: r.status === 'COMPLETED' ? 'Completed' : r.status === 'IN_PROGRESS' ? 'In Progress' : r.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled'
+        })));
+      } else {
+        setRaces([]);
+      }
+    } catch (err) {
+      setTournament(null);
+      setRaces([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDetails();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-40">
+        <RefreshCw className="h-10 w-10 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!tournament) return null;
 
   return (
     <div className="pb-20">
@@ -83,11 +135,6 @@ export default function PortalTournamentDetail() {
                   <span className="font-bold text-lg text-green-400">{tournament.status}</span>
                 </div>
               </div>
-              {tournament.status !== 'Completed' && (
-                <Button className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 text-base">
-                  Register Interest
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -107,14 +154,14 @@ export default function PortalTournamentDetail() {
                   <tr>
                     <th className="px-6 py-4 font-medium">Race Name</th>
                     <th className="px-6 py-4 font-medium">Date</th>
-                    <th className="px-6 py-4 font-medium">Specs</th>
+                    <th className="px-6 py-4 font-medium">Distance</th>
                     <th className="px-6 py-4 font-medium text-right">Prize</th>
                     <th className="px-6 py-4 font-medium text-center">Status</th>
                     <th className="px-6 py-4 font-medium text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {MOCK_RACES.map((race) => (
+                  {races.map((race) => (
                     <tr key={race.id} className="hover:bg-slate-50/80 transition-colors group">
                       <td className="px-6 py-5 font-bold text-slate-900 group-hover:text-primary transition-colors">
                         {race.name}
@@ -122,11 +169,8 @@ export default function PortalTournamentDetail() {
                       <td className="px-6 py-5 text-slate-600">
                         {race.date}
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="bg-slate-50 text-slate-700">{race.distance}</Badge>
-                          <Badge variant="outline" className="bg-slate-50 text-slate-700">{race.condition}</Badge>
-                        </div>
+                      <td className="px-6 py-5 text-slate-600">
+                        {race.distance}
                       </td>
                       <td className="px-6 py-5 text-right font-bold text-amber-600">
                         ${race.prize.toLocaleString()}

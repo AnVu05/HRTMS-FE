@@ -12,7 +12,7 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
   const rolePrefix = '/referee';
 
   const activeNavItems = [
-    { href: `${rolePrefix}/home`, label: 'Home' },
+    { href: `${rolePrefix}/dashboard`, label: 'Dashboard' },
     { href: `${rolePrefix}/jockeys`, label: 'Jockeys' },
     { href: `${rolePrefix}/tournaments`, label: 'Tournaments' },
     { href: `${rolePrefix}/races`, label: 'Race Schedule' },
@@ -21,8 +21,8 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
   return (
     <>
       {activeNavItems.map((item) => {
-        const isHomePath = item.href === '/referee/home';
-        const isActive = location === item.href || (!isHomePath && location.startsWith(item.href + '/'));
+        const isDashboardPath = item.href === '/referee/dashboard';
+        const isActive = location === item.href || (!isDashboardPath && location.startsWith(item.href + '/'));
         return (
           <Link key={item.href} href={item.href} onClick={onClick}>
             <div
@@ -45,7 +45,6 @@ export function RefereeLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
 
   const role = 'referee';
-  const profilePath = '/referee/profile';
 
   const handleLogout = async () => {
     try {
@@ -66,7 +65,7 @@ export function RefereeLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-6">
-            <Link href="/referee/home">
+            <Link href="/referee/dashboard">
               <div className="flex items-center gap-2 cursor-pointer" data-testid="portal-logo">
                 <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground">
                   <Trophy className="h-5 w-5" />
@@ -83,9 +82,6 @@ export function RefereeLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2">
-              <Link href={profilePath}>
-                <Button variant="ghost" size="sm" className="font-medium">Profile</Button>
-              </Link>
               <Button variant="outline" size="sm" onClick={handleLogout} className="font-medium">Đăng xuất</Button>
             </div>
             
@@ -106,9 +102,6 @@ export function RefereeLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex flex-col gap-2">
                   <NavLinks />
                   <div className="h-px bg-slate-100 my-4"></div>
-                  <Link href={profilePath}>
-                    <Button className="w-full justify-start font-medium" variant="ghost">Profile</Button>
-                  </Link>
                   <Button onClick={handleLogout} className="w-full justify-start font-medium text-red-600 hover:text-red-700 hover:bg-red-50" variant="ghost">Đăng xuất</Button>
                 </div>
               </SheetContent>

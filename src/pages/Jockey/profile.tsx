@@ -41,6 +41,16 @@ export default function PortalJockeyProfile() {
   const [editCertIssuedAt, setEditCertIssuedAt] = useState('');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [updatingCert, setUpdatingCert] = useState(false);
+
+  // Edit Profile States
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editJockeyName, setEditJockeyName] = useState('');
+  const [editAge, setEditAge] = useState<number | ''>('');
+  const [editExperienceYears, setEditExperienceYears] = useState<number | ''>('');
+  const [editBio, setEditBio] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editAvatarBase64, setEditAvatarBase64] = useState('');
+  const [updatingProfile, setUpdatingProfile] = useState(false);
   
   const { toast } = useToast();
 
@@ -124,6 +134,61 @@ export default function PortalJockeyProfile() {
         description: err.message || 'Could not delete certificate.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      let base64 = reader.result as string;
+      const commaIndex = base64.indexOf(',');
+      if (commaIndex !== -1) {
+        base64 = base64.substring(commaIndex + 1);
+      }
+      setEditAvatarBase64(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleStartEditProfile = () => {
+    setEditJockeyName(profile?.jockeyName || '');
+    setEditAge(profile?.age || '');
+    setEditExperienceYears(profile?.experienceYears || '');
+    setEditBio(profile?.professionalBio || '');
+    setEditEmail(profile?.email || '');
+    setEditAvatarBase64(profile?.avatar || '');
+    setIsEditProfileOpen(true);
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdatingProfile(true);
+    try {
+      await jockeyService.updateProfile(jockeyId, {
+        ...profile,
+        jockeyName: editJockeyName,
+        age: editAge ? Number(editAge) : null,
+        experienceYears: editExperienceYears ? Number(editExperienceYears) : null,
+        professionalBio: editBio,
+        email: editEmail,
+        avatar: editAvatarBase64,
+      });
+      toast({
+        title: 'Success',
+        description: 'Profile updated successfully.',
+      });
+      setIsEditProfileOpen(false);
+      fetchProfile();
+    } catch (err: any) {
+      toast({
+        title: 'Update Failed',
+        description: err.message || 'An error occurred while updating profile.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingProfile(false);
     }
   };
 
@@ -297,7 +362,7 @@ export default function PortalJockeyProfile() {
               </Button>
             </Link>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Jockey Portal Dashboard</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Jockey profile</h1>
           <p className="text-slate-500">Manage your credentials, status, and racing invitations.</p>
         </div>
         
@@ -310,8 +375,16 @@ export default function PortalJockeyProfile() {
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
             <CardHeader className="bg-slate-900 text-white pb-8">
-              <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-4xl mb-4 shadow-inner">
-                🏇
+              <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-4xl mb-4 shadow-inner overflow-hidden">
+                {profile?.avatar ? (
+                  <img
+                    src={profile.avatar.startsWith('data:') ? profile.avatar : `data:image/png;base64,${profile.avatar}`}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  '🏇'
+                )}
               </div>
               <CardTitle className="text-2xl font-bold">
                 {loadingProfile ? 'Loading...' : profile?.jockeyName || profile?.username || 'Jockey Profile'}
@@ -375,6 +448,12 @@ export default function PortalJockeyProfile() {
                     <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border leading-relaxed">
                       {profile.professionalBio || 'No biography available.'}
                     </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100">
+                    <Button onClick={handleStartEditProfile} className="w-full bg-slate-800 hover:bg-slate-900 text-white gap-2 font-semibold">
+                      <Edit className="h-4 w-4" /> Edit Profile
+                    </Button>
                   </div>
                 </>
               )}
@@ -693,6 +772,115 @@ export default function PortalJockeyProfile() {
                 disabled={updatingCert}
               >
                 {updatingCert ? 'Updating...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile Info</DialogTitle>
+            <DialogDescription>Update your personal and professional profile details here.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateProfile}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700">Full Name</label>
+                <Input
+                  type="text"
+                  placeholder="e.g. John Doe"
+                  value={editJockeyName}
+                  onChange={(e) => setEditJockeyName(e.target.value)}
+                  required
+                  disabled={updatingProfile}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-slate-700">Age</label>
+                  <Input
+                    type="number"
+                    min="18"
+                    max="100"
+                    placeholder="e.g. 25"
+                    value={editAge}
+                    onChange={(e) => setEditAge(e.target.value !== '' ? Number(e.target.value) : '')}
+                    required
+                    disabled={updatingProfile}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-slate-700">Experience (Years)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="80"
+                    placeholder="e.g. 5"
+                    value={editExperienceYears}
+                    onChange={(e) => setEditExperienceYears(e.target.value !== '' ? Number(e.target.value) : '')}
+                    required
+                    disabled={updatingProfile}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700">Email Address</label>
+                <Input
+                  type="email"
+                  placeholder="e.g. jock@example.com"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  required
+                  disabled={updatingProfile}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700">Avatar Image (Optional)</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={updatingProfile}
+                />
+                {editAvatarBase64 && (
+                  <div className="mt-2 flex justify-center border p-2 rounded bg-slate-50">
+                    <img 
+                      src={editAvatarBase64.startsWith('data:') ? editAvatarBase64 : `data:image/png;base64,${editAvatarBase64}`} 
+                      alt="Preview" 
+                      className="max-h-[100px] object-contain rounded" 
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700">Professional Bio</label>
+                <textarea
+                  className="w-full min-h-[100px] p-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Tell us about your career..."
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  disabled={updatingProfile}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditProfileOpen(false)}
+                disabled={updatingProfile}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                disabled={updatingProfile}
+              >
+                {updatingProfile ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </form>

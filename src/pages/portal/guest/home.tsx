@@ -1,34 +1,87 @@
+import React, { useState, useEffect } from 'react';
 import { Link } from 'wouter';
-import { Trophy, Flag, Users, ArrowRight } from 'lucide-react';
+import { Trophy, Flag, Users, ArrowRight, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-const MOCK_TOURNAMENTS = [
-  { id: '1', name: 'Hanoi Grand Prix', location: 'Ho Chi Minh City', status: 'Active', prize: '$500,000', date: 'Oct 15–20, 2023', races: 8 },
-  { id: '2', name: 'Saigon Sprint Series', location: 'Hanoi', status: 'Upcoming', prize: '$350,000', date: 'Nov 5–8, 2023', races: 6 },
-  { id: '3', name: 'Mekong Valley Classic', location: 'Da Nang', status: 'Completed', prize: '$280,000', date: 'Sep 10–14, 2023', races: 5 },
-];
-
-const MOCK_RACES = [
-  { id: '2', name: 'Middle Distance Challenge', tournament: 'Hanoi Grand Prix', date: 'Oct 17, 2023', distance: '1600m', prize: '$75,000' },
-  { id: '3', name: 'Grand Prix Final', tournament: 'Hanoi Grand Prix', date: 'Oct 20, 2023', distance: '2400m', prize: '$200,000' },
-  { id: '4', name: 'Sprint Heat 1', tournament: 'Saigon Sprint Series', date: 'Nov 5, 2023', distance: '1000m', prize: '$30,000' },
-];
-
-const MOCK_JOCKEYS = [
-  { id: '7', name: 'Park Ji-won', flag: '🇰🇷', nationality: 'Korea', winRate: 74, earnings: '$890,000' },
-  { id: '2', name: "James O'Brien", flag: '🇮🇪', nationality: 'Ireland', winRate: 71, earnings: '$520,000' },
-  { id: '1', name: 'Nguyễn Văn Minh', flag: '🇻🇳', nationality: 'Vietnam', winRate: 68, earnings: '$340,000' },
-  { id: '8', name: 'Luca Bianchi', flag: '🇮🇹', nationality: 'Italy', winRate: 66, earnings: '$445,000' },
-];
+import { ownerApi } from '@/services/owner.service';
 
 const statusColor: Record<string, string> = {
   Active: 'bg-green-100 text-green-700',
   Upcoming: 'bg-blue-100 text-blue-700',
-  Completed: 'bg-gray-100 text-gray-600',
+  Completed: 'bg-gray-100 text-gray-700',
 };
 
 export default function PortalHome() {
+  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [races, setRaces] = useState<any[]>([]);
+  const [jockeys, setJockeys] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchHomeData = async () => {
+    setLoading(true);
+    try {
+      const tRes = await ownerApi.getFeaturedTournaments();
+      const tList = tRes.data || tRes || [];
+      if (Array.isArray(tList)) {
+        setTournaments(tList.slice(0, 3).map((t: any) => ({
+          id: String(t.id),
+          name: t.name,
+          location: t.location || 'Vietnam',
+          status: t.status === 'ACTIVE' ? 'Active' : t.status === 'UPCOMING' ? 'Upcoming' : 'Completed',
+          prize: t.prizePool ? `$${t.prizePool.toLocaleString()}` : '$500,000',
+          date: t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'TBD',
+          races: t.raceCount || 8
+        })));
+      } else {
+        setTournaments([]);
+      }
+
+      const rRes = await ownerApi.getUpcomingRaces();
+      const rList = rRes.data || rRes || [];
+      if (Array.isArray(rList)) {
+        setRaces(rList.slice(0, 3).map((r: any) => ({
+          id: String(r.id),
+          name: r.name,
+          tournament: r.tournament_name || 'Tournament',
+          date: r.date || 'TBD',
+          distance: r.distance_m ? `${r.distance_m}m` : '1200m',
+          prize: r.prize ? `$${r.prize.toLocaleString()}` : '$50,000'
+        })));
+      } else {
+        setRaces([]);
+      }
+
+      try {
+        const jRes = await ownerApi.getJockeys();
+        const jList = jRes.data || jRes || [];
+        if (Array.isArray(jList)) {
+          setJockeys(jList.slice(0, 4).map((j: any) => ({
+            id: String(j.id || j.jockeyId),
+            name: j.jockeyName || j.username || 'Jockey',
+            flag: '🇻🇳',
+            nationality: j.nationality || 'Vietnam',
+            winRate: j.winRate || 65,
+            earnings: j.earnings ? `$${j.earnings.toLocaleString()}` : '$150,000'
+          })));
+        } else {
+          setJockeys([]);
+        }
+      } catch (e) {
+        setJockeys([]);
+      }
+    } catch (err) {
+      setTournaments([]);
+      setRaces([]);
+      setJockeys([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHomeData();
+  }, []);
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-12 space-y-14">
 
@@ -48,79 +101,72 @@ export default function PortalHome() {
         </div>
       </div>
 
-      {/* Stats */}
-      {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-b border-gray-200 py-6">
-        {[
-          { icon: Users, label: 'Jockeys', value: '48' },
-          { icon: Trophy, label: 'Active Tournaments', value: '3' },
-          { icon: Flag, label: 'Total Races', value: '142' },
-          { icon: Trophy, label: 'Prize Money', value: '$2.4M' },
-        ].map(({ icon: Icon, label, value }) => (
-          <div key={label} className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-          </div>
-        ))}
-      </div> */}
-
-      {/* Tournaments */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Featured Tournaments</h2>
-          <Link href="/portal/tournaments">
-            <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-              View All <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </Link>
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <RefreshCw className="h-10 w-10 animate-spin text-slate-400" />
         </div>
-        <div className="divide-y border rounded-lg overflow-hidden">
-          {MOCK_TOURNAMENTS.map(t => (
-            <div key={t.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor[t.status]}`}>{t.status}</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{t.name}</p>
-                  <p className="text-xs text-gray-400">{t.location} · {t.date}</p>
+      ) : (
+        <>
+          {/* Tournaments */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Featured Tournaments</h2>
+              <Link href="/portal/tournaments">
+                <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                  View All <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </Link>
+            </div>
+            <div className="divide-y border rounded-lg overflow-hidden">
+              {tournaments.map(t => (
+                <div key={t.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor[t.status] || 'bg-blue-100 text-blue-700'}`}>{t.status}</span>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{t.name}</p>
+                      <p className="text-xs text-gray-400">{t.location} · {t.date}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-semibold text-gray-700 hidden sm:block">{t.prize}</span>
+                    <Link href={`/portal/tournaments/${t.id}`}>
+                      <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-tournament-${t.id}`}>Details</button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold text-gray-700 hidden sm:block">{t.prize}</span>
-                <Link href={`/portal/tournaments/${t.id}`}>
-                  <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-tournament-${t.id}`}>Details</button>
-                </Link>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
 
-      {/* Upcoming Races */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Upcoming Races</h2>
-          <Link href="/portal/races">
-            <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-              Full Schedule <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </Link>
-        </div>
-        <div className="divide-y border rounded-lg overflow-hidden">
-          {MOCK_RACES.map(r => (
-            <div key={r.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{r.name}</p>
-                <p className="text-xs text-gray-400">{r.tournament} · {r.date} · {r.distance}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold text-gray-700 hidden sm:block">{r.prize}</span>
-                <Link href={`/portal/races/${r.id}`}>
-                  <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-race-${r.id}`}>Details</button>
-                </Link>
-              </div>
+          {/* Upcoming Races */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Upcoming Races</h2>
+              <Link href="/portal/races">
+                <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                  Full Schedule <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </Link>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="divide-y border rounded-lg overflow-hidden">
+              {races.map(r => (
+                <div key={r.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{r.name}</p>
+                    <p className="text-xs text-gray-400">{r.tournament} · {r.date} · {r.distance}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-semibold text-gray-700 hidden sm:block">{r.prize}</span>
+                    <Link href={`/portal/races/${r.id}`}>
+                      <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-race-${r.id}`}>Details</button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
       {/* Top Jockeys */}
       <section>
@@ -133,7 +179,7 @@ export default function PortalHome() {
           </Link>
         </div>
         <div className="divide-y border rounded-lg overflow-hidden">
-          {MOCK_JOCKEYS.map((j, i) => (
+          {jockeys.map((j, i) => (
             <div key={j.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-3">
                 <span className="text-gray-400 text-sm w-5 text-center">{i + 1}</span>
@@ -158,6 +204,11 @@ export default function PortalHome() {
               </div>
             </div>
           ))}
+          {jockeys.length === 0 && (
+            <div className="text-center py-6 text-slate-400 text-sm">
+              No jockeys found
+            </div>
+          )}
         </div>
       </section>
 

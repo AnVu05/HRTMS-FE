@@ -21,8 +21,7 @@ import JockeyJockeys from '@/pages/Jockey/jockeys';
 import JockeyJockeyProfile from '@/pages/Jockey/jockey-profile';
 
 // Referee Pages
-import RefereeHome from '@/pages/Referee/home';
-import RefereeProfile from '@/pages/Referee/profile';
+import RefereeDashboard from '@/pages/Referee/dashboard';
 import RefereeTournaments from '@/pages/Referee/tournaments';
 import RefereeTournamentDetail from '@/pages/Referee/tournament-detail';
 import RefereeRaces from '@/pages/Referee/races';
@@ -160,8 +159,8 @@ function Router() {
       <ProtectedPortalRoute path="/jockey/jockeys/:id" allowedRoles={['JOCKEY']} component={JockeyJockeyProfile} />
 
       {/* Referee Portal */}
-      <ProtectedPortalRoute path="/referee/home" allowedRoles={['REFEREE']} component={RefereeHome} />
-      <ProtectedPortalRoute path="/referee/profile" allowedRoles={['REFEREE']} component={RefereeProfile} />
+      <ProtectedPortalRoute path="/referee/home" allowedRoles={['REFEREE']} component={RefereeDashboard} />
+      <ProtectedPortalRoute path="/referee/dashboard" allowedRoles={['REFEREE']} component={RefereeDashboard} />
       <ProtectedPortalRoute path="/referee/tournaments" allowedRoles={['REFEREE']} component={RefereeTournaments} />
       <ProtectedPortalRoute path="/referee/tournaments/:id" allowedRoles={['REFEREE']} component={RefereeTournamentDetail} />
       <ProtectedPortalRoute path="/referee/races" allowedRoles={['REFEREE']} component={RefereeRaces} />

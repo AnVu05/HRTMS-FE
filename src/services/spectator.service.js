@@ -49,7 +49,7 @@ export const spectatorService = {
 
   /**
    * Tạo dự đoán kết quả cuộc đua mới
-   * @param {{ raceId: number, horseId: number, predictedPosition: number }} payload
+   * @param {{ spectatorId: number, raceId: number, predictedHorseId: number, pointsInvested: number, status: string, createdAt: string }} payload
    */
   createPrediction(payload) {
     return apiRequest('/api/predictions', {

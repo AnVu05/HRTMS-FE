@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { raceApi } from '@/services/race.service';
+import { ownerApi } from '@/services/owner.service';
 
 interface Race {
   id: number;
@@ -22,9 +23,9 @@ interface Race {
   end_time: string;
   distance_m: number;
   num_horse: number;
-  referee_id: number;
+  referee_id?: number;
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  cancel_reason?: string;
+  reason?: string;
 }
 
 interface Participant {
@@ -33,7 +34,7 @@ interface Participant {
   horse_name: string;
   jockey_name: string;
   gate_number?: number;
-  status: 'ACTIVE' | 'SCRATCHED' | 'DISQUALIFIED';
+  status: 'ACTIVE' | 'SCRATCHED' | 'DISQUALIFIED' | 'RACING';
   reason?: string;
 }
 
@@ -63,51 +64,75 @@ export default function RefereeRaceDetail() {
     3: 0, // Rank 3 -> horse_id
   });
 
+  const handlePhotoFinishChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoFinish(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Unity Simulator Config
+  const [unityUrl, setUnityUrl] = useState(() => {
+    return localStorage.getItem('unity_sim_url') || 'https://play.unity.com/en/games/207b51b8-2b81-416b-808e-b5801f05acbe/build';
+  });
+  const [isEditingUrl, setIsEditingUrl] = useState(false);
+  const [tempUrl, setTempUrl] = useState(unityUrl);
+  const [showSimPreview, setShowSimPreview] = useState(false);
+
+  const saveUnityUrl = () => {
+    localStorage.setItem('unity_sim_url', tempUrl);
+    setUnityUrl(tempUrl);
+    setIsEditingUrl(false);
+  };
+
   const fetchRaceData = async () => {
     setLoading(true);
     try {
       const res = (await raceApi.getRaceById(id)) as any;
       if (res) {
-        setRace(res);
+        const mappedRace = {
+          ...res,
+          distance_m: res.distance_m !== undefined ? res.distance_m : res.distanceM,
+          num_horse: res.num_horse !== undefined ? res.num_horse : res.numHorse,
+          start_time: res.start_time || res.startTime || '',
+          end_time: res.end_time || res.endTime || '',
+        };
+        setRace(mappedRace);
         setNewTimeData({
-          date: res.date || '',
-          start_time: res.start_time || '',
-          end_time: res.end_time || '',
+          date: mappedRace.date || '',
+          start_time: mappedRace.start_time || '',
+          end_time: mappedRace.end_time || '',
         });
         
-        // Mock participants if backend doesn't provide them inside race data
-        const mockLineup: Participant[] = res.participants || [
-          { id: 1, horse_id: 101, horse_name: 'Thunderbolt', jockey_name: 'Nguyen Van Minh', gate_number: 1, status: 'ACTIVE' },
-          { id: 2, horse_id: 102, horse_name: 'Crimson Sky', jockey_name: 'James O\'Brien', gate_number: 2, status: 'ACTIVE' },
-          { id: 3, horse_id: 103, horse_name: 'River Spirit', jockey_name: 'Takeshi Yamamoto', gate_number: 3, status: 'ACTIVE' },
-          { id: 4, horse_id: 104, horse_name: 'Ocean Whisper', jockey_name: 'Emma Richardson', gate_number: 4, status: 'ACTIVE' },
-          { id: 5, horse_id: 105, horse_name: 'Desert Wind', jockey_name: 'Luca Bianchi', gate_number: 5, status: 'ACTIVE' },
-        ];
-        setParticipants(mockLineup);
+        try {
+          const lineupRes = await ownerApi.getRaceStartingLineup(id);
+          const lineupList = lineupRes.data || lineupRes || [];
+          if (Array.isArray(lineupList)) {
+            setParticipants(lineupList.map((p: any) => ({
+              id: p.id,
+              horse_id: p.horse_id,
+              horse_name: p.horse_name || 'Horse',
+              jockey_name: p.jockey_name || 'Jockey',
+              gate_number: p.gate_number,
+              status: p.status || 'ACTIVE',
+              reason: p.reason
+            })));
+          } else {
+            setParticipants([]);
+          }
+        } catch (e) {
+          setParticipants([]);
+        }
+      } else {
+        throw new Error('No data');
       }
     } catch (err: any) {
-      toast.error('Failed to load race details.');
-      // Mock fallback for UI demonstrations if API returns error
-      setRace({
-        id: Number(id),
-        name: 'Middle Distance Challenge',
-        tournament_id: 1,
-        tournament_name: 'Hanoi Grand Prix',
-        date: '2026-07-12',
-        start_time: '10:00:00',
-        end_time: '11:00:00',
-        distance_m: 1600,
-        num_horse: 8,
-        referee_id: 2,
-        status: 'SCHEDULED'
-      });
-      setParticipants([
-        { id: 1, horse_id: 101, horse_name: 'Thunderbolt', jockey_name: 'Nguyen Van Minh', gate_number: 1, status: 'ACTIVE' },
-        { id: 2, horse_id: 102, horse_name: 'Crimson Sky', jockey_name: 'James O\'Brien', gate_number: 2, status: 'ACTIVE' },
-        { id: 3, horse_id: 103, horse_name: 'River Spirit', jockey_name: 'Takeshi Yamamoto', gate_number: 3, status: 'ACTIVE' },
-        { id: 4, horse_id: 104, horse_name: 'Ocean Whisper', jockey_name: 'Emma Richardson', gate_number: 4, status: 'ACTIVE' },
-        { id: 5, horse_id: 105, horse_name: 'Desert Wind', jockey_name: 'Luca Bianchi', gate_number: 5, status: 'ACTIVE' },
-      ]);
+      toast.error('Failed to load race details from server.');
+      setRace(null);
+      setParticipants([]);
     } finally {
       setLoading(false);
     }
@@ -116,6 +141,47 @@ export default function RefereeRaceDetail() {
   useEffect(() => {
     fetchRaceData();
   }, [id]);
+
+  // Auto-poll game results when race is in progress
+  useEffect(() => {
+    let intervalId: any;
+    if (race?.status === 'IN_PROGRESS') {
+      intervalId = setInterval(async () => {
+        try {
+          const response = await fetch('https://game-dua-ngua-api.onrender.com/api/data');
+          if (response.ok) {
+            const data = await response.json();
+            const participantHorseIds = new Set(participants.map(p => p.horse_id));
+            
+            const newPlacements = { ...placementResults };
+            let hasChanges = false;
+            
+            Object.entries(data).forEach(([hId, info]: [string, any]) => {
+              const horseIdNum = Number(hId);
+              if (participantHorseIds.has(horseIdNum) && info.rank && [1, 2, 3].includes(info.rank)) {
+                if (newPlacements[info.rank] !== horseIdNum) {
+                  newPlacements[info.rank] = horseIdNum;
+                  hasChanges = true;
+                }
+              }
+            });
+            
+            if (hasChanges) {
+              setPlacementResults(newPlacements);
+              if (newPlacements[1] && newPlacements[2] && newPlacements[3]) {
+                toast.success('Auto-filled rankings from game simulator!');
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to sync game data:', err);
+        }
+      }, 2000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [race?.status, participants, placementResults]);
 
   const handleStartRace = async () => {
     if (!window.confirm('Are you sure you want to start this race?')) return;
@@ -146,7 +212,7 @@ export default function RefereeRaceDetail() {
       setShowCancelForm(false);
       fetchRaceData();
     } catch (err) {
-      if (race) setRace({ ...race, status: 'CANCELLED', cancel_reason: cancelReason });
+      if (race) setRace({ ...race, status: 'CANCELLED', reason: cancelReason });
       setShowCancelForm(false);
     } finally {
       setSubmitting(false);
@@ -299,11 +365,11 @@ export default function RefereeRaceDetail() {
             <div className="bg-slate-900 rounded-xl p-4 border border-slate-800 w-full md:w-auto shrink-0 flex gap-8">
               <div>
                 <div className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1 font-mono">Distance</div>
-                <div className="text-2xl font-bold">{race.distance_m}m</div>
+                <div className="text-2xl font-bold">{race.distance_m || '-- '}m</div>
               </div>
               <div>
                 <div className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1 font-mono">Horses Limit</div>
-                <div className="text-2xl font-bold text-amber-500">{race.num_horse}</div>
+                <div className="text-2xl font-bold text-amber-500">{race.num_horse || '--'}</div>
               </div>
             </div>
           </div>
@@ -317,7 +383,7 @@ export default function RefereeRaceDetail() {
             <XCircle className="h-6 w-6 text-red-500 shrink-0" />
             <div>
               <p className="font-bold">Race Cancelled</p>
-              <p className="text-sm">Reason: {race.cancel_reason || 'Not specified'}</p>
+              <p className="text-sm">Reason: {race.reason || 'Not specified'}</p>
             </div>
           </div>
         )}
@@ -353,6 +419,8 @@ export default function RefereeRaceDetail() {
                     <Calendar className="mr-2 h-4 w-4 text-slate-500" /> Reschedule Race
                   </Button>
 
+
+
                   <Button 
                     variant="destructive"
                     onClick={() => { setShowCancelForm(!showCancelForm); setShowTimeForm(false); }}
@@ -360,6 +428,66 @@ export default function RefereeRaceDetail() {
                   >
                     <XCircle className="mr-2 h-4 w-4" /> Cancel Race
                   </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Live Unity Simulation Game Embed */}
+            {race.status === 'IN_PROGRESS' && (
+              <Card className="bg-slate-900 border-slate-800 text-white shadow-lg overflow-hidden">
+                <CardHeader className="bg-slate-950 border-b border-slate-800 p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-lg font-bold flex items-center gap-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        Live Race Simulator (Unity)
+                      </CardTitle>
+                      <CardDescription className="text-slate-400 text-xs">WebGL simulation of the current horse race.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isEditingUrl ? (
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                          <Input 
+                            value={tempUrl} 
+                            onChange={(e) => setTempUrl(e.target.value)} 
+                            className="h-8 text-xs bg-slate-800 border-slate-700 text-white w-48"
+                            placeholder="Unity Play URL..."
+                          />
+                          <Button size="sm" onClick={saveUnityUrl} className="h-8 px-2 text-xs bg-indigo-600 hover:bg-indigo-700">Save</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setIsEditingUrl(false)} className="h-8 px-2 text-xs text-slate-400 hover:text-white">Cancel</Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => { setTempUrl(unityUrl); setIsEditingUrl(true); }}
+                          className="h-8 text-xs border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white"
+                        >
+                          Configure Simulator URL
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="relative w-full aspect-video bg-black flex items-center justify-center">
+                    {unityUrl ? (
+                      <iframe 
+                        src={unityUrl}
+                        className="w-full h-full border-0"
+                        allow="autoplay; fullscreen; vr"
+                        title="Unity Race Simulator"
+                      />
+                    ) : (
+                      <div className="p-12 text-center text-slate-500">
+                        <p className="text-sm font-semibold">Unity Game Simulator has not been configured</p>
+                        <p className="text-xs text-slate-600 mt-1">Please click "Configure Simulator URL" and paste the deployed Unity WebGL game link.</p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -470,11 +598,12 @@ export default function RefereeRaceDetail() {
                           <td className="px-6 py-5 text-slate-600">{p.jockey_name}</td>
                           <td className="px-6 py-5">
                             <Badge className={
-                              p.status === 'ACTIVE' ? 'bg-green-100 text-green-700 hover:bg-green-100' :
+                              race.status === 'CANCELLED' ? 'bg-red-100 text-red-700 hover:bg-red-100' :
+                              p.status === 'ACTIVE' || p.status === 'RACING' ? 'bg-green-100 text-green-700 hover:bg-green-100' :
                               p.status === 'SCRATCHED' ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
                               'bg-red-100 text-red-700 hover:bg-red-100'
                             }>
-                              {p.status} {p.reason && `(${p.reason})`}
+                              {race.status === 'CANCELLED' ? 'CANCELLED' : p.status} {p.reason && `(${p.reason})`}
                             </Badge>
                           </td>
                           {race.status !== 'COMPLETED' && race.status !== 'CANCELLED' && (
@@ -544,16 +673,45 @@ export default function RefereeRaceDetail() {
                   ) : (
                     <form onSubmit={handleSubmitResults} className="space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="photo_finish" className="font-semibold text-slate-700">Photo Finish (URL / Base64)</Label>
-                        <Input 
-                          id="photo_finish" 
-                          placeholder="http://example.com/photo-finish.jpg"
-                          value={photoFinish}
-                          onChange={(e) => setPhotoFinish(e.target.value)}
-                          required
-                          disabled={submitting}
-                        />
+                        <Label htmlFor="photo_finish" className="font-semibold text-slate-700">Photo Finish (Upload Image or Paste URL / Base64)</Label>
+                        <div className="space-y-3">
+                          <Input 
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoFinishChange}
+                            disabled={submitting}
+                          />
+                          <div className="text-xs text-slate-400 text-center">- OR -</div>
+                          <Input 
+                            id="photo_finish" 
+                            placeholder="http://example.com/photo-finish.jpg or Base64 data..."
+                            value={photoFinish}
+                            onChange={(e) => setPhotoFinish(e.target.value)}
+                            required
+                            disabled={submitting}
+                          />
+                          {photoFinish && (
+                            <div className="mt-2 border rounded-lg p-2 bg-slate-50 flex flex-col items-center gap-1.5">
+                              <span className="text-xs font-semibold text-slate-400">Photo Finish Preview:</span>
+                              <img 
+                                src={photoFinish.startsWith('data:') ? photoFinish : (photoFinish.startsWith('http') ? photoFinish : `data:image/png;base64,${photoFinish}`)} 
+                                alt="Photo Finish" 
+                                className="max-h-[150px] object-contain rounded border bg-white" 
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {race.status === 'IN_PROGRESS' && (
+                        <div className="flex items-center gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-700 text-xs">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                          </span>
+                          Auto-syncing placements in real-time from the game server...
+                        </div>
+                      )}
 
                       <div className="space-y-4 pt-2 border-t border-slate-100">
                         <h4 className="font-semibold text-sm text-slate-500 uppercase tracking-wider font-mono">Winner Placements</h4>
