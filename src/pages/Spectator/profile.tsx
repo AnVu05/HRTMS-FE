@@ -150,7 +150,7 @@ export default function PortalSpectatorProfile() {
             <h3 className="text-lg font-semibold text-red-900 mb-2">Could Not Load Spectator Profile</h3>
             <p className="text-red-700 max-w-md mx-auto mb-6">{error || 'Spectator profile not found'}</p>
             <div className="flex justify-center gap-4">
-              <Link href="/portal/spectator/home">
+              <Link href="/spectator/home">
                 <Button variant="outline">Back Home</Button>
               </Link>
               <Button onClick={fetchProfile} className="bg-red-600 hover:bg-red-700 text-white">Retry Fetch</Button>
@@ -179,7 +179,7 @@ export default function PortalSpectatorProfile() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl animate-in fade-in duration-500 space-y-8">
       <div className="flex items-center justify-between">
-        <Link href="/portal/spectator/home">
+        <Link href="/spectator/home">
           <Button variant="ghost" className="text-slate-600 hover:text-slate-900 gap-2">
             <ArrowLeft className="h-4 w-4" /> Back to Portal Home
           </Button>

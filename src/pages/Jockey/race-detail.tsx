@@ -105,7 +105,7 @@ export default function PortalRaceDetail() {
       {/* Race Header Banner */}
       <div className="bg-slate-950 text-white border-b border-slate-800">
         <div className="container mx-auto px-4 py-8 md:px-6">
-          <Link href="/portal/jockey/races">
+          <Link href="/jockey/races">
             <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800 mb-6 -ml-4" data-testid="btn-back">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Schedule
             </Button>

@@ -114,7 +114,7 @@ export default function PortalRaces() {
 
                   {/* Action */}
                   <div className="p-6 pt-0 md:pt-6 flex items-center justify-end md:justify-center border-t md:border-t-0 md:border-l border-slate-100 bg-white md:w-40 shrink-0">
-                    <Link href={`/portal/jockey/races/${race.id}`} className="w-full">
+                    <Link href={`/jockey/races/${race.id}`} className="w-full">
                       <Button variant="outline" className="w-full bg-white hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" data-testid={`btn-view-race-${race.id}`}>
                         {race.status === 'Completed' ? 'Results' : 'Details'}
                       </Button>

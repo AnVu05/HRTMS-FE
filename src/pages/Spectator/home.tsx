@@ -39,10 +39,10 @@ export default function PortalHome() {
           Track tournaments, race schedules, and jockey performance across the entire system.
         </p>
         <div className="flex gap-3 pt-1">
-          <Link href="/portal/spectator/tournaments">
+          <Link href="/spectator/tournaments">
             <Button size="sm" data-testid="hero-btn-tournaments">View Tournaments</Button>
           </Link>
-          <Link href="/portal/spectator/races">
+          <Link href="/spectator/races">
             <Button size="sm" variant="outline" data-testid="hero-btn-races">Race Schedule</Button>
           </Link>
         </div>
@@ -67,7 +67,7 @@ export default function PortalHome() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Featured Tournaments</h2>
-          <Link href="/portal/spectator/tournaments">
+          <Link href="/spectator/tournaments">
             <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
               View All <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -85,7 +85,7 @@ export default function PortalHome() {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold text-gray-700 hidden sm:block">{t.prize}</span>
-                <Link href={`/portal/spectator/tournaments/${t.id}`}>
+                <Link href={`/spectator/tournaments/${t.id}`}>
                   <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-tournament-${t.id}`}>Details</button>
                 </Link>
               </div>
@@ -98,7 +98,7 @@ export default function PortalHome() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Upcoming Races</h2>
-          <Link href="/portal/spectator/races">
+          <Link href="/spectator/races">
             <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
               Full Schedule <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -113,7 +113,7 @@ export default function PortalHome() {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold text-gray-700 hidden sm:block">{r.prize}</span>
-                <Link href={`/portal/spectator/races/${r.id}`}>
+                <Link href={`/spectator/races/${r.id}`}>
                   <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-race-${r.id}`}>Details</button>
                 </Link>
               </div>
@@ -126,7 +126,7 @@ export default function PortalHome() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Top Jockeys</h2>
-          <Link href="/portal/spectator/jockeys">
+          <Link href="/spectator/jockeys">
             <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
               View All <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -152,7 +152,7 @@ export default function PortalHome() {
                   <p className="text-sm font-semibold text-gray-900">{j.earnings}</p>
                   <p className="text-xs text-gray-400">Earnings</p>
                 </div>
-                <Link href={`/portal/spectator/jockeys/${j.id}`}>
+                <Link href={`/spectator/jockeys/${j.id}`}>
                   <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-jockey-${j.id}`}>Profile</button>
                 </Link>
               </div>

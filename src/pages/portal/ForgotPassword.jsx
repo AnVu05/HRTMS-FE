@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'wouter';
-import { authApi } from '@/api/authApi';
+import { authApi } from '@/services/auth.service';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 w-full absolute inset-0 z-50">
       {/* Left side - Banner */}
       <div className="hidden md:flex md:w-1/2 bg-[#001f3f] text-white p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -69,7 +69,7 @@ export default function ForgotPassword() {
         </div>
         
         <div className="relative z-10">
-          <Link href="/">
+          <Link href="/portal">
             <div className="flex items-center gap-2 text-white cursor-pointer inline-flex">
               <div className="bg-[#f59e0b] p-2 rounded-lg">
                 <Trophy className="h-6 w-6 text-white" />
@@ -203,23 +203,20 @@ export default function ForgotPassword() {
                   <h3 className="text-xl font-semibold text-slate-900">Success!</h3>
                   <p className="text-slate-500">Your password has been changed.</p>
                 </div>
-                <a href="/login" className="w-full">
+                <Link href="/portal/login" className="w-full block">
                   <Button className="w-full h-12 text-base font-bold bg-[#001f3f] hover:bg-[#003366] text-white">
                     Go to Login
                   </Button>
-                </a>
+                </Link>
               </div>
             )}
           </div>
 
           {step !== 3 && (
             <div className="text-center">
-              <a 
-                href="/login" 
-                className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-              >
+              <Link href="/portal/login" className="inline-flex items-center text-sm font-medium text-primary hover:underline cursor-pointer">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
-              </a>
+              </Link>
             </div>
           )}
 

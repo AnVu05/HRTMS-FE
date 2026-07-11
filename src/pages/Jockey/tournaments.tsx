@@ -96,7 +96,7 @@ export default function PortalTournaments() {
                   </div>
                 </div>
                 
-                <Link href={`/portal/jockey/tournaments/${tournament.id}`}>
+                <Link href={`/jockey/tournaments/${tournament.id}`}>
                   <Button className="w-full bg-slate-50 hover:bg-primary text-slate-900 hover:text-primary-foreground border border-slate-200 transition-colors" data-testid={`btn-view-tournament-${tournament.id}`}>
                     View Tournament Details
                   </Button>

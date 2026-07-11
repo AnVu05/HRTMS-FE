@@ -3,7 +3,6 @@ import { Link } from 'wouter';
 import { ArrowLeft, User, Calendar, Award, CheckCircle, XCircle, AlertCircle, FileText, Check, X, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { refereeService } from '@/services/referee.service';
@@ -55,7 +54,7 @@ const MOCK_REFEREE_INVITATIONS = [
 
 export default function PortalRefereeProfile() {
   const [refereeId, setRefereeId] = useState<number>(() => {
-    return Number(localStorage.getItem('referee_id') || '1');
+    return Number(localStorage.getItem('user_id') || '1');
   });
 
   const [invitations, setInvitations] = useState<any[]>([]);
@@ -104,11 +103,11 @@ export default function PortalRefereeProfile() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl animate-in fade-in duration-500 space-y-8">
-      {/* Header section with configurable Referee ID */}
+      {/* Header section */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Link href="/portal/referee/home">
+            <Link href="/referee/home">
               <Button variant="ghost" className="text-slate-600 hover:text-slate-900 gap-2 pl-0">
                 <ArrowLeft className="h-4 w-4" /> Back to Portal
               </Button>
@@ -116,20 +115,6 @@ export default function PortalRefereeProfile() {
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Referee Portal Dashboard</h1>
           <p className="text-slate-500">Manage your refereeing status and tournament invitations.</p>
-        </div>
-        
-        <div className="flex items-center gap-2 bg-white p-3 rounded-lg border shadow-sm">
-          <span className="text-sm font-semibold text-slate-600">Simulate Referee ID:</span>
-          <Input 
-            type="number" 
-            value={refereeId} 
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setRefereeId(val);
-              localStorage.setItem('referee_id', String(val));
-            }} 
-            className="w-20 h-9 font-bold text-center" 
-          />
         </div>
       </div>
 

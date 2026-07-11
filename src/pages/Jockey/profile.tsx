@@ -11,7 +11,7 @@ import { jockeyService } from '@/services/jockey.service';
 
 export default function PortalJockeyProfile() {
   const [jockeyId, setJockeyId] = useState<number>(() => {
-    return Number(localStorage.getItem('jockey_id') || '1');
+    return Number(localStorage.getItem('user_id') || '1');
   });
   
   const [profile, setProfile] = useState<any>(null);
@@ -45,9 +45,11 @@ export default function PortalJockeyProfile() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchProfile();
-    fetchCertificates();
-    fetchInvitations();
+    if (jockeyId) {
+      fetchProfile();
+      fetchCertificates();
+      fetchInvitations();
+    }
   }, [jockeyId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,111 +175,17 @@ export default function PortalJockeyProfile() {
     }
   };
 
-const MOCK_PROFILE = {
-  username: "jockey_pro",
-  email: "jockey_pro@horseracing.com",
-  jockeyName: "Nguyễn Văn Minh",
-  age: 28,
-  experienceYears: 6,
-  status: "ACTIVE",
-  professionalBio: "Experienced jockey with over 150 races won. Specialist in short to medium-distance turf sprints."
-};
-
-const MOCK_CERTIFICATES = [
-  {
-    cert_id: 101,
-    cert_name: "Professional Jockey License - Class A",
-    issued_at: "2025-01-15",
-    cert_image_base64: "",
-    status: "VERIFIED"
-  },
-  {
-    cert_id: 102,
-    cert_name: "International Racing Clearance Certificate",
-    issued_at: "2025-05-20",
-    cert_image_base64: "",
-    status: "PENDING"
-  },
-  {
-    cert_id: 103,
-    cert_name: "Equine Health & Safety Course Certificate",
-    issued_at: "2024-11-10",
-    cert_image_base64: "",
-    status: "REJECTED"
-  }
-];
-
-const MOCK_INVITATIONS = [
-  {
-    id: 1,
-    createdAt: "2026-07-10T07:56:59.682Z",
-    title: "Race Invitation",
-    content: "You have been invited to ride horse ID: 12",
-    raceId: 5,
-    horseId: 12,
-    ownerId: 3,
-    tournamentId: 2
-  },
-  {
-    id: 2,
-    createdAt: "2026-07-09T14:30:00.000Z",
-    title: "Race Invitation",
-    content: "You have been invited to ride horse ID: 8",
-    raceId: 6,
-    horseId: 8,
-    ownerId: 3,
-    tournamentId: 2
-  },
-  {
-    id: 3,
-    createdAt: "2026-07-08T09:15:00.000Z",
-    title: "Race Invitation",
-    content: "You have been invited to ride horse ID: 22",
-    raceId: 7,
-    horseId: 22,
-    ownerId: 4,
-    tournamentId: 3
-  }
-];
-
-const MOCK_NOTIFICATIONS = [
-  {
-    id: 201,
-    title: "Tournament Updated",
-    content: "The Hanoi Grand Prix tournament schedule has been updated. Please review the new times.",
-    type: "TOURNAMENT_UPDATE",
-    status: "UNREAD",
-    created_at: "2026-07-10T08:12:16.379Z"
-  },
-  {
-    id: 202,
-    title: "Certificate Rejected",
-    content: "Your Medical clearance certificate was rejected because the image was blurry. Please upload again.",
-    type: "REJECT_CERTIFICATE",
-    status: "UNREAD",
-    created_at: "2026-07-09T11:00:00.000Z"
-  },
-  {
-    id: 203,
-    title: "Registration Approved",
-    content: "Congratulations! Your registration for Race #3 has been verified by the Admin.",
-    type: "REGISTRATION_APPROVED",
-    status: "READ",
-    created_at: "2026-07-08T15:45:00.000Z"
-  }
-];
-
   const fetchProfile = () => {
     setLoadingProfile(true);
     setErrorProfile(null);
     jockeyService.getProfile(jockeyId)
       .then(response => {
         const data = response.data || response;
-        setProfile(data || MOCK_PROFILE);
+        setProfile(data);
         setLoadingProfile(false);
       })
       .catch(err => {
-        setProfile(MOCK_PROFILE);
+        setErrorProfile('Could not load profile data.');
         setLoadingProfile(false);
       });
   };
@@ -288,11 +196,11 @@ const MOCK_NOTIFICATIONS = [
     jockeyService.getJockeyCertificates(jockeyId)
       .then(response => {
         const data = response.data || response || [];
-        setCertificates(data.length > 0 ? data : MOCK_CERTIFICATES);
+        setCertificates(data);
         setLoadingCerts(false);
       })
       .catch(err => {
-        setCertificates(MOCK_CERTIFICATES);
+        setErrorCerts('Could not load certificates.');
         setLoadingCerts(false);
       });
   };
@@ -330,22 +238,20 @@ const MOCK_NOTIFICATIONS = [
               tournamentId: matchingForm ? matchingForm.tournamentId : null
             };
           })
-          .filter((invite: any) => invite.id !== null); // Ensure we have a valid form ID to respond to
+          .filter((invite: any) => invite.id !== null);
           
         // Other notifications (exclude JOCKEY_INVITATION)
         const others = notifData.filter((n: any) => n.type !== 'JOCKEY_INVITATION');
         
-        setOtherNotifications(others.length > 0 ? others : MOCK_NOTIFICATIONS);
-        setInvitations(filteredInvites.length > 0 ? filteredInvites : MOCK_INVITATIONS);
+        setOtherNotifications(others);
+        setInvitations(filteredInvites);
         setLoadingInvites(false);
       })
       .catch(err => {
-        setInvitations(MOCK_INVITATIONS);
-        setOtherNotifications(MOCK_NOTIFICATIONS);
+        setErrorInvites('Could not load invitations.');
         setLoadingInvites(false);
       });
   };
-
 
   const handleRespondInvitation = async (formId: number, status: 'Accept' | 'Reject') => {
     try {
@@ -381,11 +287,11 @@ const MOCK_NOTIFICATIONS = [
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl animate-in fade-in duration-500 space-y-8">
-      {/* Header section with configurable Jockey ID */}
+      {/* Header section with back button */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Link href="/portal/jockey/home">
+            <Link href="/jockey/home">
               <Button variant="ghost" className="text-slate-600 hover:text-slate-900 gap-2 pl-0">
                 <ArrowLeft className="h-4 w-4" /> Back to Portal
               </Button>
@@ -396,21 +302,6 @@ const MOCK_NOTIFICATIONS = [
         </div>
         
         <div className="flex items-center gap-4">
-          
-
-          <div className="flex items-center gap-2 bg-white p-3 rounded-lg border shadow-sm">
-            <span className="text-sm font-semibold text-slate-600">Simulate Jockey ID:</span>
-            <Input 
-              type="number" 
-              value={jockeyId} 
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                setJockeyId(val);
-                localStorage.setItem('jockey_id', String(val));
-              }} 
-              className="w-20 h-9 font-bold text-center" 
-            />
-          </div>
         </div>
       </div>
 

@@ -188,7 +188,7 @@ export default function PortalJockeys() {
                       </div>
                     </div>
                     
-                    <Link href={`/portal/spectator/jockeys/${jockey.id}`}>
+                    <Link href={`/spectator/jockeys/${jockey.id}`}>
                       <Button className="w-full mt-6 bg-slate-900 hover:bg-primary hover:text-primary-foreground text-white transition-colors" data-testid={`btn-view-jockey-${jockey.id}`}>
                         View Full Profile
                       </Button>

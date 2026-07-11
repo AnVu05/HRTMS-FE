@@ -88,7 +88,7 @@ export default function PortalJockeyProfile() {
       <div className="bg-slate-950 text-white pt-12 pb-24 relative overflow-hidden">
         <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-primary/10 to-transparent pointer-events-none"></div>
         <div className="container mx-auto px-4 md:px-6 relative z-10">
-          <Link href="/portal/jockey/jockeys">
+          <Link href="/jockey/jockeys">
             <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-slate-800 mb-6 -ml-4" data-testid="btn-back">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory
             </Button>

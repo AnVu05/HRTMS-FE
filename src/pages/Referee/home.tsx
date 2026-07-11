@@ -22,12 +22,12 @@ export default function RefereeHome() {
           </p>
         </div>
         <div className="flex gap-3 pt-2">
-          <Link href="/portal/referee/profile">
+          <Link href="/referee/profile">
             <Button size="sm" variant="secondary" className="text-blue-700 bg-white hover:bg-blue-50 font-bold">
               Go to Dashboard
             </Button>
           </Link>
-          <Link href="/portal/referee/races">
+          <Link href="/referee/races">
             <Button size="sm" variant="ghost" className="text-white hover:bg-white/10 font-bold border border-white/20">
               Assigned Races
             </Button>
@@ -58,7 +58,7 @@ export default function RefereeHome() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">My Judging Schedule</h2>
-          <Link href="/portal/referee/races">
+          <Link href="/referee/races">
             <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
               View All Assigned Races <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -80,7 +80,7 @@ export default function RefereeHome() {
                 <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
                   {r.role}
                 </span>
-                <Link href={`/portal/referee/races/${r.id}`}>
+                <Link href={`/referee/races/${r.id}`}>
                   <button className="text-xs text-blue-600 hover:underline">Details</button>
                 </Link>
               </div>

@@ -22,12 +22,12 @@ export default function JockeyHome() {
           </p>
         </div>
         <div className="flex gap-3 pt-2">
-          <Link href="/portal/jockey/profile">
+          <Link href="/jockey/profile">
             <Button size="sm" variant="secondary" className="text-orange-700 bg-white hover:bg-orange-50 font-bold">
               Go to Dashboard
             </Button>
           </Link>
-          <Link href="/portal/jockey/races">
+          <Link href="/jockey/races">
             <Button size="sm" variant="ghost" className="text-white hover:bg-white/10 font-bold border border-white/20">
               My Races
             </Button>
@@ -58,7 +58,7 @@ export default function JockeyHome() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">My Participation Summary</h2>
-          <Link href="/portal/jockey/races">
+          <Link href="/jockey/races">
             <button className="text-sm text-orange-600 hover:underline flex items-center gap-1">
               View All My Races <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -83,7 +83,7 @@ export default function JockeyHome() {
                 {r.position !== '--' && (
                   <span className="text-sm font-bold text-gray-700">Pos: {r.position}</span>
                 )}
-                <Link href={`/portal/jockey/races/${r.id}`}>
+                <Link href={`/jockey/races/${r.id}`}>
                   <button className="text-xs text-orange-600 hover:underline">Details</button>
                 </Link>
               </div>

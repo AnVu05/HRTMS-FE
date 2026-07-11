@@ -4,7 +4,7 @@ import { Trophy, Mail, Lock, ArrowRight, KeyRound, ArrowLeft } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { authApi } from '@/api/authApi';
+import { authApi } from '@/services/auth.service';
 import { toast } from 'sonner';
 
 export default function Login() {
@@ -14,19 +14,49 @@ export default function Login() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
+  const handleLoginSuccess = (response) => {
+    if (response && response.user && response.token) {
+      toast.success('Login successful!');
+      localStorage.setItem("access_token", response.token);
+      localStorage.setItem("user_role", response.user.role);
+      localStorage.setItem("user_id", response.user.id);
+
+      const role = response.user.role;
+      if (role === "ADMIN") {
+        window.location.href = "/admin";
+      } else if (role === "DOCTOR") {
+        window.location.href = "/doctor/health-check";
+      } else if (role === "HORSE_OWNER") {
+        window.location.href = "/owner-home";
+      } else if (role === "JOCKEY") {
+        window.location.href = "/jockey/home";
+      } else if (role === "REFEREE") {
+        window.location.href = "/referee/home";
+      } else if (role === "SPECTATOR") {
+        window.location.href = "/spectator/home";
+      } else {
+        window.location.href = "/portal";
+      }
+    }
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error('Please enter email and password');
       return;
     }
-    
+
     setLoading(true);
     try {
       const response = await authApi.login({ email, password });
-      if (response && response.otpRequired) {
-        toast.success('Verification code sent to your email');
-        setStep(2);
+      if (response) {
+        if (response.otpRequired) {
+          toast.success('Verification code sent to your email');
+          setStep(2);
+        } else if (response.token) {
+          handleLoginSuccess(response);
+        }
       }
     } catch (err) {
       // Error handled by axios interceptor
@@ -46,16 +76,7 @@ export default function Login() {
     setLoading(true);
     try {
       const response = await authApi.verifyOtp({ email, otpCode: otp });
-      toast.success('Login successful!');
-      
-      // Based on user role, redirect or update state.
-      if (response && response.user && response.token) {
-        localStorage.setItem("access_token", response.token);
-        localStorage.setItem("user_role", response.user.role);
-        localStorage.setItem("user_id", response.user.id);
-        
-        window.location.href = "/";
-      }
+      handleLoginSuccess(response);
     } catch (err) {
       // Error handled by axios interceptor
       console.error(err);
@@ -69,13 +90,13 @@ export default function Login() {
       {/* Visual Side */}
       <div className="hidden lg:flex lg:w-1/2 bg-slate-950 relative overflow-hidden flex-col justify-between p-12">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-slate-950 to-slate-950"></div>
-        
+
         {/* Abstract decorative shape */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-        
+
         <div className="relative z-10">
-          <Link href="/">
+          <Link href="/portal">
             <div className="flex items-center gap-2 text-white cursor-pointer inline-flex" data-testid="login-logo-link">
               <div className="flex h-10 w-10 items-center justify-center rounded bg-primary text-primary-foreground">
                 <Trophy className="h-6 w-6" />
@@ -84,7 +105,7 @@ export default function Login() {
             </div>
           </Link>
         </div>
-        
+
         <div className="relative z-10 max-w-lg">
           <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
             The world's premier platform for elite racing management.
@@ -92,7 +113,7 @@ export default function Login() {
           <p className="text-slate-400 text-lg mb-8">
             Access real-time tournament data, track jockey performance, and follow the action across every circuit.
           </p>
-          
+
           <div className="flex items-center gap-4 text-sm font-medium text-slate-300">
             <div className="flex -space-x-3">
               <div className="w-10 h-10 rounded-full border-2 border-slate-950 bg-slate-800 flex items-center justify-center">🇻🇳</div>
@@ -108,7 +129,7 @@ export default function Login() {
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-12 md:p-20 relative">
         {/* Mobile Logo */}
         <div className="absolute top-8 left-8 lg:hidden">
-          <Link href="/">
+          <Link href="/portal">
             <div className="flex items-center gap-2 cursor-pointer">
               <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground">
                 <Trophy className="h-5 w-5" />
@@ -132,9 +153,9 @@ export default function Login() {
                     <Label htmlFor="email" className="text-slate-700">Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                      <Input 
-                        id="email" 
-                        type="email" 
+                      <Input
+                        id="email"
+                        type="email"
                         placeholder="name@example.com"
                         className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white"
                         value={email}
@@ -144,18 +165,20 @@ export default function Login() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <Label htmlFor="password" className="text-slate-700">Password</Label>
-                      <a href="/forgot-password" className="text-sm font-medium text-primary hover:underline">Forgot password?</a>
+                      <Link href="/portal/forgot-password">
+                        <span className="text-sm font-medium text-primary hover:underline cursor-pointer">Forgot password?</span>
+                      </Link>
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                      <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="••••••••"
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="password"
                         className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -179,7 +202,7 @@ export default function Login() {
                 </div>
                 <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Two-Step Verification</h1>
                 <p className="text-slate-500">
-                  We sent a verification code to <br/>
+                  We sent a verification code to <br />
                   <span className="font-medium text-slate-900">{email}</span>
                 </p>
               </div>
@@ -188,9 +211,9 @@ export default function Login() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="otp" className="text-slate-700">Verification Code</Label>
-                    <Input 
-                      id="otp" 
-                      type="text" 
+                    <Input
+                      id="otp"
+                      type="text"
                       placeholder="Enter 6-digit code"
                       className="text-center text-xl tracking-[0.25em] font-mono h-14 bg-slate-50 border-slate-200 focus:bg-white"
                       value={otp}
@@ -215,13 +238,13 @@ export default function Login() {
 
           <div className="mt-8 text-center text-slate-500">
             Don't have an account?{' '}
-            <Link href="/register" className="font-bold text-primary hover:underline" data-testid="link-register">
+            <Link href="/portal/register" className="font-bold text-primary hover:underline" data-testid="link-register">
               Create one now
             </Link>
           </div>
-          
+
           <div className="mt-12 text-center">
-            <Link href="/" className="text-sm text-slate-400 hover:text-slate-600 font-medium" data-testid="link-back-portal">
+            <Link href="/portal" className="text-sm text-slate-400 hover:text-slate-600 font-medium" data-testid="link-back-portal">
               ← Back to Portal Home
             </Link>
           </div>

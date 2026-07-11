@@ -28,7 +28,7 @@ export default function PortalTournamentDetail() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 opacity-80"></div>
 
         <div className="container mx-auto px-4 md:px-6 relative z-10">
-          <Link href="/portal/spectator/tournaments">
+          <Link href="/spectator/tournaments">
             <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800 mb-8 -ml-4" data-testid="btn-back">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Tournaments
             </Button>
@@ -141,7 +141,7 @@ export default function PortalTournamentDetail() {
                         </Badge>
                       </td>
                       <td className="px-6 py-5 text-right">
-                        <Link href={`/portal/spectator/races/${race.id}`}>
+                        <Link href={`/spectator/races/${race.id}`}>
                           <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10" data-testid={`btn-view-race-${race.id}`}>
                             Details
                           </Button>
