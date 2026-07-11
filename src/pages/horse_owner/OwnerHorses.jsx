@@ -24,8 +24,6 @@ const statusColor = {
   RETIRED: 'bg-gray-100 text-gray-600',
 };
 
-const ownerId = localStorage.getItem("user_id");
-
 function HorseFormDialog({ mode = 'add', initialData = null, trigger, onSave }) {
   const isEdit = mode === 'edit';
   const [isOpen, setIsOpen] = useState(false);
@@ -120,11 +118,12 @@ function HorseFormDialog({ mode = 'add', initialData = null, trigger, onSave }) 
 export default function OwnerHorses() {
   const [horses, setHorses] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  
   const fetchHorses = async () => {
     try {
       setLoading(true);
-      const data = await ownerApi.getHorsesByOwner(ownerId);
+      const currentOwnerId = localStorage.getItem("user_id");
+      const data = await ownerApi.getHorsesByOwner(currentOwnerId);
       setHorses(data || []);
     } catch (err) {
       console.error("Failed to load horses", err);
@@ -138,9 +137,10 @@ export default function OwnerHorses() {
   }, []);
 
   const handleSave = async (horseData) => {
+    const currentOwnerId = localStorage.getItem("user_id");
     const payload = {
       ...horseData,
-      ownerId: parseInt(ownerId),
+      owner_id: parseInt(currentOwnerId),
       age: parseInt(horseData.age),
       weightKg: parseFloat(horseData.weightKg)
     };
