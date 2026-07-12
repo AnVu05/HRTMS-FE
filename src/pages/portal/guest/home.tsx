@@ -4,6 +4,7 @@ import { Trophy, Flag, Users, ArrowRight, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ownerApi } from '@/services/owner.service';
+import { jockeyService } from '@/services/jockey.service';
 
 const statusColor: Record<string, string> = {
   Active: 'bg-green-100 text-green-700',
@@ -28,7 +29,7 @@ export default function PortalHome() {
           name: t.name,
           location: t.location || 'Vietnam',
           status: t.status === 'ACTIVE' ? 'Active' : t.status === 'UPCOMING' ? 'Upcoming' : 'Completed',
-          prize: t.prizePool ? `$${t.prizePool.toLocaleString()}` : '$500,000',
+          
           date: t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'TBD',
           races: t.raceCount || 8
         })));
@@ -45,7 +46,7 @@ export default function PortalHome() {
           tournament: r.tournament_name || 'Tournament',
           date: r.date || 'TBD',
           distance: r.distance_m ? `${r.distance_m}m` : '1200m',
-          prize: r.prize ? `$${r.prize.toLocaleString()}` : '$50,000'
+          
         })));
       } else {
         setRaces([]);
@@ -55,14 +56,28 @@ export default function PortalHome() {
         const jRes = await ownerApi.getJockeys();
         const jList = jRes.data || jRes || [];
         if (Array.isArray(jList)) {
-          setJockeys(jList.slice(0, 4).map((j: any) => ({
-            id: String(j.id || j.jockeyId),
-            name: j.jockeyName || j.username || 'Jockey',
-            flag: '🇻🇳',
-            nationality: j.nationality || 'Vietnam',
-            winRate: j.winRate || 65,
-            earnings: j.earnings ? `$${j.earnings.toLocaleString()}` : '$150,000'
-          })));
+          const topJockeys = jList.slice(0, 4);
+          const detailedJockeys = await Promise.all(
+            topJockeys.map(async (j: any) => {
+              const jockeyId = j.id || j.jockeyId;
+              let completedRaces = 0;
+              try {
+                const countRes = await jockeyService.getCompletedRacesCount(jockeyId);
+                completedRaces = countRes?.data !== undefined ? countRes.data : (countRes || 0);
+              } catch (err) {
+                console.error(`Failed to fetch completed races count for jockey ${jockeyId}`, err);
+              }
+              return {
+                id: String(jockeyId),
+                name: j.jockeyName || j.username || 'Jockey',
+                flag: '🇻🇳',
+                nationality: j.nationality || 'Vietnam',
+                winRate: j.winRate || 65,
+                completedRaces: completedRaces
+              };
+            })
+          );
+          setJockeys(detailedJockeys);
         } else {
           setJockeys([]);
         }
@@ -128,7 +143,7 @@ export default function PortalHome() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-semibold text-gray-700 hidden sm:block">{t.prize}</span>
+
                     <Link href={`/portal/tournaments/${t.id}`}>
                       <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-tournament-${t.id}`}>Details</button>
                     </Link>
@@ -156,7 +171,7 @@ export default function PortalHome() {
                     <p className="text-xs text-gray-400">{r.tournament} · {r.date} · {r.distance}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-semibold text-gray-700 hidden sm:block">{r.prize}</span>
+
                     <Link href={`/portal/races/${r.id}`}>
                       <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-race-${r.id}`}>Details</button>
                     </Link>
@@ -195,8 +210,8 @@ export default function PortalHome() {
                   <p className="text-xs text-gray-400">Win Rate</p>
                 </div>
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">{j.earnings}</p>
-                  <p className="text-xs text-gray-400">Earnings</p>
+                  <p className="text-sm font-semibold text-gray-900">{j.completedRaces}</p>
+                  <p className="text-xs text-gray-400">Races Completed</p>
                 </div>
                 <Link href={`/portal/jockeys/${j.id}`}>
                   <button className="text-xs text-blue-600 hover:underline" data-testid={`btn-jockey-${j.id}`}>Profile</button>

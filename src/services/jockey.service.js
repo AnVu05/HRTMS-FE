@@ -14,6 +14,12 @@ export const jockeyService = {
     });
   },
 
+  getCompletedRacesCount(jockeyId) {
+    return apiRequest(`/api/jockeys/${jockeyId}/completed-races/count`, {
+      method: 'GET',
+    });
+  },
+
   updateProfile(jockeyId, payload) {
     return apiRequest(`/api/jockeys/${jockeyId}/profile`, {
       method: 'PUT',

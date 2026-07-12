@@ -24,7 +24,7 @@ export default function PortalTournamentDetail() {
           name: tData.name,
           location: tData.location || 'Vietnam',
           status: tData.status === 'ACTIVE' ? 'Active' : tData.status === 'UPCOMING' ? 'Upcoming' : tData.status === 'COMPLETED' ? 'Completed' : tData.status || 'Upcoming',
-          prize: tData.prizePool || tData.prize || 500000,
+         
           date: tData.start_date && tData.end_date ? `${tData.start_date} - ${tData.end_date}` : 'TBD',
           raceCount: tData.raceCount || 8,
           maxParticipants: tData.maxParticipants || 24,
@@ -45,8 +45,8 @@ export default function PortalTournamentDetail() {
           date: r.date || 'TBD',
           distance: r.distanceM ? `${r.distanceM}m` : r.distance_m ? `${r.distance_m}m` : '1200m',
           condition: r.condition || 'Good',
-          prize: r.prize || 50000,
-          status: r.status === 'COMPLETED' ? 'Completed' : r.status === 'IN_PROGRESS' ? 'In Progress' : r.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled'
+         
+          status: (r.status === 'COMPLETE' || r.status === 'COMPLETED') ? 'Completed' : (r.status === 'ONGOING' || r.status === 'IN_PROGRESS') ? 'In Progress' : r.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled'
         })));
       } else {
         setRaces([]);
@@ -96,7 +96,7 @@ export default function PortalTournamentDetail() {
                 }>
                   {tournament.status}
                 </Badge>
-                <span className="text-primary font-bold tracking-wide">${tournament.prize.toLocaleString()} Prize Pool</span>
+                
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight leading-tight text-slate-400">
@@ -155,7 +155,7 @@ export default function PortalTournamentDetail() {
                     <th className="px-6 py-4 font-medium">Race Name</th>
                     <th className="px-6 py-4 font-medium">Date</th>
                     <th className="px-6 py-4 font-medium">Distance</th>
-                    <th className="px-6 py-4 font-medium text-right">Prize</th>
+                   
                     <th className="px-6 py-4 font-medium text-center">Status</th>
                     <th className="px-6 py-4 font-medium text-right">Action</th>
                   </tr>
@@ -172,9 +172,7 @@ export default function PortalTournamentDetail() {
                       <td className="px-6 py-5 text-slate-600">
                         {race.distance}
                       </td>
-                      <td className="px-6 py-5 text-right font-bold text-amber-600">
-                        ${race.prize.toLocaleString()}
-                      </td>
+                    
                       <td className="px-6 py-5 text-center">
                         <Badge className={
                           race.status === 'Completed' ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' :

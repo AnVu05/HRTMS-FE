@@ -6,12 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { jockeyService } from '@/services/jockey.service';
 
-
-export default function PortalJockeyProfile() {
+export default function OwnerJockeyProfile() {
   const { id } = useParams();
-  const [jockeyData, setJockeyData] = useState<any>(null);
+  const [jockeyData, setJockeyData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -46,7 +45,7 @@ export default function PortalJockeyProfile() {
     );
   }
 
-  const getAvatarSrc = (avatar: string | null) => {
+  const getAvatarSrc = (avatar) => {
     if (!avatar) return null;
     if (avatar.startsWith('data:image/') || avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('/')) {
       return avatar;
@@ -81,7 +80,7 @@ export default function PortalJockeyProfile() {
       <div className="bg-slate-950 text-white pt-12 pb-24 relative overflow-hidden">
         <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-primary/10 to-transparent pointer-events-none"></div>
         <div className="container mx-auto px-4 md:px-6 relative z-10">
-          <Link href="/portal/jockeys">
+          <Link href="/owner-home/jockeys">
             <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-slate-800 mb-6 -ml-4" data-testid="btn-back">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory
             </Button>

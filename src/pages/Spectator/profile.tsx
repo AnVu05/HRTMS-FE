@@ -11,7 +11,7 @@ import { spectatorService } from '@/services/spectator.service';
 export default function PortalSpectatorProfile() {
   // Use a default spectator ID (e.g. 2) since there is no session manager, but allow configuring
   const [spectatorId, setSpectatorId] = useState<number>(() => {
-    return Number(localStorage.getItem('spectator_id') || '2');
+    return Number(localStorage.getItem('user_id') || localStorage.getItem('spectator_id') || '2');
   });
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -155,19 +155,6 @@ export default function PortalSpectatorProfile() {
               </Link>
               <Button onClick={fetchProfile} className="bg-red-600 hover:bg-red-700 text-white">Retry Fetch</Button>
             </div>
-            <div className="mt-6 flex justify-center items-center gap-2 border-t pt-4">
-              <span className="text-xs text-slate-500">Configure ID:</span>
-              <Input 
-                type="number" 
-                value={spectatorId} 
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setSpectatorId(val);
-                  localStorage.setItem('spectator_id', String(val));
-                }} 
-                className="w-16 h-8 text-xs" 
-              />
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -184,19 +171,6 @@ export default function PortalSpectatorProfile() {
             <ArrowLeft className="h-4 w-4" /> Back to Portal Home
           </Button>
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500 font-medium">Spectator ID:</span>
-          <Input 
-            type="number" 
-            value={spectatorId} 
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setSpectatorId(val);
-              localStorage.setItem('spectator_id', String(val));
-            }} 
-            className="w-20 h-9" 
-          />
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { spectatorService } from '@/services/spectator.service';
 import { ownerApi } from '@/services/owner.service';
+import { raceApi } from '@/services/race.service';
 
 export default function PortalRaceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ export default function PortalRaceDetail() {
   const [race, setRace] = useState<any>(null);
   const [lineup, setLineup] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
+  const [photoFinishImage, setPhotoFinishImage] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   // Retrieve spectatorId dynamically from localStorage or default to 2
@@ -47,25 +49,85 @@ export default function PortalRaceDetail() {
           date: raceData.date || 'TBD',
           distance: raceData.distance_m ? `${raceData.distance_m}m` : '1200m',
           condition: raceData.condition || 'Good',
-          prize: raceData.prize || 50000,
-          status: raceData.status === 'COMPLETED' ? 'Completed' : raceData.status === 'IN_PROGRESS' ? 'In Progress' : raceData.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled',
+          
+          status: (raceData.status === 'COMPLETE' || raceData.status === 'COMPLETED') ? 'Completed' : (raceData.status === 'ONGOING' || raceData.status === 'IN_PROGRESS') ? 'In Progress' : raceData.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled',
           reason: raceData.reason
         });
 
-        if (raceData.status === 'COMPLETED') {
-          // Fetch results
-          const resultRes = await ownerApi.getRaceResults(id);
-          const resultList = resultRes.data || resultRes || [];
-          if (Array.isArray(resultList)) {
-            setResults(resultList.map((r: any) => ({
-              id: r.pos || r.position,
-              position: r.pos || r.position,
-              jockey: r.jockey || 'Jockey',
-              horse: r.horse || 'Horse',
-              time: r.finishTime || '--:--.--',
-              prize: r.prize || 0,
-              medal: (r.pos === 1 || r.position === 1) ? 'gold' : (r.pos === 2 || r.position === 2) ? 'silver' : (r.pos === 3 || r.position === 3) ? 'bronze' : null
-            })));
+        if (raceData.status === 'COMPLETE' || raceData.status === 'COMPLETED') {
+          // Fetch lineup first so we can map names
+          const lineupRes = await ownerApi.getRaceStartingLineup(id);
+          const lineupList = lineupRes.data || lineupRes || [];
+          const mappedLineup = Array.isArray(lineupList) ? lineupList.map((p: any) => ({
+            id: p.id,
+            horse_id: p.horseId || p.horse_id,
+            jockey: p.jockeyName || p.jockey_name || 'Jockey',
+            horse: p.horseName || p.horse_name || 'Horse'
+          })) : [];
+          setLineup(mappedLineup);
+
+          // Fetch results from /raceresults
+          try {
+            const resultsRes = await raceApi.getAllRaceResults();
+            const resultsList = resultsRes.data || resultsRes || [];
+            if (Array.isArray(resultsList)) {
+              const match = resultsList.find((r: any) => r.raceId === Number(id));
+              if (match) {
+                // Fetch detail: /api/raceresults/{id}
+                const detailRes = await raceApi.getRaceResultById(match.id);
+                const detailData = detailRes.data || detailRes;
+                setPhotoFinishImage(detailData.photoFinishImage || '');
+
+                // Fetch placements
+                const placementsRes = await raceApi.getAllPlacements();
+                const placementsList = placementsRes.data || placementsRes || [];
+                if (Array.isArray(placementsList)) {
+                  const filteredPlacements = placementsList.filter((p: any) => p.raceResultId === match.id);
+                  
+                  // Sort by position ascending
+                  filteredPlacements.sort((a, b) => (a.finishPosition || 99) - (b.finishPosition || 99));
+
+                  setResults(filteredPlacements.map((p: any) => {
+                    const participant = mappedLineup.find(l => Number(l.id) === Number(p.registrationFormId));
+                    let formattedTime = '--:--.--';
+                    if (p.finishTime) {
+                      try {
+                        const dateObj = new Date(p.finishTime);
+                        if (!isNaN(dateObj.getTime())) {
+                          formattedTime = dateObj.toTimeString().split(' ')[0];
+                        }
+                      } catch (e) {}
+                    }
+                    return {
+                      id: p.id,
+                      position: p.finishPosition,
+                      jockey: participant?.jockey || 'Jockey',
+                      horse: participant?.horse || 'Horse',
+                      time: formattedTime,
+                      weight: p.weighInWeight ? `${p.weighInWeight} kg` : 'N/A',
+                      medal: p.finishPosition === 1 ? 'gold' : p.finishPosition === 2 ? 'silver' : p.finishPosition === 3 ? 'bronze' : null
+                    };
+                  }));
+                }
+              } else {
+                // Fallback to basic results API if no raceresults row matches
+                const resultRes = await ownerApi.getRaceResults(id);
+                const resultList = resultRes.data || resultRes || [];
+                if (Array.isArray(resultList)) {
+                  setResults(resultList.map((r: any) => ({
+                    id: r.pos || r.position,
+                    position: r.pos || r.position,
+                    jockey: r.jockeyName || r.jockey || 'Jockey',
+                    horse: r.horseName || r.horse || 'Horse',
+                    time: r.finishTime || '--:--.--',
+                    weight: 'N/A',
+                    medal: (r.pos === 1 || r.position === 1) ? 'gold' : (r.pos === 2 || r.position === 2) ? 'silver' : (r.pos === 3 || r.position === 3) ? 'bronze' : null
+                  })));
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load official results:', e);
           }
         } else {
           // Fetch lineup
@@ -73,9 +135,9 @@ export default function PortalRaceDetail() {
           const lineupList = lineupRes.data || lineupRes || [];
           if (Array.isArray(lineupList)) {
             setLineup(lineupList.map((p: any) => ({
-              id: p.horse_id,
-              jockey: p.jockey_name || 'Jockey',
-              horse: p.horse_name || 'Horse'
+              id: p.horseId || p.horse_id,
+              jockey: p.jockeyName || p.jockey_name || 'Jockey',
+              horse: p.horseName || p.horse_name || 'Horse'
             })));
           }
         }
@@ -199,10 +261,6 @@ export default function PortalRaceDetail() {
             
             <div className="bg-slate-900 rounded-xl p-4 border border-slate-800 w-full md:w-auto shrink-0 flex gap-8">
               <div>
-                <div className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Prize Purse</div>
-                <div className="text-2xl font-bold text-amber-500">${race.prize.toLocaleString()}</div>
-              </div>
-              <div>
                 <div className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Distance</div>
                 <div className="text-2xl font-bold">{race.distance}</div>
               </div>
@@ -222,29 +280,6 @@ export default function PortalRaceDetail() {
           </div>
         )}
         
-        {/* Race Conditions Info Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-8 flex flex-wrap gap-8 items-center">
-          <div className="flex items-center gap-3 text-slate-700">
-            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
-              <Flag className="h-5 w-5 text-slate-500" />
-            </div>
-            <div>
-              <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Track Condition</div>
-              <div className="font-bold text-lg">{race.condition}</div>
-            </div>
-          </div>
-          <div className="h-10 w-px bg-slate-200 hidden sm:block"></div>
-          <div className="flex items-center gap-3 text-slate-700">
-            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-slate-500" />
-            </div>
-            <div>
-              <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Location</div>
-              <div className="font-bold text-lg">Hanoi Turf Club</div>
-            </div>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Lineup / Results */}
           <div className="lg:col-span-2 space-y-8">
@@ -265,7 +300,7 @@ export default function PortalRaceDetail() {
                           <th className="px-6 py-4 font-semibold">Jockey</th>
                           <th className="px-6 py-4 font-semibold">Horse</th>
                           <th className="px-6 py-4 font-semibold">Time</th>
-                          <th className="px-6 py-4 font-semibold text-right">Prize</th>
+                          <th className="px-6 py-4 font-semibold">Weight</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -297,8 +332,8 @@ export default function PortalRaceDetail() {
                             <td className="px-6 py-5 font-mono text-slate-600">
                               {result.time}
                             </td>
-                            <td className="px-6 py-5 text-right font-bold text-green-600">
-                              ${result.prize.toLocaleString()}
+                            <td className="px-6 py-5 font-medium text-slate-700">
+                              {result.weight}
                             </td>
                           </tr>
                         ))}
@@ -356,6 +391,26 @@ export default function PortalRaceDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {photoFinishImage && (
+              <Card className="bg-white shadow-md border-slate-200 overflow-hidden">
+                <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Flag className="h-5 w-5 text-red-500" /> Photo Finish Verification
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 flex flex-col items-center justify-center">
+                  <img 
+                    src={photoFinishImage} 
+                    alt="Photo Finish" 
+                    className="max-h-96 rounded border border-slate-200 object-contain shadow-sm"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Place Prediction Card */}

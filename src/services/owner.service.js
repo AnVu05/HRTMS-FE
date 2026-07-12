@@ -29,10 +29,10 @@ export const ownerApi = {
     return axiosClient.get(`/registrationforms/race/${id}/racing`);
   },
   getJockeys: () => {
-    return axiosClient.get('/portal/jockeys');
+    return axiosClient.get('/jockeys');
   },
   getJockeyProfile: (id) => {
-    return axiosClient.get(`/portal/jockeys/${id}/profile`);
+    return axiosClient.get(`/jockeys/${id}/profile`);
   },
   getHorsesByOwner: (ownerId) => {
     return axiosClient.get(`/horses/owner/${ownerId}`);
@@ -42,6 +42,9 @@ export const ownerApi = {
   },
   updateHorse: (id, data) => {
     return axiosClient.put(`/horses/${id}`, data);
+  },
+  getHorseById: (id) => {
+    return axiosClient.get(`/horses/${id}`);
   },
   getRegistrationsByOwner: (ownerId) => {
     return axiosClient.get(`/registrationforms/owner/${ownerId}`);

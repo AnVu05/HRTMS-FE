@@ -24,7 +24,7 @@ export default function PortalTournaments() {
           name: t.name,
           location: t.location || 'Vietnam',
           status: t.status === 'ACTIVE' ? 'Active' : t.status === 'UPCOMING' ? 'Upcoming' : t.status === 'COMPLETED' ? 'Completed' : t.status || 'Upcoming',
-          prize: t.prizePool || t.prize || 500000,
+          
           date: t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'TBD',
           raceCount: t.raceCount || 8,
           maxParticipants: t.maxParticipants || 24,
@@ -93,9 +93,7 @@ export default function PortalTournaments() {
                       {tournament.status}
                     </Badge>
                   </div>
-                  <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md text-white px-3 py-1 rounded-full text-sm font-bold border border-white/20 shadow-lg">
-                    ${tournament.prize.toLocaleString()} Pool
-                  </div>
+                  
                   <div className="absolute bottom-4 left-4 right-4">
                     <h3 className="text-2xl font-bold text-white mb-1 drop-shadow-md group-hover:text-primary transition-colors">
                       {tournament.name}

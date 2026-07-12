@@ -81,7 +81,7 @@ export default function RefereeDashboard() {
     }
   };
 
-  const activeRacesCount = scheduledRaces.filter(r => r.status === 'IN_PROGRESS').length;
+  const activeRacesCount = scheduledRaces.filter(r => r.status === 'ONGOING').length;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:px-6 space-y-10 animate-in fade-in duration-500">
@@ -269,7 +269,7 @@ export default function RefereeDashboard() {
                       </Badge>
                       <Badge className={
                         race.status === 'COMPLETED' ? 'bg-slate-200 text-slate-700 hover:bg-slate-200' :
-                          race.status === 'IN_PROGRESS' ? 'bg-green-500 text-white animate-pulse' :
+                          race.status === 'ONGOING' ? 'bg-green-500 text-white animate-pulse' :
                             race.status === 'CANCELLED' ? 'bg-red-100 text-red-700 hover:bg-red-100' :
                               'bg-blue-100 text-blue-700 hover:bg-blue-100'
                       }>
@@ -299,10 +299,10 @@ export default function RefereeDashboard() {
                     <Link href={`/referee/races/${race.id}`} className="w-full">
                       <Button
                         size="sm"
-                        variant={race.status === 'IN_PROGRESS' || race.status === 'SCHEDULED' ? 'default' : 'outline'}
+                        variant={race.status === 'ONGOING' || race.status === 'SCHEDULED' ? 'default' : 'outline'}
                         className="font-bold w-full md:w-auto flex items-center justify-center gap-1 px-4"
                       >
-                        {race.status === 'IN_PROGRESS' || race.status === 'SCHEDULED' ? (
+                        {race.status === 'ONGOING' || race.status === 'SCHEDULED' ? (
                           <>
                             <Play className="h-3.5 w-3.5" /> Control Race
                           </>

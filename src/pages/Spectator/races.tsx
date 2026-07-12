@@ -27,8 +27,8 @@ export default function PortalRaces() {
           date: r.date || 'TBD',
           distance: r.distance_m ? `${r.distance_m}m` : '1200m',
           condition: r.condition || 'Good',
-          prize: r.prize || 50000,
-          status: r.status === 'COMPLETED' ? 'Completed' : r.status === 'IN_PROGRESS' ? 'In Progress' : r.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled'
+          
+          status: (r.status === 'COMPLETE' || r.status === 'COMPLETED') ? 'Completed' : (r.status === 'ONGOING' || r.status === 'IN_PROGRESS') ? 'In Progress' : r.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled'
         })));
       } else {
         setRaces([]);
@@ -119,19 +119,11 @@ export default function PortalRaces() {
                           <h3 className="text-xl font-bold text-slate-900">{race.name}</h3>
                         </div>
 
-                        <div className="text-left md:text-right">
-                          <div className="text-sm text-slate-500 uppercase tracking-wider font-semibold mb-1">Prize Purse</div>
-                          <div className="text-xl font-bold text-amber-600">${race.prize.toLocaleString()}</div>
-                        </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-4 mt-4 text-sm">
                         <div className="flex items-center gap-1.5 text-slate-600">
                           <Flag className="h-4 w-4 text-slate-400" /> {race.distance}
-                        </div>
-                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                        <div className="flex items-center gap-1.5 text-slate-600">
-                          Track: <span className="font-medium text-slate-800">{race.condition}</span>
                         </div>
                         <div className="w-1 h-1 rounded-full bg-slate-300"></div>
                         <Badge className={

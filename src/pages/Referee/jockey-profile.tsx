@@ -6,13 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { jockeyService } from '@/services/jockey.service';
 
-const MOCK_HISTORY = [
-  { id: '1', date: 'Oct 15 2023', race: 'Opening Sprint', tournament: 'Hanoi Grand Prix', horse: 'Thunderbolt', position: 1, prize: 50000 },
-  { id: '2', date: 'Oct 02 2023', race: 'Autumn Dash', tournament: 'Exhibition Series', horse: 'Crimson Sky', position: 2, prize: 15000 },
-  { id: '3', date: 'Sep 14 2023', race: 'Valley Cup', tournament: 'Mekong Valley Classic', horse: 'River Spirit', position: 1, prize: 100000 },
-  { id: '4', date: 'Aug 22 2023', race: 'Coastal Final', tournament: 'Coastal Cup', horse: 'Ocean Whisper', position: 3, prize: 5000 },
-  { id: '5', date: 'Jul 10 2023', race: 'Summer Heat', tournament: 'National Qualifiers', horse: 'Thunderbolt', position: 1, prize: 20000 },
-];
 
 export default function PortalJockeyProfile() {
   const { id } = useParams();
@@ -155,56 +148,6 @@ export default function PortalJockeyProfile() {
                 <p className="text-slate-600 leading-relaxed text-lg">
                   {jockey.bio}
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white shadow-sm border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-xl">Recent Race History</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
-                      <tr>
-                        <th className="px-6 py-4 font-semibold">Date</th>
-                        <th className="px-6 py-4 font-semibold">Race & Tournament</th>
-                        <th className="px-6 py-4 font-semibold">Horse</th>
-                        <th className="px-6 py-4 font-semibold text-center">Finish</th>
-                        <th className="px-6 py-4 font-semibold text-right">Prize Won</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {MOCK_HISTORY.map((race) => (
-                        <tr key={race.id} className="bg-white hover:bg-slate-50/80 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-slate-600 flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-slate-400" /> {race.date}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="font-medium text-slate-900">{race.race}</div>
-                            <div className="text-slate-500 text-xs">{race.tournament}</div>
-                          </td>
-                          <td className="px-6 py-4 font-medium text-slate-700">
-                            {race.horse}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <Badge variant="outline" className={
-                              race.position === 1 ? 'border-amber-400 bg-amber-50 text-amber-700 font-bold' :
-                                race.position === 2 ? 'border-slate-300 bg-slate-100 text-slate-700 font-bold' :
-                                  race.position === 3 ? 'border-amber-700/40 bg-amber-900/5 text-amber-900 font-bold' :
-                                    'bg-transparent'
-                            }>
-                              {race.position}{race.position === 1 ? 'st' : race.position === 2 ? 'nd' : race.position === 3 ? 'rd' : 'th'}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-right font-medium text-green-600">
-                            ${race.prize.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               </CardContent>
             </Card>
           </div>

@@ -46,9 +46,82 @@ import ForgotPassword from '@/pages/portal/ForgotPassword';
 import Forbidden from '@/pages/portal/Forbidden';
 
 // Other Portals
-import AdminApp from '@/pages/admin/AdminApp';
-import DoctorApp from '@/pages/doctor/DoctorApp';
-import OwnerApp from '@/pages/horse_owner/OwnerApp';
+import { AdminLayout } from '@/pages/admin/AdminLayout';
+import { Dashboard as AdminDashboard } from '@/pages/admin/Dashboard';
+import { Tournaments as AdminTournaments } from '@/pages/admin/Tournaments';
+import { Races as AdminRaces } from '@/pages/admin/Races';
+import { Medical as AdminMedical } from '@/pages/admin/Medical';
+import { Verifications as AdminVerifications } from '@/pages/admin/Verifications';
+import { SystemData as AdminSystemData } from '@/pages/admin/SystemData';
+import { DoctorLayout } from '@/pages/doctor/DoctorLayout';
+import { HealthChecking as DoctorHealthChecking } from '@/pages/doctor/HealthChecking';
+import { OwnerLayout } from '@/pages/horse_owner/OwnerLayout';
+import OwnerHome from '@/pages/horse_owner/OwnerHome';
+import OwnerJockeys from '@/pages/horse_owner/OwnerJockeys';
+import OwnerTournaments from '@/pages/horse_owner/OwnerTournaments';
+import OwnerTournamentDetail from '@/pages/horse_owner/OwnerTournamentDetail';
+import OwnerRaceDetail from '@/pages/horse_owner/OwnerRaceDetail';
+import OwnerProfile from '@/pages/horse_owner/OwnerProfile';
+import OwnerJockeyProfile from '@/pages/horse_owner/OwnerJockeyProfile';
+import { OwnerManagementLayout } from '@/pages/horse_owner/OwnerManagementLayout';
+import OwnerHorses from '@/pages/horse_owner/OwnerHorses';
+import OwnerRegistrations from '@/pages/horse_owner/OwnerRegistrations';
+
+function ProtectedAdminRoute({ path, component: Component }: { path: string; component: React.ComponentType<any> }) {
+  return (
+    <Route path={path}>
+      {(params) => (
+        <ProtectedRoute allowedRoles={['ADMIN']}>
+          <AdminLayout>
+            <Component {...params} />
+          </AdminLayout>
+        </ProtectedRoute>
+      )}
+    </Route>
+  );
+}
+
+function ProtectedDoctorRoute({ path, component: Component }: { path: string; component: React.ComponentType<any> }) {
+  return (
+    <Route path={path}>
+      {(params) => (
+        <ProtectedRoute allowedRoles={['DOCTOR']}>
+          <DoctorLayout>
+            <Component {...params} />
+          </DoctorLayout>
+        </ProtectedRoute>
+      )}
+    </Route>
+  );
+}
+
+function ProtectedOwnerHomeRoute({ path, component: Component }: { path: string; component: React.ComponentType<any> }) {
+  return (
+    <Route path={path}>
+      {(params) => (
+        <ProtectedRoute allowedRoles={['HORSE_OWNER']}>
+          <OwnerLayout>
+            <Component {...params} />
+          </OwnerLayout>
+        </ProtectedRoute>
+      )}
+    </Route>
+  );
+}
+
+function ProtectedOwnerManagementRoute({ path, component: Component }: { path: string; component: React.ComponentType<any> }) {
+  return (
+    <Route path={path}>
+      {(params) => (
+        <ProtectedRoute allowedRoles={['HORSE_OWNER']}>
+          <OwnerManagementLayout>
+            <Component {...params} />
+          </OwnerManagementLayout>
+        </ProtectedRoute>
+      )}
+    </Route>
+  );
+}
 
 // Guest / Vãng Lai Pages
 import GuestHome from '@/pages/portal/guest/home';
@@ -115,38 +188,27 @@ function Router() {
   return (
     <Switch>
       {/* Admin Portal */}
-      <Route path="/admin*">
-        {() => (
-          <ProtectedRoute allowedRoles={['ADMIN']}>
-            <AdminApp />
-          </ProtectedRoute>
-        )}
-      </Route>
+      <ProtectedAdminRoute path="/admin" component={AdminDashboard} />
+      <ProtectedAdminRoute path="/admin/tournaments" component={AdminTournaments} />
+      <ProtectedAdminRoute path="/admin/races" component={AdminRaces} />
+      <ProtectedAdminRoute path="/admin/medical" component={AdminMedical} />
+      <ProtectedAdminRoute path="/admin/verifications" component={AdminVerifications} />
+      <ProtectedAdminRoute path="/admin/system-data" component={AdminSystemData} />
 
       {/* Doctor Portal */}
-      <Route path="/doctor*">
-        {() => (
-          <ProtectedRoute allowedRoles={['DOCTOR']}>
-            <DoctorApp />
-          </ProtectedRoute>
-        )}
-      </Route>
+      <ProtectedDoctorRoute path="/doctor" component={DoctorHealthChecking} />
+      <ProtectedDoctorRoute path="/doctor/health-check" component={DoctorHealthChecking} />
 
       {/* Horse Owner Portal */}
-      <Route path="/owner-home*">
-        {() => (
-          <ProtectedRoute allowedRoles={['HORSE_OWNER']}>
-            <OwnerApp />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path="/owner-management*">
-        {() => (
-          <ProtectedRoute allowedRoles={['HORSE_OWNER']}>
-            <OwnerApp />
-          </ProtectedRoute>
-        )}
-      </Route>
+      <ProtectedOwnerHomeRoute path="/owner-home" component={OwnerHome} />
+      <ProtectedOwnerHomeRoute path="/owner-home/jockeys" component={OwnerJockeys} />
+      <ProtectedOwnerHomeRoute path="/owner-home/jockeys/:id" component={OwnerJockeyProfile} />
+      <ProtectedOwnerHomeRoute path="/owner-home/tournaments" component={OwnerTournaments} />
+      <ProtectedOwnerHomeRoute path="/owner-home/tournaments/:id" component={OwnerTournamentDetail} />
+      <ProtectedOwnerHomeRoute path="/owner-home/races/:id" component={OwnerRaceDetail} />
+      <ProtectedOwnerHomeRoute path="/owner-home/profile" component={OwnerProfile} />
+      <ProtectedOwnerManagementRoute path="/owner-management/horses" component={OwnerHorses} />
+      <ProtectedOwnerManagementRoute path="/owner-management/registrations" component={OwnerRegistrations} />
 
       {/* Jockey Portal */}
       <ProtectedPortalRoute path="/jockey/home" allowedRoles={['JOCKEY']} component={JockeyHome} />

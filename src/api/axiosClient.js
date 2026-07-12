@@ -39,7 +39,7 @@ axiosClient.interceptors.response.use(
         localStorage.removeItem("user_role");
         localStorage.removeItem("user_id");
         toast.error("Session expired or forbidden. Please login again.");
-        window.location.href = "/login";
+        window.location.href = "/portal/login";
         return Promise.reject(error);
       }
       
