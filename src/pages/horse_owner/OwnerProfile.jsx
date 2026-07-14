@@ -130,7 +130,7 @@ export default function OwnerProfile() {
       // Logout process
       await authApi.logout().catch(() => {});
       localStorage.clear();
-      window.location.href = '/login';
+      window.location.href = '/portal/login';
     } catch (err) {
       console.error("Deactivation failed", err);
       toast.error("Failed to deactivate account");

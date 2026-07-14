@@ -55,7 +55,7 @@ export function DoctorLayout({ children }) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user_role');
       localStorage.removeItem('user_id');
-      window.location.href = '/login';
+      window.location.href = '/portal/login';
     }
   };
 

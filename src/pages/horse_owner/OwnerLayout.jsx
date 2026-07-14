@@ -69,7 +69,7 @@ export function OwnerLayout({ children }) {
   useEffect(() => {
     if (!ownerId || ownerId === "null") {
       localStorage.clear();
-      window.location.href = "/login";
+      window.location.href = "/portal/login";
       return;
     }
     fetchNotifications();
@@ -175,9 +175,9 @@ export function OwnerLayout({ children }) {
                           console.error("Logout API failed", err);
                         } finally {
                           localStorage.removeItem("user_id");
-                          localStorage.removeItem("role");
-                          localStorage.removeItem("token");
-                          window.location.href = "/login";
+                          localStorage.removeItem("user_role");
+                          localStorage.removeItem("access_token");
+                          window.location.href = "/portal/login";
                         }
                       }}
                     >
