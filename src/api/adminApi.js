@@ -1,6 +1,9 @@
 import axiosClient from './axiosClient';
 
 const adminApi = {
+  // Statistics
+  getDashboardStats: () => axiosClient.get('/v1/statistics/admin/dashboard'),
+
   // Tournaments
   getTournamentsDashboard: () => axiosClient.get('/v1/tournaments/dashboard'),
   createTournament: (adminId, data) => axiosClient.post(`/v1/tournaments/${adminId}`, data),
@@ -37,6 +40,10 @@ const adminApi = {
   getJockeyCertImages: (jockeyId) => axiosClient.get(`/v1/verifications/jockey-certs/${jockeyId}/images`),
   acceptJockeyCert: (jockeyId, adminId) => axiosClient.put(`/v1/verifications/jockey-certs/${jockeyId}/accept?adminId=${adminId}`),
   rejectJockeyCert: (jockeyId, adminId, reason) => axiosClient.put(`/v1/verifications/jockey-certs/${jockeyId}/reject?adminId=${adminId}`, { reason }),
+  
+  // Jockey
+  getJockeyProfile: (jockeyId) => axiosClient.get(`/jockeys/${jockeyId}/profile`),
+  getJockeyCertificates: (jockeyId) => axiosClient.get(`/jockeys/${jockeyId}/certificates`),
 
   // Notifications
   getNotifications: (adminId) => axiosClient.get(`/v1/notifications/admin/${adminId}`),

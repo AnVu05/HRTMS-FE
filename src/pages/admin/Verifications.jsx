@@ -5,7 +5,7 @@ import adminApi from '@/api/adminApi';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X } from 'lucide-react';
+import { Check, X, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
@@ -52,11 +52,123 @@ function ImageViewerDialog({ jockeyId, open, onOpenChange }) {
   );
 }
 
+function RegistrationDetailDialog({ registration, open, onOpenChange }) {
+  const jockeyId = registration?.jockeyId;
+
+  const { data: jockeyProfile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['jockeyProfile', jockeyId],
+    queryFn: () => adminApi.getJockeyProfile(jockeyId),
+    enabled: !!jockeyId && open,
+  });
+
+  const { data: jockeyCertificates = [], isLoading: isLoadingCerts } = useQuery({
+    queryKey: ['jockeyCertificates', jockeyId],
+    queryFn: () => adminApi.getJockeyCertificates(jockeyId),
+    enabled: !!jockeyId && open,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Registration Details</DialogTitle>
+        </DialogHeader>
+        {registration && (
+          <Tabs defaultValue="registration_info" className="w-full mt-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="registration_info">Registration Info</TabsTrigger>
+              <TabsTrigger value="jockey_info">Jockey Info</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="registration_info" className="space-y-4 p-4 border rounded-md mt-4 bg-slate-50">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Tournament</p>
+                  <p className="font-semibold">{registration.tournament_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Race</p>
+                  <p className="font-semibold">{registration.race_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Owner</p>
+                  <p className="font-semibold">{registration.owner_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Horse</p>
+                  <p className="font-semibold">{registration.horse_name}</p>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="jockey_info" className="space-y-4 mt-4">
+              {isLoadingProfile || isLoadingCerts ? (
+                 <p className="text-center text-muted-foreground p-4">Loading jockey information...</p>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-slate-50">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Jockey Name</p>
+                      <p className="font-semibold">{jockeyProfile?.jockeyName || registration.jockey_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Experience (Years)</p>
+                      <p className="font-semibold">{jockeyProfile?.experienceYears ?? 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-3">Certificates</h4>
+                    {jockeyCertificates.length > 0 ? (
+                      <div className="flex justify-center border rounded-md p-4 bg-slate-50">
+                        <Carousel className="w-full max-w-xl">
+                          <CarouselContent>
+                            {jockeyCertificates.map((cert, index) => (
+                              <CarouselItem key={index}>
+                                <div className="space-y-3">
+                                  <p className="text-center font-medium">{cert.cert_name || `Certificate ${index + 1}`}</p>
+                                  <div className="flex aspect-video items-center justify-center p-2 rounded-md border bg-white">
+                                    <img 
+                                      src={cert.cert_image_base64?.startsWith('data:image') ? cert.cert_image_base64 : `data:image/jpeg;base64,${cert.cert_image_base64}`} 
+                                      alt={cert.cert_name || `Certificate ${index + 1}`} 
+                                      className="max-w-full max-h-[400px] object-contain"
+                                    />
+                                  </div>
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <CarouselPrevious />
+                          <CarouselNext />
+                        </Carousel>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm p-4 text-center border rounded-md">No certificates found.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function Verifications() {
   const queryClient = useQueryClient();
   const adminId = localStorage.getItem("user_id");
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedJockeyId, setSelectedJockeyId] = useState(null);
+
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailRegistration, setDetailRegistration] = useState(null);
+
+  const handleViewDetail = (reg) => {
+    setDetailRegistration(reg);
+    setDetailDialogOpen(true);
+  };
 
   const handleViewImage = (jockeyId) => {
     setSelectedJockeyId(jockeyId);
@@ -144,6 +256,7 @@ export function Verifications() {
                       <TableCell>{r.jockey_name}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleViewDetail(r)}><Eye className="mr-1 h-4 w-4"/> Detail</Button>
                           <Button variant="outline" size="sm" className="text-green-600 border-green-600 hover:bg-green-50" onClick={() => handleAcceptReg(r.id)}><Check className="mr-1 h-4 w-4"/> Approve</Button>
                           <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50" onClick={() => handleRejectReg(r.id)}><X className="mr-1 h-4 w-4"/> Reject</Button>
                         </div>
@@ -216,6 +329,7 @@ export function Verifications() {
         </TabsContent>
       </Tabs>
       
+      <RegistrationDetailDialog registration={detailRegistration} open={detailDialogOpen} onOpenChange={setDetailDialogOpen} />
       <ImageViewerDialog jockeyId={selectedJockeyId} open={viewerOpen} onOpenChange={setViewerOpen} />
     </div>
   );

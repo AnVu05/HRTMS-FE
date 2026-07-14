@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { ArrowLeft, Flag, MapPin, Trophy, Timer } from 'lucide-react';
+import { ArrowLeft, Flag, MapPin, Trophy, Timer, ClipboardList, Activity, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,6 +125,7 @@ export default function OwnerRaceDetail() {
   const [horses, setHorses] = useState([]);
   const [jockeys, setJockeys] = useState([]);
   const [tournament, setTournament] = useState(null);
+  const [raceFormat, setRaceFormat] = useState(null);
 
   useEffect(() => {
     const fetchRaceDetails = async () => {
@@ -147,6 +148,16 @@ export default function OwnerRaceDetail() {
               setJockeys(jockeysData || []);
             } catch (e) {
               console.error("Failed to fetch tournament details", e);
+            }
+          }
+          
+          const rulesId = raceData.race_rules_id || raceData.raceRulesId;
+          if (rulesId) {
+            try {
+              const formatData = await ownerApi.getRaceFormatById(rulesId);
+              setRaceFormat(formatData);
+            } catch (e) {
+              console.error("Failed to fetch race format", e);
             }
           }
         }
@@ -237,63 +248,91 @@ export default function OwnerRaceDetail() {
       </div>
 
       <div className="container mx-auto px-4 md:px-6 py-8">
-        {/* Leaderboard */}
+        {/* Race Format */}
         <Card className="bg-white shadow-md border-slate-200 overflow-hidden">
           <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
             <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-amber-500" /> 
-              {race.status === 'COMPLETED' ? 'Official Results' : 'Starting Lineup'}
+              <ClipboardList className="h-6 w-6 text-primary" /> 
+              Race Format
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-white text-slate-500 text-sm uppercase tracking-wider border-b border-slate-100">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold w-24 text-center">Pos</th>
-                    <th className="px-6 py-4 font-semibold">Jockey</th>
-                    <th className="px-6 py-4 font-semibold">Horse</th>
-                    <th className="px-6 py-4 font-semibold">Time</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {lineup.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No lineup or results available yet.</td>
-                    </tr>
-                  ) : lineup.map((result, idx) => (
-                    <tr key={result.id || idx} className="hover:bg-slate-50 transition-colors group">
-                      <td className="px-6 py-5 text-center">
-                        {race.status === 'COMPLETED' && (idx === 0 || idx === 1 || idx === 2) ? (
-                          <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center shadow-sm font-bold text-white ${
-                            idx === 0 ? 'bg-amber-400' :
-                            idx === 1 ? 'bg-slate-400' :
-                            'bg-amber-700/60'
-                          }`}>
-                            {idx + 1}
-                          </div>
-                        ) : (
-                          <div className="mx-auto h-8 w-8 flex items-center justify-center font-bold text-slate-500">
-                            {idx + 1}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-5">
-                        <Link href="/owner-home/jockeys" className="font-bold text-slate-900 hover:text-primary transition-colors cursor-pointer">
-                          {result.jockeyName || result.jockey_name || 'Unknown'}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-5 font-medium text-slate-700">
-                        {result.horseName || result.horse_name || 'Unknown'}
-                      </td>
-                      <td className="px-6 py-5 font-mono text-slate-600">
-                        {result.time || result.finish_time || '--:--'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <CardContent className="p-6">
+            {raceFormat ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Horse Requirements */}
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <Flag className="h-4 w-4 text-slate-500" /> Horse Requirements
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Allowed Breed</span>
+                      <span className="font-medium text-slate-900">{raceFormat.allowedBreed || 'Any'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Allowed Age</span>
+                      <span className="font-medium text-slate-900">{raceFormat.allowedHorseAge ? `${raceFormat.allowedHorseAge} years` : 'Any'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Jockey & Weight Rules */}
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-slate-500" /> Jockey & Weight
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Min. Experience</span>
+                      <span className="font-medium text-slate-900">{raceFormat.minJockeyExperience || 0} races</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Weight Range</span>
+                      <span className="font-medium text-slate-900">{raceFormat.minWeight || 0}kg - {raceFormat.maxWeight || 'Max'}kg</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Base Weight</span>
+                      <span className="font-medium text-slate-900">{raceFormat.baseWeight || 0}kg</span>
+                    </div>
+                    {raceFormat.applyFemaleAllowance > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-500">Female Allowance</span>
+                        <span className="font-medium text-green-600">-{raceFormat.applyFemaleAllowance}kg</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fees & Prizes */}
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-slate-500" /> Fees & Prizes
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Entry Fee</span>
+                      <span className="font-medium text-amber-600">${raceFormat.entryFee || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">1st Prize</span>
+                      <span className="font-medium text-slate-900">{raceFormat.firstPrizePercent || 0}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">2nd Prize</span>
+                      <span className="font-medium text-slate-900">{raceFormat.secondPrizePercent || 0}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">3rd Prize</span>
+                      <span className="font-medium text-slate-900">{raceFormat.thirdPrizePercent || 0}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                No race format information available.
+              </div>
+            )}
           </CardContent>
         </Card>
         

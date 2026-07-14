@@ -22,6 +22,9 @@ export const ownerApi = {
   getRaceById: (id) => {
     return axiosClient.get(`/v1/races/${id}`);
   },
+  getRaceFormatById: (id) => {
+    return axiosClient.get(`/raceformats/${id}`);
+  },
   getRaceResults: (id) => {
     return axiosClient.get(`/v1/races/${id}/results`);
   },
