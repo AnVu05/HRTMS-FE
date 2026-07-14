@@ -13,16 +13,16 @@ export default function PortalJockeyProfile() {
   const [jockeyId, setJockeyId] = useState<number>(() => {
     return Number(localStorage.getItem('user_id') || '1');
   });
-  
+
   const [profile, setProfile] = useState<any>(null);
   const [certificates, setCertificates] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [otherNotifications, setOtherNotifications] = useState<any[]>([]);
-  
+
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingCerts, setLoadingCerts] = useState(true);
   const [loadingInvites, setLoadingInvites] = useState(true);
-  
+
   const [errorProfile, setErrorProfile] = useState<string | null>(null);
   const [errorCerts, setErrorCerts] = useState<string | null>(null);
   const [errorInvites, setErrorInvites] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export default function PortalJockeyProfile() {
   const [editEmail, setEditEmail] = useState('');
   const [editAvatarBase64, setEditAvatarBase64] = useState('');
   const [updatingProfile, setUpdatingProfile] = useState(false);
-  
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -226,7 +226,7 @@ export default function PortalJockeyProfile() {
       setNewCertImageBase64('');
       setNewCertIssuedAt(new Date().toISOString().split('T')[0]);
       setIsUploadOpen(false);
-      
+
       // Refresh list
       fetchCertificates();
     } catch (err: any) {
@@ -280,17 +280,17 @@ export default function PortalJockeyProfile() {
       .then(([notifResponse, formsResponse]) => {
         const notifData = notifResponse.data?.content || notifResponse.content || [];
         const formsData = formsResponse.data || formsResponse || [];
-        
+
         // Filter jockey invitations
         const filteredInvites = notifData
           .filter((n: any) => n.type === 'JOCKEY_INVITATION')
           .map((n: any) => {
-            const matchingForm = formsData.find((f: any) => 
-              f.jockeyId === jockeyId && 
-              f.raceId === n.race_id && 
+            const matchingForm = formsData.find((f: any) =>
+              f.jockeyId === jockeyId &&
+              f.raceId === n.race_id &&
               f.status === 'PENDING_JOCKEY'
             );
-            
+
             return {
               id: matchingForm ? matchingForm.id : null,
               notificationId: n.id,
@@ -304,10 +304,10 @@ export default function PortalJockeyProfile() {
             };
           })
           .filter((invite: any) => invite.id !== null);
-          
+
         // Other notifications (exclude JOCKEY_INVITATION)
         const others = notifData.filter((n: any) => n.type !== 'JOCKEY_INVITATION');
-        
+
         setOtherNotifications(others);
         setInvitations(filteredInvites);
         setLoadingInvites(false);
@@ -365,7 +365,7 @@ export default function PortalJockeyProfile() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Jockey profile</h1>
           <p className="text-slate-500">Manage your credentials, status, and racing invitations.</p>
         </div>
-        
+
         <div className="flex items-center gap-4">
         </div>
       </div>
@@ -434,8 +434,8 @@ export default function PortalJockeyProfile() {
                     <div>
                       <div className="text-xs text-slate-400 font-medium">Status</div>
                       <Badge className={
-                        profile.status === 'ACTIVE' 
-                          ? 'bg-green-500/20 text-green-700 border-green-300' 
+                        profile.status === 'ACTIVE'
+                          ? 'bg-green-500/20 text-green-700 border-green-300'
                           : 'bg-slate-300 text-slate-700'
                       }>
                         {profile.status || 'ACTIVE'}
@@ -523,13 +523,13 @@ export default function PortalJockeyProfile() {
                       </div>
 
                       <div className="flex items-center gap-2.5">
-                        <Button 
+                        <Button
                           onClick={() => handleRespondInvitation(invite.id, 'Accept')}
                           className="bg-green-600 hover:bg-green-700 text-white font-bold h-10 px-4 flex items-center gap-1.5 shadow-sm"
                         >
                           <Check className="h-4 w-4" /> Accept
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => handleRespondInvitation(invite.id, 'Reject')}
                           variant="destructive"
                           className="font-bold h-10 px-4 flex items-center gap-1.5 shadow-sm"
@@ -598,16 +598,16 @@ export default function PortalJockeyProfile() {
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         onClick={() => setIsUploadOpen(false)}
                         disabled={submittingCert}
                       >
                         Cancel
                       </Button>
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
                         disabled={submittingCert}
                       >
@@ -645,8 +645,8 @@ export default function PortalJockeyProfile() {
                     <tbody className="divide-y divide-slate-100">
                       {certificates.map((cert) => {
                         const imgSrc = cert.cert_image_base64 && (
-                          cert.cert_image_base64.startsWith('data:') 
-                            ? cert.cert_image_base64 
+                          cert.cert_image_base64.startsWith('data:')
+                            ? cert.cert_image_base64
                             : `data:image/png;base64,${cert.cert_image_base64}`
                         );
                         return (
@@ -658,10 +658,10 @@ export default function PortalJockeyProfile() {
                               {imgSrc ? (
                                 <Dialog>
                                   <DialogTrigger asChild>
-                                    <img 
-                                      src={imgSrc} 
-                                      alt={cert.cert_name} 
-                                      className="w-12 h-12 object-cover rounded border shadow-sm cursor-zoom-in hover:opacity-85 transition-opacity" 
+                                    <img
+                                      src={imgSrc}
+                                      alt={cert.cert_name}
+                                      className="w-12 h-12 object-cover rounded border shadow-sm cursor-zoom-in hover:opacity-85 transition-opacity"
                                     />
                                   </DialogTrigger>
                                   <DialogContent className="max-w-xl">
@@ -680,17 +680,17 @@ export default function PortalJockeyProfile() {
                             <td className="px-6 py-4 text-center">{getStatusBadge(cert.status)}</td>
                             <td className="px-6 py-4 text-center">
                               <div className="flex justify-center items-center gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => handleStartEdit(cert)}
                                   className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => handleDeleteCertificate(cert.cert_id)}
                                   className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
                                 >
@@ -748,26 +748,26 @@ export default function PortalJockeyProfile() {
                 />
                 {editCertImageBase64 && (
                   <div className="mt-2 flex justify-center border p-2 rounded bg-slate-50">
-                    <img 
-                      src={editCertImageBase64.startsWith('data:') ? editCertImageBase64 : `data:image/png;base64,${editCertImageBase64}`} 
-                      alt="Preview" 
-                      className="max-h-[100px] object-contain rounded" 
+                    <img
+                      src={editCertImageBase64.startsWith('data:') ? editCertImageBase64 : `data:image/png;base64,${editCertImageBase64}`}
+                      alt="Preview"
+                      className="max-h-[100px] object-contain rounded"
                     />
                   </div>
                 )}
               </div>
             </div>
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setIsEditOpen(false)}
                 disabled={updatingCert}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
                 disabled={updatingCert}
               >
@@ -847,10 +847,10 @@ export default function PortalJockeyProfile() {
                 />
                 {editAvatarBase64 && (
                   <div className="mt-2 flex justify-center border p-2 rounded bg-slate-50">
-                    <img 
-                      src={editAvatarBase64.startsWith('data:') ? editAvatarBase64 : `data:image/png;base64,${editAvatarBase64}`} 
-                      alt="Preview" 
-                      className="max-h-[100px] object-contain rounded" 
+                    <img
+                      src={editAvatarBase64.startsWith('data:') ? editAvatarBase64 : `data:image/png;base64,${editAvatarBase64}`}
+                      alt="Preview"
+                      className="max-h-[100px] object-contain rounded"
                     />
                   </div>
                 )}

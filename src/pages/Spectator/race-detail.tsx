@@ -436,6 +436,17 @@ export default function PortalRaceDetail() {
                     </CardDescription>
                   </div>
                   <CardContent className="p-6 pt-6">
+                    {lineup.length <= 1 ? (
+                      <div className="py-8 text-center bg-amber-50/50 border border-amber-100 rounded-xl">
+                        <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-3">
+                          <XCircle className="h-6 w-6 text-amber-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-1">Not Enough Horses</h3>
+                        <p className="text-sm text-slate-500 max-w-xs mx-auto">
+                          Predictions are disabled because this race has fewer than 2 active horses.
+                        </p>
+                      </div>
+                    ) : (
                     <form onSubmit={handlePlaceBet} className="space-y-6">
                       <div className="space-y-2">
                         <Label className="text-slate-700 font-semibold text-sm">Selected Horse</Label>
@@ -490,6 +501,7 @@ export default function PortalRaceDetail() {
                         {isSubmitting ? 'Placing Prediction...' : 'Submit Prediction'}
                       </Button>
                     </form>
+                    )}
                   </CardContent>
                 </Card>
               ) : (

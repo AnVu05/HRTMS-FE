@@ -169,8 +169,6 @@ export default function PortalRegister() {
                         <SelectItem value="SPECTATOR">Spectator</SelectItem>
                         <SelectItem value="HORSE_OWNER">Horse Owner</SelectItem>
                         <SelectItem value="JOCKEY">Jockey</SelectItem>
-                        <SelectItem value="DOCTOR">Doctor</SelectItem>
-                        <SelectItem value="REFEREE">Referee</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -414,57 +414,38 @@ export default function RefereeRaceDetail() {
         console.error('Failed to query existing results:', e);
       }
 
-      let raceResultId: number;
-
       if (existingResultId) {
-        // 1. Update existing Race Result
+        // 1. Update existing Race Result and send Placements together
         await raceApi.updateRaceResult(existingResultId, {
           raceId: Number(id),
           refereeId: race?.referee_id || 2,
           status: 'OFFICIAL',
           createdAt: new Date().toISOString(),
-          photoFinishImage: photoFinish
+          photoFinishImage: photoFinish,
+          placements: placements.filter(p => p.registrationFormId).map(p => ({
+            registrationFormId: Number(p.registrationFormId),
+            finishPosition: Number(p.rank),
+            finishTime: p.finishTime || new Date().toISOString(),
+            weighInWeight: Number(p.weighInWeight) || 0.1
+          }))
         });
         raceResultId = existingResultId;
-
-        // 2. Clear old Placements for this result
-        try {
-          const placementsRes = await raceApi.getAllPlacements();
-          const placementsList = placementsRes.data || placementsRes || [];
-          if (Array.isArray(placementsList)) {
-            const matches = placementsList.filter((p: any) => p.raceResultId === existingResultId);
-            for (const m of matches) {
-              if (m.id) {
-                await raceApi.deletePlacement(m.id);
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Failed to clear old placements:', e);
-        }
       } else {
-        // 1. Create new Race Result
+        // 1. Create new Race Result and send Placements together
         const resultRes = await raceApi.createRaceResult({
           raceId: Number(id),
           refereeId: race?.referee_id || 2,
           status: 'OFFICIAL',
           createdAt: new Date().toISOString(),
-          photoFinishImage: photoFinish
-        });
-        raceResultId = resultRes?.data?.id || (resultRes as any)?.id || 999;
-      }
-
-      // 3. Create Placements
-      for (const p of placements) {
-        if (p.registrationFormId) {
-          await raceApi.createPlacement({
-            raceResultId: Number(raceResultId),
+          photoFinishImage: photoFinish,
+          placements: placements.filter(p => p.registrationFormId).map(p => ({
             registrationFormId: Number(p.registrationFormId),
             finishPosition: Number(p.rank),
             finishTime: p.finishTime || new Date().toISOString(),
             weighInWeight: Number(p.weighInWeight) || 0.1
-          });
-        }
+          }))
+        });
+        raceResultId = resultRes?.data?.id || (resultRes as any)?.id || 999;
       }
 
       toast.success('Race results and placements submitted successfully!');

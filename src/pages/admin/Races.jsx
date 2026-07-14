@@ -155,7 +155,7 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">Name</Label>
-            <Input id="name" className="col-span-3" {...register("name", { required: true })} />
+            <Input id="name" data-testid="race-name" className="col-span-3" {...register("name", { required: true })} />
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
@@ -163,6 +163,7 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
             <div className="col-span-3">
               <Input 
                 id="date" 
+                data-testid="race-date"
                 type="text" 
                 placeholder="DD/MM/YYYY"
                 {...register("date", { 
@@ -176,22 +177,22 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="startTime" className="text-right">Start Time</Label>
-            <Input id="startTime" type="time" step="1" className="col-span-3" {...register("startTime")} />
+            <Input id="startTime" data-testid="race-start-time" type="time" step="1" className="col-span-3" {...register("startTime")} />
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="endTime" className="text-right">End Time</Label>
-            <Input id="endTime" type="time" step="1" className="col-span-3" {...register("endTime")} />
+            <Input id="endTime" data-testid="race-end-time" type="time" step="1" className="col-span-3" {...register("endTime")} />
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="distanceM" className="text-right">Distance (m)</Label>
-            <Input id="distanceM" type="number" className="col-span-3" {...register("distanceM")} />
+            <Input id="distanceM" data-testid="race-distance" type="number" className="col-span-3" {...register("distanceM")} />
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="numHorse" className="text-right">No. of Horses</Label>
-            <Input id="numHorse" type="number" className="col-span-3" {...register("numHorse")} />
+            <Input id="numHorse" data-testid="race-num-horse" type="number" className="col-span-3" {...register("numHorse")} />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -245,7 +246,7 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
           </div>
 
           <DialogFooter>
-            <Button type="submit" className="bg-[#f59e0b] hover:bg-[#d97706] text-white">Save Race</Button>
+            <Button type="submit" data-testid="race-submit-btn" className="bg-[#f59e0b] hover:bg-[#d97706] text-white">Save Race</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -452,6 +453,7 @@ export function Races() {
                   tournamentId={selectedTournament.id} 
                   trigger={
                     <Button 
+                      data-testid="create-race-btn"
                       className="bg-[#f59e0b] hover:bg-[#d97706] text-white"
                       disabled={['COMPLETE', 'CANCELLED'].includes(selectedTournament.status)}
                     >
@@ -488,7 +490,7 @@ export function Races() {
                               tournamentId={selectedTournament.id}
                               initialData={race}
                               trigger={
-                                <Button variant="outline" size="sm" disabled={!['PENDING_REFEREE', 'PREPARE', 'PUBLISHED', 'WALK_OVER'].includes(race.status)}>Update</Button>
+                                <Button data-testid="edit-race-btn" variant="outline" size="sm" disabled={!['PENDING_REFEREE', 'PREPARE', 'PUBLISHED', 'WALK_OVER'].includes(race.status)}>Update</Button>
                               }
                             />
                             <CancelRaceDialog 
