@@ -401,6 +401,7 @@ export default function RefereeRaceDetail() {
     try {
       // Check if a race result already exists for this race
       let existingResultId: number | null = null;
+      let raceResultId: number | null = null;
       try {
         const resultsRes = await raceApi.getAllRaceResults();
         const resultsList = resultsRes.data || resultsRes || [];
@@ -539,7 +540,7 @@ export default function RefereeRaceDetail() {
                   <CardDescription>Initiate, reschedule, or cancel this horse race.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-4">
-                  {(race.status === 'PREPARE' || race.status === 'SCHEDULED') && (
+                  {(race.status === 'PREPARE' || race.status === 'SCHEDULED' || race.status === 'PUBLISHED') && (
                     <Button
                       onClick={handleStartRace}
                       disabled={submitting}

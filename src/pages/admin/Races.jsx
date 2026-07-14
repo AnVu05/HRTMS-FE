@@ -150,7 +150,7 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <input type="hidden" {...register("tournamentId")} />
-          <input type="hidden" {...register("status")} />
+          {!isEdit && <input type="hidden" {...register("status")} />}
           <input type="hidden" {...register("canceledAt")} />
           
           <div className="grid grid-cols-4 items-center gap-4">
@@ -234,6 +234,31 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
               )}
             />
           </div>
+
+          {isEdit && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">Status</Label>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PREPARE">PREPARE</SelectItem>
+                      <SelectItem value="PUBLISHED">PUBLISHED</SelectItem>
+                      <SelectItem value="ONGOING">ONGOING</SelectItem>
+                      <SelectItem value="COMPLETE">COMPLETE</SelectItem>
+                      <SelectItem value="CANCELLED">CANCELLED</SelectItem>
+                      <SelectItem value="PENDING_REFEREE">PENDING_REFEREE</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          )}
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="expectedDurationMinutes" className="text-right">Expected Duration (min)</Label>
