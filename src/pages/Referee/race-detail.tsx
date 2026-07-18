@@ -196,8 +196,8 @@ export default function RefereeRaceDetail() {
 
                   setResults(filteredPlacements.map((p: any) => {
                     const participant = participantsList.find((l: any) => Number(l.id) === Number(p.registrationFormId));
-                    let formattedTime = '--:--.--';
-                    if (p.finishTime) {
+                    let formattedTime = p.finishTime || '--:--.--';
+                    if (p.finishTime && p.finishTime.includes('T')) {
                       try {
                         const dateObj = new Date(p.finishTime);
                         if (!isNaN(dateObj.getTime())) {
@@ -261,18 +261,27 @@ export default function RefereeRaceDetail() {
                 if (p && rankNum >= 1) {
                   let placementIdx = updatedPlacements.findIndex(pl => pl.rank === rankNum);
                   const weight = horseWeights[p.horse_id] || 50.0;
+                  const simTime = info.time || info.finishTime || info.timeFinished || new Date().toISOString();
                   if (placementIdx === -1 && rankNum <= participants.length) {
                     updatedPlacements.push({
                       rank: rankNum,
                       registrationFormId: String(p.id),
-                      finishTime: new Date().toISOString(),
+                      finishTime: simTime,
                       weighInWeight: weight
                     });
                     hasChanges = true;
                   } else if (placementIdx !== -1) {
+                    let changed = false;
                     if (updatedPlacements[placementIdx].registrationFormId !== String(p.id)) {
                       updatedPlacements[placementIdx].registrationFormId = String(p.id);
                       updatedPlacements[placementIdx].weighInWeight = weight;
+                      changed = true;
+                    }
+                    if (updatedPlacements[placementIdx].finishTime !== simTime) {
+                      updatedPlacements[placementIdx].finishTime = simTime;
+                      changed = true;
+                    }
+                    if (changed) {
                       hasChanges = true;
                     }
                   }
@@ -774,9 +783,14 @@ export default function RefereeRaceDetail() {
                                   if (race.status === 'ONGOING') {
                                     const horseGameInfo = p.gate_number !== undefined ? gameData[p.gate_number] : null;
                                     const progress = horseGameInfo ? (horseGameInfo.percent) : null;
+                                    const rank = horseGameInfo ? horseGameInfo.rank : null;
+                                    const timeVal = horseGameInfo ? (horseGameInfo.time || horseGameInfo.finishTime || horseGameInfo.timeFinished) : null;
                                     if (progress !== undefined && progress !== null) {
-                                      const formattedProgress = parseFloat(progress).toFixed(2);
-                                      return `RACING (${formattedProgress}%)`;
+                                      const numericProgress = parseFloat(progress);
+                                      if (numericProgress >= 100) {
+                                        return `FINISHED ${rank ? `#${rank}` : ''} ${timeVal ? `(${timeVal}s)` : ''}`;
+                                      }
+                                      return `RACING (${numericProgress.toFixed(2)}%)`;
                                     }
                                     return 'RACING';
                                   }
@@ -931,7 +945,7 @@ export default function RefereeRaceDetail() {
                                 )}
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
                                   <Label className="text-xs text-slate-500">Horse & Jockey</Label>
                                   <select
@@ -962,6 +976,17 @@ export default function RefereeRaceDetail() {
                                     className="h-9 text-xs bg-white border-slate-200"
                                     value={item.weighInWeight}
                                     onChange={(e) => updatePlacementValue(index, 'weighInWeight', parseFloat(e.target.value) || 0.1)}
+                                    disabled={submitting}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-slate-500">Finish Time (s)</Label>
+                                  <Input
+                                    type="text"
+                                    className="h-9 text-xs bg-white border-slate-200 font-mono"
+                                    placeholder="e.g. 12.34"
+                                    value={item.finishTime}
+                                    onChange={(e) => updatePlacementValue(index, 'finishTime', e.target.value)}
                                     disabled={submitting}
                                   />
                                 </div>

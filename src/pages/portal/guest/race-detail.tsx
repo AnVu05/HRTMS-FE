@@ -34,6 +34,57 @@ export default function PortalRaceDetail() {
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [points, setPoints] = useState<number>(100);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!race || race.status !== 'Scheduled') return;
+
+    const calculateTime = () => {
+      let dateStr = race.date || '';
+      // Convert DD/MM/YYYY to YYYY-MM-DD
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split(' ')[0].split('/');
+        if (parts.length === 3) {
+          dateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+      
+      const timeStr = race.start_time || '00:00:00';
+      const cleanDate = dateStr.split(' ')[0];
+      const targetStr = `${cleanDate}T${timeStr}`;
+      
+      const targetTime = new Date(targetStr).getTime();
+      if (isNaN(targetTime)) {
+        const fallback = new Date(race.date).getTime();
+        return isNaN(fallback) ? null : fallback - Date.now();
+      }
+      return targetTime - Date.now();
+    };
+
+    setTimeLeft(calculateTime());
+
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTime());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [race]);
+
+  const formatTimeLeft = (ms: number) => {
+    const totalSecs = Math.floor(ms / 1000);
+    const days = Math.floor(totalSecs / 86400);
+    const hours = Math.floor((totalSecs % 86400) / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    
+    let parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
+    parts.push(`${mins}m`);
+    parts.push(`${secs}s`);
+    
+    return parts.join(' ');
+  };
 
   const fetchRaceData = async () => {
     setLoading(true);
@@ -47,6 +98,7 @@ export default function PortalRaceDetail() {
           tournamentId: String(raceData.tournament_id),
           tournamentName: raceData.tournament_name || 'Tournament',
           date: raceData.date || 'TBD',
+          start_time: raceData.start_time || raceData.startTime || '',
           distance: raceData.distance_m ? `${raceData.distance_m}m` : '1200m',
           condition: raceData.condition || 'Good',
           
@@ -428,6 +480,22 @@ export default function PortalRaceDetail() {
                     <CardDescription className="text-slate-400 text-sm">
                       Select a horse from the lineup and invest points to predict the race.
                     </CardDescription>
+                    {race.status === 'Scheduled' && timeLeft !== null && (
+                      <div className={`mt-3 flex items-center gap-2 p-2 rounded-lg text-xs font-semibold border ${
+                        timeLeft <= 0 
+                          ? 'bg-red-500/10 border-red-500/20 text-red-400' 
+                          : timeLeft < 300000 
+                            ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse' 
+                            : 'bg-green-500/10 border-green-500/20 text-green-400'
+                      }`}>
+                        <Timer className="h-4 w-4 shrink-0" />
+                        <span>
+                          {timeLeft <= 0 
+                            ? 'Thời gian dự đoán đã hết' 
+                            : `Còn lại để dự đoán: ${formatTimeLeft(timeLeft)}`}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <CardContent className="p-6 pt-6">
                     {lineup.length <= 1 ? (
@@ -490,9 +558,13 @@ export default function PortalRaceDetail() {
                       <Button 
                         type="submit" 
                         className="w-full h-12 text-base font-bold transition-all"
-                        disabled={isSubmitting || !selectedHorseId}
+                        disabled={isSubmitting || !selectedHorseId || (race.status === 'Scheduled' && timeLeft !== null && timeLeft <= 0)}
                       >
-                        {isSubmitting ? 'Placing Prediction...' : 'Submit Prediction'}
+                        {isSubmitting 
+                          ? 'Placing Prediction...' 
+                          : (race.status === 'Scheduled' && timeLeft !== null && timeLeft <= 0) 
+                            ? 'Predictions Closed' 
+                            : 'Submit Prediction'}
                       </Button>
                     </form>
                     )}
