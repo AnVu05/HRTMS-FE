@@ -19,16 +19,16 @@ export default function ForgotPassword() {
   const handleRequestOtp = async (e) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Please enter your email');
+      toast.error('Please enter your email', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
     setLoading(true);
     try {
       await authApi.forgotPassword({ email });
-      toast.success('Verification code sent to your email!');
+      toast.success('Verification code sent to your email!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       setStep(2);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send verification code. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to send verification code. Please try again.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
     } finally {
       setLoading(false);
     }
@@ -37,11 +37,11 @@ export default function ForgotPassword() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (!otp || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all fields');
+      toast.error('Please fill in all fields', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error('Passwords do not match', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
     setLoading(true);
@@ -51,10 +51,10 @@ export default function ForgotPassword() {
         otpCode: otp,
         newPassword: newPassword
       });
-      toast.success('Password reset successfully!');
+      toast.success('Password reset successfully!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       setStep(3);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to reset password. Please check your OTP.');
+      toast.error(err.response?.data?.message || 'Failed to reset password. Please check your OTP.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
     } finally {
       setLoading(false);
     }

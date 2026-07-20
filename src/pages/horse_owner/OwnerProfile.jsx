@@ -55,7 +55,7 @@ export default function OwnerProfile() {
       setAvatarBase64(data?.avatar || '');
     } catch (err) {
       console.error("Failed to load profile", err);
-      toast.error("Could not load profile information");
+      toast.error("Could not load profile information", { style: { backgroundColor: '#ffcccc', color: 'black' } });
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export default function OwnerProfile() {
       }
       
       await ownerApi.updateProfile(ownerId, payload);
-      toast.success("Account information updated successfully!");
+      toast.success("Account information updated successfully!", { style: { backgroundColor: '#4caf50', color: 'white' } });
       fetchProfile(); // Refresh to get latest data
     } catch (err) {
       console.error("Update failed", err);
@@ -104,14 +104,14 @@ export default function OwnerProfile() {
   const handleAvatarSubmit = async (e) => {
     e.preventDefault();
     if (!avatarBase64) {
-      toast.error("Please select an image first");
+      toast.error("Please select an image first", { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
     
     setSavingAvatar(true);
     try {
       await ownerApi.updateAvatar(ownerId, { avatar: avatarBase64 });
-      toast.success("Avatar updated successfully!");
+      toast.success("Avatar updated successfully!", { style: { backgroundColor: '#4caf50', color: 'white' } });
       // We must reload the window to update the avatar in the navbar layout as well
       window.location.reload(); 
     } catch (err) {
@@ -125,7 +125,7 @@ export default function OwnerProfile() {
     setDeactivating(true);
     try {
       await ownerApi.deactivateAccount(ownerId);
-      toast.success("Account deactivated successfully. Logging out...");
+      toast.success("Account deactivated successfully. Logging out...", { style: { backgroundColor: '#4caf50', color: 'white' } });
       
       // Logout process
       await authApi.logout().catch(() => {});
@@ -133,7 +133,7 @@ export default function OwnerProfile() {
       window.location.href = '/portal/login';
     } catch (err) {
       console.error("Deactivation failed", err);
-      toast.error("Failed to deactivate account");
+      toast.error("Failed to deactivate account", { style: { backgroundColor: '#ffcccc', color: 'black' } });
       setDeactivating(false);
     }
   };
