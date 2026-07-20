@@ -35,6 +35,10 @@ export default function PortalRaceDetail() {
   const [points, setPoints] = useState<number>(100);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Countdown state
+  const [countdownText, setCountdownText] = useState<string>('');
+  const [canPredict, setCanPredict] = useState<boolean>(false);
+
   const fetchRaceData = async () => {
     setLoading(true);
     try {
@@ -51,7 +55,9 @@ export default function PortalRaceDetail() {
           condition: raceData.condition || 'Good',
           
           status: (raceData.status === 'COMPLETE' || raceData.status === 'COMPLETED') ? 'Completed' : (raceData.status === 'ONGOING' || raceData.status === 'IN_PROGRESS') ? 'In Progress' : raceData.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled',
-          reason: raceData.reason
+          reason: raceData.reason,
+          startTime: raceData.start_time,
+          predictionTimeBefore: raceData.prediction_time_before || 1
         });
 
         if (raceData.status === 'COMPLETE' || raceData.status === 'COMPLETED') {
@@ -156,6 +162,48 @@ export default function PortalRaceDetail() {
   useEffect(() => {
     fetchRaceData();
   }, [id]);
+
+  useEffect(() => {
+    if (!race || race.status === 'Completed' || race.status === 'Cancelled' || race.status === 'In Progress') {
+      setCanPredict(false);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (!race.date || !race.startTime) {
+        setCountdownText('');
+        return;
+      }
+      
+      const now = new Date();
+      const raceStartStr = `${race.date}T${race.startTime}`;
+      const raceStartTime = new Date(raceStartStr);
+      
+      const predictionTimeBeforeHours = race.predictionTimeBefore || 1;
+      const predictionOpenTime = new Date(raceStartTime.getTime() - predictionTimeBeforeHours * 60 * 60 * 1000);
+      
+      if (now.getTime() < predictionOpenTime.getTime()) {
+        setCanPredict(false);
+        const diff = predictionOpenTime.getTime() - now.getTime();
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdownText(`Thời gian mở dự đoán: ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      } else if (now.getTime() >= predictionOpenTime.getTime() && now.getTime() < raceStartTime.getTime()) {
+        setCanPredict(true);
+        const diff = raceStartTime.getTime() - now.getTime();
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdownText(`Thời gian còn lại để dự đoán: ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      } else {
+        setCanPredict(false);
+        setCountdownText('Dự đoán đã đóng');
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [race]);
 
   const handlePlaceBet = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -436,6 +484,11 @@ export default function PortalRaceDetail() {
                     </CardDescription>
                   </div>
                   <CardContent className="p-6 pt-6">
+                    {countdownText && (
+                      <div className={`mb-6 p-4 rounded-xl font-semibold text-center ${canPredict ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                        {countdownText}
+                      </div>
+                    )}
                     {lineup.length <= 1 ? (
                       <div className="py-8 text-center bg-amber-50/50 border border-amber-100 rounded-xl">
                         <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-3">
@@ -496,7 +549,7 @@ export default function PortalRaceDetail() {
                       <Button 
                         type="submit" 
                         className="w-full h-12 text-base font-bold transition-all"
-                        disabled={isSubmitting || !selectedHorseId}
+                        disabled={isSubmitting || !selectedHorseId || !canPredict}
                       >
                         {isSubmitting ? 'Placing Prediction...' : 'Submit Prediction'}
                       </Button>
