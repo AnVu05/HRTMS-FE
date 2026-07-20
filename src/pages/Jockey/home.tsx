@@ -88,10 +88,10 @@ export default function JockeyHome() {
     setSubmittingInvite(prev => ({ ...prev, [formId]: true }));
     try {
       await jockeyService.jockeyRespondToRegistrationForm(formId, { status });
-      toast.success(status === 'Accept' ? 'Accepted Invitation' : 'Declined Invitation');
+      toast.success(status === 'Accept' ? 'Accepted Invitation' : 'Declined Invitation', { style: { backgroundColor: '#4caf50', color: 'white' } });
       fetchRaces();
     } catch (err: any) {
-      toast.error(err.message || 'An error occurred while responding to the invitation.');
+      toast.error(err.message || 'An error occurred while responding to the invitation.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
     } finally {
       setSubmittingInvite(prev => ({ ...prev, [formId]: false }));
     }

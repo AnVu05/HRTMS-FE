@@ -16,7 +16,7 @@ export default function Login() {
 
   const handleLoginSuccess = (response) => {
     if (response && response.user && response.token) {
-      toast.success('Login successful!');
+      toast.success('Login successful!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       localStorage.setItem("access_token", response.token);
       localStorage.setItem("user_role", response.user.role);
       localStorage.setItem("user_id", response.user.id);
@@ -43,7 +43,7 @@ export default function Login() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Please enter email and password');
+      toast.error('Please enter email and password', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
 
@@ -52,7 +52,7 @@ export default function Login() {
       const response = await authApi.login({ email, password });
       if (response) {
         if (response.otpRequired) {
-          toast.success('Verification code sent to your email');
+          toast.success('Verification code sent to your email', { style: { backgroundColor: '#4caf50', color: 'white' } });
           setStep(2);
         } else if (response.token) {
           handleLoginSuccess(response);
@@ -69,7 +69,7 @@ export default function Login() {
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     if (!otp) {
-      toast.error('Please enter the OTP');
+      toast.error('Please enter the OTP', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
 
@@ -155,6 +155,7 @@ export default function Login() {
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                       <Input
                         id="email"
+                        data-testid="login-email-input"
                         type="email"
                         placeholder="name@example.com"
                         className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white"
@@ -177,6 +178,7 @@ export default function Login() {
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                       <Input
                         id="password"
+                        data-testid="login-password-input"
                         type="password"
                         placeholder="password"
                         className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white"
@@ -189,7 +191,7 @@ export default function Login() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={loading} className="w-full h-12 text-base font-bold" data-testid="login-submit">
+                <Button type="submit" disabled={loading} className="w-full h-12 text-base font-bold" data-testid="login-submit-btn">
                   {loading ? 'Verifying...' : 'Sign In'} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>

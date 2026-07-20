@@ -211,6 +211,7 @@ export default function RefereeDashboard() {
                 <div className="flex items-center gap-2.5 shrink-0 self-end md:self-center">
                   <Button
                     size="sm"
+                    data-testid="referee-accept-btn"
                     disabled={submittingInvite[invite.notification_id]}
                     onClick={() => handleRespondInvitation(invite.notification_id, 'Accept')}
                     className="bg-green-600 hover:bg-green-700 text-white font-bold h-9 px-4 flex items-center gap-1 shadow-sm"

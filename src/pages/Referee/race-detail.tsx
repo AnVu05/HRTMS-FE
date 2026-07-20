@@ -226,7 +226,7 @@ export default function RefereeRaceDetail() {
         throw new Error('No data');
       }
     } catch (err: any) {
-      toast.error('Failed to load race details from server.');
+      toast.error('Failed to load race details from server.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       setRace(null);
       setParticipants([]);
     } finally {
@@ -284,7 +284,7 @@ export default function RefereeRaceDetail() {
                 setPlacements(updatedPlacements);
                 const first3Filled = updatedPlacements.slice(0, 3).every(pl => pl.registrationFormId);
                 if (first3Filled) {
-                  toast.success('Auto-filled rankings from game simulator!');
+                  toast.success('Auto-filled rankings from game simulator!', { style: { backgroundColor: '#4caf50', color: 'white' } });
                 }
               }
             }
@@ -304,7 +304,7 @@ export default function RefereeRaceDetail() {
     setSubmitting(true);
     try {
       await raceApi.startRace(id);
-      toast.success('Race started successfully!');
+      toast.success('Race started successfully!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       fetchRaceData();
     } catch (err) {
       // Error handled by Axios Client
@@ -318,13 +318,13 @@ export default function RefereeRaceDetail() {
   const handleCancelRace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cancelReason) {
-      toast.error('Please enter a cancellation reason');
+      toast.error('Please enter a cancellation reason', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
     setSubmitting(true);
     try {
       await raceApi.cancelRace(id, { reason: cancelReason });
-      toast.success('Race cancelled successfully.');
+      toast.success('Race cancelled successfully.', { style: { backgroundColor: '#4caf50', color: 'white' } });
       setShowCancelForm(false);
       fetchRaceData();
     } catch (err) {
@@ -344,7 +344,7 @@ export default function RefereeRaceDetail() {
         start_time: newTimeData.start_time,
         end_time: newTimeData.end_time
       });
-      toast.success('Race schedule updated successfully!');
+      toast.success('Race schedule updated successfully!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       setShowTimeForm(false);
       fetchRaceData();
     } catch (err) {
@@ -365,7 +365,7 @@ export default function RefereeRaceDetail() {
     setSubmitting(true);
     try {
       await raceApi.lateScratch(id, horseId, reason);
-      toast.success('Horse scratched successfully.');
+      toast.success('Horse scratched successfully.', { style: { backgroundColor: '#4caf50', color: 'white' } });
       fetchRaceData();
     } catch (err) {
       setParticipants(prev => prev.map(p => p.horse_id === horseId ? { ...p, status: 'SCRATCHED', reason } : p));
@@ -379,7 +379,7 @@ export default function RefereeRaceDetail() {
     setSubmitting(true);
     try {
       await raceApi.disqualifyHorse(id, horseId, reason);
-      toast.success('Horse disqualified successfully.');
+      toast.success('Horse disqualified successfully.', { style: { backgroundColor: '#4caf50', color: 'white' } });
       fetchRaceData();
     } catch (err) {
       setParticipants(prev => prev.map(p => p.horse_id === horseId ? { ...p, status: 'DISQUALIFIED', reason } : p));
@@ -393,7 +393,7 @@ export default function RefereeRaceDetail() {
 
     const nonEmpties = placements.map(p => p.registrationFormId).filter(v => v !== '');
     if (new Set(nonEmpties).size !== nonEmpties.length) {
-      toast.error('Winners cannot be duplicate horses.');
+      toast.error('Winners cannot be duplicate horses.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
       return;
     }
 
@@ -401,6 +401,7 @@ export default function RefereeRaceDetail() {
     try {
       // Check if a race result already exists for this race
       let existingResultId: number | null = null;
+      let raceResultId: number | null = null;
       try {
         const resultsRes = await raceApi.getAllRaceResults();
         const resultsList = resultsRes.data || resultsRes || [];
@@ -414,64 +415,45 @@ export default function RefereeRaceDetail() {
         console.error('Failed to query existing results:', e);
       }
 
-      let raceResultId: number;
-
       if (existingResultId) {
-        // 1. Update existing Race Result
+        // 1. Update existing Race Result and send Placements together
         await raceApi.updateRaceResult(existingResultId, {
           raceId: Number(id),
           refereeId: race?.referee_id || 2,
           status: 'OFFICIAL',
           createdAt: new Date().toISOString(),
-          photoFinishImage: photoFinish
+          photoFinishImage: photoFinish,
+          placements: placements.filter(p => p.registrationFormId).map(p => ({
+            registrationFormId: Number(p.registrationFormId),
+            finishPosition: Number(p.rank),
+            finishTime: p.finishTime || new Date().toISOString(),
+            weighInWeight: Number(p.weighInWeight) || 0.1
+          }))
         });
         raceResultId = existingResultId;
-
-        // 2. Clear old Placements for this result
-        try {
-          const placementsRes = await raceApi.getAllPlacements();
-          const placementsList = placementsRes.data || placementsRes || [];
-          if (Array.isArray(placementsList)) {
-            const matches = placementsList.filter((p: any) => p.raceResultId === existingResultId);
-            for (const m of matches) {
-              if (m.id) {
-                await raceApi.deletePlacement(m.id);
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Failed to clear old placements:', e);
-        }
       } else {
-        // 1. Create new Race Result
+        // 1. Create new Race Result and send Placements together
         const resultRes = await raceApi.createRaceResult({
           raceId: Number(id),
           refereeId: race?.referee_id || 2,
           status: 'OFFICIAL',
           createdAt: new Date().toISOString(),
-          photoFinishImage: photoFinish
-        });
-        raceResultId = resultRes?.data?.id || (resultRes as any)?.id || 999;
-      }
-
-      // 3. Create Placements
-      for (const p of placements) {
-        if (p.registrationFormId) {
-          await raceApi.createPlacement({
-            raceResultId: Number(raceResultId),
+          photoFinishImage: photoFinish,
+          placements: placements.filter(p => p.registrationFormId).map(p => ({
             registrationFormId: Number(p.registrationFormId),
             finishPosition: Number(p.rank),
             finishTime: p.finishTime || new Date().toISOString(),
             weighInWeight: Number(p.weighInWeight) || 0.1
-          });
-        }
+          }))
+        });
+        raceResultId = resultRes?.data?.id || (resultRes as any)?.id || 999;
       }
 
-      toast.success('Race results and placements submitted successfully!');
+      toast.success('Race results and placements submitted successfully!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       if (race) setRace({ ...race, status: 'COMPLETE' });
     } catch (err) {
       // Mock completion status
-      toast.success('Race results and placements updated (simulation)!');
+      toast.success('Race results and placements updated (simulation)!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       if (race) setRace({ ...race, status: 'COMPLETE' });
     } finally {
       setSubmitting(false);
@@ -558,7 +540,7 @@ export default function RefereeRaceDetail() {
                   <CardDescription>Initiate, reschedule, or cancel this horse race.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-4">
-                  {(race.status === 'PREPARE' || race.status === 'SCHEDULED') && (
+                  {(race.status === 'PREPARE' || race.status === 'SCHEDULED' || race.status === 'PUBLISHED') && (
                     <Button
                       onClick={handleStartRace}
                       disabled={submitting}

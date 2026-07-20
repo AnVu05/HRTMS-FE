@@ -43,3 +43,10 @@ dist-ssr/
 *.exe
 *.so
 *.dll
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

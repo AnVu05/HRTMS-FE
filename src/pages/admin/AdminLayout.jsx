@@ -90,7 +90,7 @@ export function AdminLayout({ children }) {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild className="text-red-500 hover:text-red-600 hover:bg-red-50 w-full justify-start cursor-pointer">
-                  <button onClick={handleLogout} className="flex items-center gap-2">
+                  <button onClick={handleLogout} data-testid="logout-btn" className="flex items-center gap-2">
                     <LogOut className="h-4 w-4" />
                     <span>Logout</span>
                   </button>

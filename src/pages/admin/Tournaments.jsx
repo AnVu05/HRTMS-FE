@@ -147,42 +147,42 @@ function TournamentFormDialog({ mode, initialData, trigger }) {
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="name" className="text-right mt-3">Name</Label>
             <div className="col-span-3">
-              <Input id="name" {...form.register("name")} />
+              <Input id="name" data-testid="tournament-name" {...form.register("name")} />
               {form.formState.errors.name && <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="start_date" className="text-right mt-3">Start Date</Label>
             <div className="col-span-3">
-              <Input id="start_date" placeholder="DD/MM/YYYY" {...form.register("start_date")} />
+              <Input id="start_date" data-testid="tournament-start-date" placeholder="DD/MM/YYYY" {...form.register("start_date")} />
               {form.formState.errors.start_date && <p className="text-sm text-red-500 mt-1">{form.formState.errors.start_date.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="end_date" className="text-right mt-3">End Date</Label>
             <div className="col-span-3">
-              <Input id="end_date" placeholder="DD/MM/YYYY" {...form.register("end_date")} />
+              <Input id="end_date" data-testid="tournament-end-date" placeholder="DD/MM/YYYY" {...form.register("end_date")} />
               {form.formState.errors.end_date && <p className="text-sm text-red-500 mt-1">{form.formState.errors.end_date.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="published_date" className="text-right mt-3">Published</Label>
             <div className="col-span-3">
-              <Input id="published_date" placeholder="DD/MM/YYYY" {...form.register("published_date")} />
+              <Input id="published_date" data-testid="tournament-published-date" placeholder="DD/MM/YYYY" {...form.register("published_date")} />
               {form.formState.errors.published_date && <p className="text-sm text-red-500 mt-1">{form.formState.errors.published_date.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="open_prediction_date" className="text-right mt-3">Open Pred.</Label>
             <div className="col-span-3">
-              <Input id="open_prediction_date" placeholder="DD/MM/YYYY" {...form.register("open_prediction_date")} />
+              <Input id="open_prediction_date" data-testid="tournament-open-prediction-date" placeholder="DD/MM/YYYY" {...form.register("open_prediction_date")} />
               {form.formState.errors.open_prediction_date && <p className="text-sm text-red-500 mt-1">{form.formState.errors.open_prediction_date.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="close_prediction_date" className="text-right mt-3">Close Pred.</Label>
             <div className="col-span-3">
-              <Input id="close_prediction_date" placeholder="DD/MM/YYYY" {...form.register("close_prediction_date")} />
+              <Input id="close_prediction_date" data-testid="tournament-close-prediction-date" placeholder="DD/MM/YYYY" {...form.register("close_prediction_date")} />
               {form.formState.errors.close_prediction_date && <p className="text-sm text-red-500 mt-1">{form.formState.errors.close_prediction_date.message}</p>}
             </div>
           </div>
@@ -195,7 +195,7 @@ function TournamentFormDialog({ mode, initialData, trigger }) {
                   control={form.control}
                   render={({ field }) => (
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger id="status">
+                      <SelectTrigger id="status" data-testid="tournament-status-select">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -219,7 +219,7 @@ function TournamentFormDialog({ mode, initialData, trigger }) {
             </div>
           )}
           <DialogFooter>
-            <Button type="submit" className="bg-[#f59e0b] hover:bg-[#d97706] text-white">
+            <Button type="submit" data-testid="tournament-submit-btn" className="bg-[#f59e0b] hover:bg-[#d97706] text-white">
               {isEdit ? 'Save Changes' : 'Save as DRAFT'}
             </Button>
           </DialogFooter>
@@ -291,7 +291,7 @@ export function Tournaments() {
         <TournamentFormDialog 
           mode="create" 
           trigger={
-            <Button className="bg-[#f59e0b] hover:bg-[#d97706] text-white">
+            <Button data-testid="create-tournament-btn" className="bg-[#f59e0b] hover:bg-[#d97706] text-white">
               <Plus className="mr-2 h-4 w-4" /> Create Tournament
             </Button>
           } 
@@ -332,7 +332,7 @@ export function Tournaments() {
                         mode="edit"
                         initialData={t}
                         trigger={
-                          <Button variant="outline" size="sm" disabled={!['DRAFT', 'PUBLISHED'].includes(t.status)}>
+                          <Button data-testid="edit-tournament-btn" variant="outline" size="sm" disabled={!['DRAFT', 'PUBLISHED'].includes(t.status)}>
                             Edit
                           </Button>
                         }

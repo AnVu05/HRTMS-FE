@@ -223,6 +223,8 @@ const raceFormatSchema = z.object({
   maxWeight: z.string().optional(),
   baseWeight: z.string().optional(),
   applyFemaleAllowance: z.string().optional(),
+  predictionTimeBefore: z.string().optional(),
+  healthCheckTimeBefore: z.string().optional(),
   status: z.string().optional(),
 }).superRefine((data, ctx) => {
   const parseNum = (val) => val ? parseFloat(val) : 0;
@@ -270,6 +272,8 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
       maxWeight: initialData?.maxWeight?.toString() || "",
       baseWeight: initialData?.baseWeight?.toString() || "",
       applyFemaleAllowance: initialData?.applyFemaleAllowance?.toString() || "",
+      predictionTimeBefore: initialData?.predictionTimeBefore?.toString() || "",
+      healthCheckTimeBefore: initialData?.healthCheckTimeBefore?.toString() || "",
       status: initialData?.status || "ACTIVE",
     },
   });
@@ -281,7 +285,7 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
     mutationFn: (data) => adminApi.updateRaceFormat(initialData.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['raceFormats'] });
-      toast.success("Race format updated successfully!");
+      toast.success("Race format updated successfully!", { style: { backgroundColor: '#4caf50', color: 'white' } });
       setOpen(false);
     }
   });
@@ -290,7 +294,7 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
     mutationFn: (data) => adminApi.createRaceFormat(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['raceFormats'] });
-      toast.success("Race format created successfully!");
+      toast.success("Race format created successfully!", { style: { backgroundColor: '#4caf50', color: 'white' } });
       setOpen(false);
     }
   });
@@ -309,6 +313,8 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
       maxWeight: data.maxWeight ? parseInt(data.maxWeight) : null,
       baseWeight: data.baseWeight ? parseInt(data.baseWeight) : null,
       applyFemaleAllowance: data.applyFemaleAllowance ? parseInt(data.applyFemaleAllowance) : null,
+      predictionTimeBefore: data.predictionTimeBefore ? parseInt(data.predictionTimeBefore) : null,
+      healthCheckTimeBefore: data.healthCheckTimeBefore ? parseInt(data.healthCheckTimeBefore) : null,
     };
     
     if (isEdit) {
@@ -410,6 +416,16 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
             <Label htmlFor="applyFemaleAllowance">Female Allowance (kg)</Label>
             <Input id="applyFemaleAllowance" type="number" step="any" {...form.register("applyFemaleAllowance")} />
             {form.formState.errors.applyFemaleAllowance && <p className="text-sm text-red-500 mt-1">{form.formState.errors.applyFemaleAllowance.message}</p>}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="predictionTimeBefore">Prediction Open (Hours Before)</Label>
+            <Input id="predictionTimeBefore" type="number" step="any" {...form.register("predictionTimeBefore")} />
+            {form.formState.errors.predictionTimeBefore && <p className="text-sm text-red-500 mt-1">{form.formState.errors.predictionTimeBefore.message}</p>}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="healthCheckTimeBefore">Health Check (Hours Before)</Label>
+            <Input id="healthCheckTimeBefore" type="number" step="any" {...form.register("healthCheckTimeBefore")} />
+            {form.formState.errors.healthCheckTimeBefore && <p className="text-sm text-red-500 mt-1">{form.formState.errors.healthCheckTimeBefore.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="status">Status</Label>

@@ -189,13 +189,13 @@ export default function OwnerRegistrations() {
 
   const handleSave = async (id, updatedData) => {
     await ownerApi.updateRegistration(id, updatedData);
-    toast.success("Registration updated successfully");
+    toast.success("Registration updated successfully", { style: { backgroundColor: '#4caf50', color: 'white' } });
     fetchData();
   };
 
   const handleCancel = async (id) => {
     await ownerApi.cancelRegistration(id);
-    toast.success("Registration cancelled successfully");
+    toast.success("Registration cancelled successfully", { style: { backgroundColor: '#4caf50', color: 'white' } });
     fetchData();
   };
 

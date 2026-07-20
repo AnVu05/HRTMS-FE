@@ -55,7 +55,7 @@ export function RefereeLayout({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("access_token");
       localStorage.removeItem("user_role");
       localStorage.removeItem("user_id");
-      toast.success('Đăng xuất thành công!');
+      toast.success('Đăng xuất thành công!', { style: { backgroundColor: '#4caf50', color: 'white' } });
       setLocation('/portal');
     }
   };
