@@ -108,11 +108,10 @@ export function DevToggle() {
                           onClick={() => {
                             setLocation(route.path);
                           }}
-                          className={`text-left text-xs px-2.5 py-1.5 rounded transition-all truncate border ${
-                            isActive
+                          className={`text-left text-xs px-2.5 py-1.5 rounded transition-all truncate border ${isActive
                               ? 'bg-primary text-primary-foreground font-semibold border-primary shadow-sm'
                               : 'bg-muted/40 hover:bg-muted/90 text-muted-foreground border-transparent'
-                          }`}
+                            }`}
                         >
                           {route.label}
                         </button>

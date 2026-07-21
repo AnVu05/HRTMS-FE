@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
-import { Trophy, Menu } from 'lucide-react';
+import { Trophy, Menu, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet';
 import { authApi } from '@/services/auth.service';
+import { walletService } from '@/services/wallet.service';
 import { toast } from 'sonner';
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
@@ -43,9 +44,30 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
 
 export function SpectatorLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
+  const [balance, setBalance] = useState<number | null>(null);
+  const [loadingWallet, setLoadingWallet] = useState<boolean>(true);
 
   const role = 'spectator';
   const profilePath = '/spectator/profile';
+
+  useEffect(() => {
+    const userId = localStorage.getItem("user_id") || localStorage.getItem("spectator_id") || '2';
+    if (userId) {
+      walletService.getWalletByUserId(userId)
+        .then((res: any) => {
+          const data = res.data || res;
+          if (data && typeof data.balance === 'number') {
+            setBalance(data.balance);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load spectator wallet:', err);
+        })
+        .finally(() => {
+          setLoadingWallet(false);
+        });
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -82,6 +104,14 @@ export function SpectatorLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-4">
+            {/* Wallet Balance Display */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-semibold shadow-xs">
+              <Wallet className="h-3.5 w-3.5 text-emerald-600" />
+              <span>
+                {loadingWallet ? '...' : balance !== null ? balance.toLocaleString('vi-VN') : '0'}
+              </span>
+            </div>
+
             <div className="hidden sm:flex items-center gap-2">
               <Link href={profilePath}>
                 <Button variant="ghost" size="sm" className="font-medium">Profile</Button>
