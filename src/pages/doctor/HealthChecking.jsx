@@ -25,10 +25,10 @@ export function HealthChecking() {
     mutationFn: ({ id, action }) => doctorApi.processHealthCheck(id, { action }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctorHealthChecks', doctorId] });
-      toast.success("Health check processed successfully", { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success("Health check processed successfully");
     },
     onError: () => {
-      toast.error("Failed to process health check", { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error("Failed to process health check");
     }
   });
 
@@ -36,10 +36,10 @@ export function HealthChecking() {
     mutationFn: ({ id, status }) => doctorApi.respondToInvitation(id, doctorId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctorHealthChecks', doctorId] });
-      toast.success("Responded to invitation successfully", { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success("Responded to invitation successfully");
     },
     onError: () => {
-      toast.error("Failed to respond to invitation", { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error("Failed to respond to invitation");
     }
   });
 

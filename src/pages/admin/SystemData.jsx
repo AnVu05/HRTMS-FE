@@ -285,7 +285,7 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
     mutationFn: (data) => adminApi.updateRaceFormat(initialData.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['raceFormats'] });
-      toast.success("Race format updated successfully!", { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success("Race format updated successfully!");
       setOpen(false);
     }
   });
@@ -294,7 +294,7 @@ function RaceFormatFormDialog({ mode, initialData, trigger }) {
     mutationFn: (data) => adminApi.createRaceFormat(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['raceFormats'] });
-      toast.success("Race format created successfully!", { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success("Race format created successfully!");
       setOpen(false);
     }
   });

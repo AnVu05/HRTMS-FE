@@ -19,16 +19,16 @@ export default function ForgotPassword() {
   const handleRequestOtp = async (e) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Please enter your email', { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error('Please enter your email');
       return;
     }
     setLoading(true);
     try {
       await authApi.forgotPassword({ email });
-      toast.success('Verification code sent to your email!', { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success('Verification code sent to your email!');
       setStep(2);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send verification code. Please try again.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error(err.response?.data?.message || 'Failed to send verification code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -37,11 +37,11 @@ export default function ForgotPassword() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (!otp || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all fields', { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error('Please fill in all fields');
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match', { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error('Passwords do not match');
       return;
     }
     setLoading(true);
@@ -51,10 +51,10 @@ export default function ForgotPassword() {
         otpCode: otp,
         newPassword: newPassword
       });
-      toast.success('Password reset successfully!', { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success('Password reset successfully!');
       setStep(3);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to reset password. Please check your OTP.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error(err.response?.data?.message || 'Failed to reset password. Please check your OTP.');
     } finally {
       setLoading(false);
     }

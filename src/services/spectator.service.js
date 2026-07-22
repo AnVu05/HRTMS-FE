@@ -14,7 +14,7 @@ export const spectatorService = {
   /**
    * Cập nhật thông tin profile của Spectator
    * @param {number|string} spectatorId
-   * @param {{ name?: string, email?: string }} payload
+   * @param {{ username?: string, display_name?: string, email?: string }} payload
    */
   updateProfile(spectatorId, payload) {
     return apiRequest(`/api/spectators/${spectatorId}/profile`, {
@@ -26,7 +26,7 @@ export const spectatorService = {
   /**
    * Cập nhật avatar của Spectator
    * @param {number|string} spectatorId
-   * @param {{ avatarUrl: string }} payload
+   * @param {{ avatar: string }} payload
    */
   updateAvatar(spectatorId, payload) {
     return apiRequest(`/api/spectators/${spectatorId}/profile/avatar`, {
@@ -63,6 +63,16 @@ export const spectatorService = {
    */
   getAllPredictions() {
     return apiRequest('/api/predictions', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Lấy danh sách dự đoán theo User ID
+   * @param {number|string} userId
+   */
+  getPredictionsByUserId(userId) {
+    return apiRequest(`/api/predictions/${userId}`, {
       method: 'GET',
     });
   },

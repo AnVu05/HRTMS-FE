@@ -230,63 +230,6 @@ export default function PortalHome() {
         </>
       )}
 
-      {/* Top Jockeys */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Top Jockeys</h2>
-          <Link href="/spectator/jockeys">
-            <button className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-              View All <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </Link>
-        </div>
-        <div className="divide-y border rounded-lg overflow-hidden">
-          {jockeys.map((j, i) => (
-            <div
-              key={j.id}
-              className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-gray-400 text-sm w-5 text-center">
-                  {i + 1}
-                </span>
-                <span className="text-lg">{j.flag}</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{j.name}</p>
-                  <p className="text-xs text-gray-400">{j.nationality}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {j.winRate}%
-                  </p>
-                  <p className="text-xs text-gray-400">Win Rate</p>
-                </div>
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {j.completedRaces}
-                  </p>
-                  <p className="text-xs text-gray-400">Races Completed</p>
-                </div>
-                <Link href={`/spectator/jockeys/${j.id}`}>
-                  <button
-                    className="text-xs text-blue-600 hover:underline"
-                    data-testid={`btn-jockey-${j.id}`}
-                  >
-                    Profile
-                  </button>
-                </Link>
-              </div>
-            </div>
-          ))}
-          {jockeys.length === 0 && (
-            <div className="text-center py-6 text-slate-400 text-sm">
-              No jockeys found
-            </div>
-          )}
-        </div>
-      </section>
     </div>
   );
 }

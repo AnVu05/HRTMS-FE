@@ -29,7 +29,7 @@ function RegistrationFormDialog({ race, tournamentName, trigger, horses, jockeys
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.horseId || !formData.jockeyId) {
-      toast.error('Please select both a horse and a jockey.', { style: { backgroundColor: '#ffcccc', color: 'black' } });
+      toast.error('Please select both a horse and a jockey.');
       return;
     }
     
@@ -43,7 +43,7 @@ function RegistrationFormDialog({ race, tournamentName, trigger, horses, jockeys
         tournamentId: race.tournament_id || race.tournamentId,
         raceId: race.id
       });
-      toast.success(`Successfully registered for ${race.name}!`, { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success(`Successfully registered for ${race.name}!`);
       setIsOpen(false);
       setFormData({ horseId: '', jockeyId: '' });
     } catch (err) {

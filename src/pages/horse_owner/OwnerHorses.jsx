@@ -147,10 +147,10 @@ export default function OwnerHorses() {
 
     if (horseData.id) {
       await ownerApi.updateHorse(horseData.id, payload);
-      toast.success("Horse updated successfully", { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success("Horse updated successfully");
     } else {
       await ownerApi.createHorse(payload);
-      toast.success("Horse created successfully", { style: { backgroundColor: '#4caf50', color: 'white' } });
+      toast.success("Horse created successfully");
     }
     // Refresh the list
     fetchHorses();

@@ -53,10 +53,9 @@ export default function PortalSpectatorProfile() {
   const fetchPredictions = async () => {
     setLoadingPredictions(true);
     try {
-      const response = await spectatorService.getAllPredictions();
+      const response = await spectatorService.getPredictionsByUserId(spectatorId);
       const apiData = response.data || response || [];
-      const apiFiltered = apiData.filter((p: any) => p.spectatorId === spectatorId);
-      setPredictions(apiFiltered);
+      setPredictions(apiData);
     } catch (err: any) {
       toast({
         title: 'Error Loading Predictions',
@@ -348,8 +347,8 @@ export default function PortalSpectatorProfile() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <Badge className={
-                          pred.status === 'WON' ? 'bg-green-500 text-white' :
-                          pred.status === 'LOST' ? 'bg-red-500 text-white' :
+                          (pred.status === 'WON' || pred.status === 'PREDICT_WIN') ? 'bg-green-500 text-white' :
+                          (pred.status === 'LOST' || pred.status === 'PREDICT_LOSE') ? 'bg-red-500 text-white' :
                           'bg-amber-500 text-white'
                         }>
                           {pred.status}
