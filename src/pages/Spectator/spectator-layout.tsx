@@ -1,0 +1,154 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'wouter';
+import { cn } from '@/lib/utils';
+import { Trophy, Menu, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet';
+import { authApi } from '@/services/auth.service';
+import { walletService } from '@/services/wallet.service';
+import { toast } from 'sonner';
+
+function NavLinks({ onClick }: { onClick?: () => void }) {
+  const [location] = useLocation();
+  const rolePrefix = '/spectator';
+
+  const activeNavItems = [
+    { href: `${rolePrefix}/home`, label: 'Home' },
+    { href: `${rolePrefix}/jockeys`, label: 'Jockeys' },
+    { href: `${rolePrefix}/tournaments`, label: 'Tournaments' },
+    { href: `${rolePrefix}/races`, label: 'Race Schedule' },
+  ];
+
+  return (
+    <>
+      {activeNavItems.map((item) => {
+        const isHomePath = item.href === '/spectator/home';
+        const isActive = location === item.href || (!isHomePath && location.startsWith(item.href + '/'));
+        return (
+          <Link key={item.href} href={item.href} onClick={onClick}>
+            <div
+              data-testid={`portal-nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary cursor-pointer px-3 py-2 rounded-md block",
+                isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+              )}
+            >
+              {item.label}
+            </div>
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+export function SpectatorLayout({ children }: { children: React.ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const [balance, setBalance] = useState<number | null>(null);
+  const [loadingWallet, setLoadingWallet] = useState<boolean>(true);
+
+  const role = 'spectator';
+  const profilePath = '/spectator/profile';
+
+  useEffect(() => {
+    const userId = localStorage.getItem("user_id") || localStorage.getItem("spectator_id") || '2';
+    if (userId) {
+      walletService.getWalletByUserId(userId)
+        .then((res: any) => {
+          const data = res.data || res;
+          if (data && typeof data.balance === 'number') {
+            setBalance(data.balance);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load spectator wallet:', err);
+        })
+        .finally(() => {
+          setLoadingWallet(false);
+        });
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user_role");
+      localStorage.removeItem("user_id");
+      toast.success('Đăng xuất thành công!', { style: { backgroundColor: '#4caf50', color: 'white' } });
+      setLocation('/portal');
+    }
+  };
+
+  return (
+    <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-6">
+            <Link href="/spectator/home">
+              <div className="flex items-center gap-2 cursor-pointer" data-testid="portal-logo">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground">
+                  <Trophy className="h-5 w-5" />
+                </div>
+                <div className="hidden sm:flex flex-col">
+                  <span className="font-bold tracking-tight leading-none text-foreground">HRTMS</span>
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Spectator Portal</span>
+                </div>
+              </div>
+            </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              <NavLinks />
+            </nav>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Wallet Balance Display */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-semibold shadow-xs">
+              <Wallet className="h-3.5 w-3.5 text-emerald-600" />
+              <span>
+                {loadingWallet ? '...' : balance !== null ? balance.toLocaleString('vi-VN') : '0'}
+              </span>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2">
+              <Link href={profilePath}>
+                <Button variant="ghost" size="sm" className="font-medium">Profile</Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="font-medium">Đăng xuất</Button>
+            </div>
+            
+            {/* Mobile Nav */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <SheetHeader className="text-left border-b pb-4 mb-4">
+                  <SheetTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-primary" /> HRTMS
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-2">
+                  <NavLinks />
+                  <div className="h-px bg-slate-100 my-4"></div>
+                  <Link href={profilePath}>
+                    <Button className="w-full justify-start font-medium" variant="ghost">Profile</Button>
+                  </Link>
+                  <Button onClick={handleLogout} className="w-full justify-start font-medium text-red-600 hover:text-red-700 hover:bg-red-50" variant="ghost">Đăng xuất</Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+      <main className="flex-1 bg-slate-50/50">
+        {children}
+      </main>
+    </div>
+  );
+}
