@@ -136,7 +136,6 @@ export default function PortalHome() {
               {tournaments.map(t => (
                 <div key={t.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor[t.status] || 'bg-blue-100 text-blue-700'}`}>{t.status}</span>
                     <div>
                       <p className="text-sm font-medium text-gray-900">{t.name}</p>
                       <p className="text-xs text-gray-400">{t.location} · {t.date}</p>

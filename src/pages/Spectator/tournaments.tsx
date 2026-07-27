@@ -23,9 +23,8 @@ export default function PortalTournaments() {
           id: String(t.id),
           name: t.name,
           location: t.location || 'Vietnam',
-          status: t.status === 'ACTIVE' ? 'Active' : t.status === 'UPCOMING' ? 'Upcoming' : t.status === 'COMPLETED' ? 'Completed' : t.status || 'Upcoming',
-          
-          date: t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'TBD',
+          status: t.status || 'DRAFT',
+          date: t.startDate && t.endDate ? `${t.startDate} - ${t.endDate}` : t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : 'TBD',
           raceCount: t.raceCount || 8,
           maxParticipants: t.maxParticipants || 24,
           description: t.description || 'Professional horse racing tournament.'
@@ -45,12 +44,18 @@ export default function PortalTournaments() {
     fetchTournaments();
   }, []);
 
-  const filteredTournaments = tournaments.filter(t => filter === 'All' || t.status === filter);
+  const filteredTournaments = tournaments.filter(t => {
+    if (filter === 'All') return true;
+    if (filter === 'Active') return t.status === 'PUBLISHED';
+    if (filter === 'Upcoming') return t.status === 'DRAFT';
+    if (filter === 'Completed') return t.status === 'COMPLETE';
+    return true;
+  });
 
   return (
     <div className="container mx-auto px-4 py-12 md:px-6">
       <div className="text-center max-w-3xl mx-auto mb-12">
-        <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-4 text-slate-400">Racing Tournaments</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-4 text-slate-900">Racing Tournaments</h1>
         <p className="text-lg text-slate-500">
           Discover prestigious racing events across the country. Follow active championships, review past results, and prepare for upcoming cups.
         </p>
@@ -86,8 +91,9 @@ export default function PortalTournaments() {
                   <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
                   <div className="absolute top-4 left-4">
                     <Badge className={
-                      tournament.status === 'Active' ? 'bg-green-500 text-white border-none shadow-md' :
-                      tournament.status === 'Upcoming' ? 'bg-blue-500 text-white border-none shadow-md' : 
+                      tournament.status === 'PUBLISHED' ? 'bg-green-500 text-white border-none shadow-md' :
+                      tournament.status === 'DRAFT' ? 'bg-blue-500 text-white border-none shadow-md' : 
+                      tournament.status === 'COMPLETE' ? 'bg-gray-700 text-white border-none shadow-md' :
                       'bg-slate-200 text-slate-700 border-none shadow-md'
                     }>
                       {tournament.status}

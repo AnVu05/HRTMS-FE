@@ -22,13 +22,12 @@ export default function PortalRaces() {
         setRaces(list.map((r: any) => ({
           id: String(r.id),
           name: r.name,
-          tournamentId: String(r.tournament_id),
-          tournamentName: r.tournament_name || 'Tournament',
+          tournamentId: String(r.tournament_id || r.tournamentId),
+          tournamentName: r.tournament_name || r.tournamentName || 'Tournament',
           date: r.date || 'TBD',
           distance: r.distance_m ? `${r.distance_m}m` : '1200m',
           condition: r.condition || 'Good',
-          
-          status: (r.status === 'COMPLETE' || r.status === 'COMPLETED') ? 'Completed' : (r.status === 'ONGOING' || r.status === 'IN_PROGRESS') ? 'In Progress' : r.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled'
+          status: r.status || 'PENDING_REFEREE'
         })));
       } else {
         setRaces([]);
@@ -46,14 +45,42 @@ export default function PortalRaces() {
 
   const filteredRaces = races.filter(r => {
     if (filter === 'All') return true;
-    return r.status === filter;
+    if (filter === 'Scheduled') {
+      return r.status === 'PENDING_REFEREE' || r.status === 'PREPARE' || r.status === 'PUBLISHED';
+    }
+    if (filter === 'In Progress') {
+      return r.status === 'ONGOING';
+    }
+    if (filter === 'Completed') {
+      return r.status === 'COMPLETE';
+    }
+    return true;
   });
+
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'ONGOING':
+        return <Badge className="bg-green-500 hover:bg-green-600 text-white animate-pulse">LIVE NOW</Badge>;
+      case 'PUBLISHED':
+      case 'PREPARE':
+      case 'PENDING_REFEREE':
+        return <Badge className="bg-blue-100 text-blue-700 border-none font-medium">Scheduled</Badge>;
+      case 'COMPLETE':
+        return <Badge className="bg-slate-200 text-slate-700 border-none font-medium">Completed</Badge>;
+      case 'CANCELLED':
+        return <Badge className="bg-red-100 text-red-700 border-none font-medium">Cancelled</Badge>;
+      case 'WALK_OVER':
+        return <Badge className="bg-purple-100 text-purple-700 border-none font-medium">Walk Over</Badge>;
+      default:
+        return <Badge className="bg-slate-100 text-slate-600 border-none font-medium">{status}</Badge>;
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-12 md:px-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-3 text-slate-400">Race Schedule</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-3 text-slate-900">Race Schedule</h1>
           <p className="text-lg text-slate-500 max-w-2xl">
             Complete schedule of all upcoming races, live events, and past results.
           </p>
@@ -90,10 +117,12 @@ export default function PortalRaces() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: idx * 0.05 }}
             >
-              <Card className={`overflow-hidden border-l-4 transition-all hover:shadow-md ${race.status === 'In Progress' ? 'border-l-green-500 shadow-sm' :
-                  race.status === 'Scheduled' ? 'border-l-blue-500' :
-                    'border-l-slate-300'
-                }`}>
+              <Card className={`overflow-hidden border-l-4 transition-all hover:shadow-md ${
+                race.status === 'ONGOING' ? 'border-l-green-500 shadow-sm' :
+                (race.status === 'PUBLISHED' || race.status === 'PREPARE' || race.status === 'PENDING_REFEREE') ? 'border-l-blue-500' :
+                race.status === 'CANCELLED' ? 'border-l-red-500' :
+                'border-l-slate-300'
+              }`}>
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:items-center">
 
@@ -112,9 +141,6 @@ export default function PortalRaces() {
                             <Badge variant="outline" className="text-xs bg-slate-100 border-none text-slate-600 font-medium tracking-wide rounded-sm">
                               {race.tournamentName}
                             </Badge>
-                            {race.status === 'In Progress' && (
-                              <Badge className="bg-green-500 hover:bg-green-600 text-white animate-pulse">LIVE NOW</Badge>
-                            )}
                           </div>
                           <h3 className="text-xl font-bold text-slate-900">{race.name}</h3>
                         </div>
@@ -126,12 +152,7 @@ export default function PortalRaces() {
                           <Flag className="h-4 w-4 text-slate-400" /> {race.distance}
                         </div>
                         <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                        <Badge className={
-                          race.status === 'Completed' ? 'bg-slate-200 text-slate-700' :
-                            race.status === 'Scheduled' ? 'bg-blue-100 text-blue-700' : 'hidden'
-                        }>
-                          {race.status}
-                        </Badge>
+                        {renderStatusBadge(race.status)}
                       </div>
                     </div>
 
@@ -139,7 +160,7 @@ export default function PortalRaces() {
                     <div className="p-6 pt-0 md:pt-6 flex items-center justify-end md:justify-center border-t md:border-t-0 md:border-l border-slate-100 bg-white md:w-40 shrink-0">
                       <Link href={`/spectator/races/${race.id}`} className="w-full">
                         <Button variant="outline" className="w-full bg-white hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" data-testid={`btn-view-race-${race.id}`}>
-                          {race.status === 'Completed' ? 'Results' : 'Details'}
+                          {race.status === 'COMPLETE' ? 'Results' : 'Details'}
                         </Button>
                       </Link>
                     </div>
