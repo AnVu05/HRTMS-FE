@@ -202,7 +202,7 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value || undefined}>
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger data-testid="race-rule-select" className="col-span-3">
                     <SelectValue placeholder="Select Rule Format" />
                   </SelectTrigger>
                   <SelectContent>
@@ -222,7 +222,7 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value || undefined}>
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger data-testid="race-referee-select" className="col-span-3">
                     <SelectValue placeholder="Select Referee" />
                   </SelectTrigger>
                   <SelectContent>
@@ -243,7 +243,7 @@ function RaceFormDialog({ mode = 'add', initialData = null, tournamentId, trigge
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value || undefined}>
-                    <SelectTrigger className="col-span-3">
+                    <SelectTrigger data-testid="race-status-select" className="col-span-3">
                       <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
