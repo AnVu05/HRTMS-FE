@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { spectatorService } from '@/services/spectator.service';
+import { ownerApi } from '@/services/owner.service';
 
 export default function PortalSpectatorProfile() {
   // Use a default spectator ID (e.g. 2) since there is no session manager, but allow configuring
@@ -54,8 +55,57 @@ export default function PortalSpectatorProfile() {
     setLoadingPredictions(true);
     try {
       const response = await spectatorService.getPredictionsByUserId(spectatorId);
-      const apiData = response.data || response || [];
-      setPredictions(apiData);
+      const rawList = response.data || response || [];
+      const apiData = Array.isArray(rawList) ? rawList : [];
+
+      let raceMap: Record<number, string> = {};
+      let horseMap: Record<number, string> = {};
+
+      try {
+        const racesRes = await ownerApi.getUpcomingRaces();
+        const racesList = racesRes.data || racesRes || [];
+        if (Array.isArray(racesList)) {
+          racesList.forEach((r: any) => {
+            if (r.id && r.name) raceMap[r.id] = r.name;
+          });
+        }
+      } catch (e) {}
+
+      const enriched = await Promise.all(apiData.map(async (pred: any) => {
+        const rId = pred.raceId || pred.race_id;
+        let raceName = pred.raceName || pred.race_name || raceMap[rId];
+        if (!raceName && rId) {
+          try {
+            const rRes = await ownerApi.getRaceById(rId);
+            const rData = rRes.data || rRes;
+            if (rData && rData.name) {
+              raceName = rData.name;
+              raceMap[rId] = raceName;
+            }
+          } catch (e) {}
+        }
+
+        const hId = pred.predictedHorseId || pred.predicted_horse_id;
+        let horseName = pred.predictedHorseName || pred.predicted_horse_name || horseMap[hId];
+        if (!horseName && hId) {
+          try {
+            const hRes = await ownerApi.getHorseById(hId);
+            const hData = hRes.data || hRes;
+            if (hData && hData.name) {
+              horseName = hData.name;
+              horseMap[hId] = horseName;
+            }
+          } catch (e) {}
+        }
+
+        return {
+          ...pred,
+          raceName: raceName || `Race #${rId}`,
+          predictedHorseName: horseName || `Horse #${hId}`
+        };
+      }));
+
+      setPredictions(enriched);
     } catch (err: any) {
       toast({
         title: 'Error Loading Predictions',
@@ -337,10 +387,10 @@ export default function PortalSpectatorProfile() {
                         {pred.createdAt ? new Date(pred.createdAt).toLocaleString() : 'N/A'}
                       </td>
                       <td className="px-6 py-4 font-semibold text-slate-900">
-                        {pred.raceName || `Race #${pred.raceId}`}
+                        {pred.raceName || pred.race_name || `Race #${pred.raceId || pred.race_id}`}
                       </td>
                       <td className="px-6 py-4 text-slate-700">
-                        {pred.predictedHorseName || `Horse #${pred.predictedHorseId}`}
+                        {pred.predictedHorseName || pred.predicted_horse_name || `Horse #${pred.predictedHorseId || pred.predicted_horse_id}`}
                       </td>
                       <td className="px-6 py-4 text-right font-bold text-slate-900">
                         {pred.pointsInvested} PTS
