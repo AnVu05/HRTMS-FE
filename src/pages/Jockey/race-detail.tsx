@@ -71,41 +71,45 @@ export default function PortalRaceDetail() {
             const resultsRes = await raceApi.getAllRaceResults();
             const resultsList = resultsRes.data || resultsRes || [];
             if (Array.isArray(resultsList)) {
-              const match = resultsList.find((r: any) => r.raceId === Number(id));
+              const match = resultsList.find((r: any) => Number(r.raceId || r.race_id) === Number(id));
               if (match) {
                 // Fetch detail: /api/raceresults/{id}
                 const detailRes = await raceApi.getRaceResultById(match.id);
                 const detailData = detailRes.data || detailRes;
-                setPhotoFinishImage(detailData.photoFinishImage || '');
+                setPhotoFinishImage(detailData.photoFinishImage || detailData.photo_finish_image || '');
 
                 // Fetch placements
                 const placementsRes = await raceApi.getAllPlacements();
                 const placementsList = placementsRes.data || placementsRes || [];
                 if (Array.isArray(placementsList)) {
-                  const filteredPlacements = placementsList.filter((p: any) => p.raceResultId === match.id);
+                  const filteredPlacements = placementsList.filter((p: any) => Number(p.raceResultId || p.race_result_id) === Number(match.id));
                   
                   // Sort by position ascending
-                  filteredPlacements.sort((a, b) => (a.finishPosition || 99) - (b.finishPosition || 99));
+                  filteredPlacements.sort((a, b) => ((a.finishPosition || a.finish_position) || 99) - ((b.finishPosition || b.finish_position) || 99));
 
                   setResults(filteredPlacements.map((p: any) => {
-                    const participant = mappedLineup.find(l => Number(l.id) === Number(p.registrationFormId));
+                    const regId = p.registrationFormId || p.registration_form_id;
+                    const participant = mappedLineup.find(l => Number(l.id) === Number(regId));
                     let formattedTime = '--:--.--';
-                    if (p.finishTime) {
+                    const fTime = p.finishTime || p.finish_time;
+                    if (fTime) {
                       try {
-                        const dateObj = new Date(p.finishTime);
+                        const dateObj = new Date(fTime);
                         if (!isNaN(dateObj.getTime())) {
                           formattedTime = dateObj.toTimeString().split(' ')[0];
                         }
                       } catch (e) {}
                     }
+                    const pos = p.finishPosition || p.finish_position;
+                    const w = p.weighInWeight || p.weigh_in_weight;
                     return {
                       id: p.id,
-                      position: p.finishPosition,
-                      jockey: participant?.jockey || 'Jockey',
-                      horse: participant?.horse || 'Horse',
+                      position: pos,
+                      jockey: p.jockeyName || p.jockey_name || participant?.jockey || 'Jockey',
+                      horse: p.horseName || p.horse_name || participant?.horse || 'Horse',
                       time: formattedTime,
-                      weight: p.weighInWeight ? `${p.weighInWeight} kg` : 'N/A',
-                      medal: p.finishPosition === 1 ? 'gold' : p.finishPosition === 2 ? 'silver' : p.finishPosition === 3 ? 'bronze' : null
+                      weight: w ? `${w} kg` : 'N/A',
+                      medal: pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : null
                     };
                   }));
                 }
